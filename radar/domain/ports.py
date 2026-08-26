@@ -8,7 +8,7 @@ class ColetorDeVagas(Protocol):
 
 
 class AvaliadorDeVagas(Protocol):
-    def avaliar(self, vaga: Vaga, perfil: Perfil) -> ResultadoMatch: ...
+    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]: ...
 
 
 class Notificador(Protocol):

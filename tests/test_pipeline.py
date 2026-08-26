@@ -1,7 +1,6 @@
 from datetime import UTC, date, datetime
 
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Vaga
-from radar.matching.gemini import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 from radar.pipeline import executar
 
 DATA_DE_TESTE = date(2026, 8, 26)
@@ -39,16 +38,19 @@ class ColetorFalso:
 
 
 class AvaliadorFalso:
-    def __init__(self, notas: dict[str, int | Exception]) -> None:
+    def __init__(self, notas: dict[str, int]) -> None:
         self._notas = notas
         self.avaliadas: list[str] = []
 
-    def avaliar(self, vaga: Vaga, perfil: Perfil) -> ResultadoMatch:
-        self.avaliadas.append(vaga.id_externo)
-        nota = self._notas[vaga.id_externo]
-        if isinstance(nota, Exception):
-            raise nota
-        return ResultadoMatch(vaga=vaga, nota=nota, motivo=f"Motivo {vaga.id_externo}")
+    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
+        self.avaliadas.extend(vaga.id_externo for vaga in vagas)
+        return [
+            ResultadoMatch(
+                vaga=vaga, nota=self._notas[vaga.id_externo], motivo=f"Motivo {vaga.id_externo}"
+            )
+            for vaga in vagas
+            if vaga.id_externo in self._notas
+        ]
 
 
 class NotificadorFalso:
@@ -59,7 +61,7 @@ class NotificadorFalso:
         self.textos.append(texto)
 
 
-def rodar(vagas: list[Vaga], notas: dict[str, int | Exception], quantidade: int = 5):
+def rodar(vagas: list[Vaga], notas: dict[str, int], quantidade: int = 5):
     notificador = NotificadorFalso()
     avaliador = AvaliadorFalso(notas)
     selecionadas = executar(
@@ -85,13 +87,10 @@ def test_corta_na_quantidade_configurada():
     assert "Empresa 1" not in notificador.textos[0]
 
 
-def test_vaga_com_erro_de_avaliacao_e_ignorada_sem_derrubar_o_run():
-    selecionadas, notificador, _ = rodar(
-        [vaga(1), vaga(2)], {"1": ErroDeAvaliacao("Gemini respondeu HTTP 503"), "2": 60}
-    )
+def test_vaga_sem_resultado_do_avaliador_fica_fora_da_mensagem():
+    selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {"2": 60})
 
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
-    assert "Empresa 2" in notificador.textos[0]
     assert "Empresa 1" not in notificador.textos[0]
 
 
@@ -109,14 +108,3 @@ def test_sem_vagas_envia_mensagem_de_nenhuma_vaga():
     assert selecionadas == []
     assert len(notificador.textos) == 1
     assert "Nenhuma vaga compatível" in notificador.textos[0]
-
-
-def test_cota_excedida_interrompe_avaliacoes_e_envia_o_que_ja_tem():
-    selecionadas, notificador, avaliador = rodar(
-        [vaga(1), vaga(2), vaga(3)],
-        {"1": 80, "2": CotaDeAvaliacaoExcedida("HTTP 429"), "3": 95},
-    )
-
-    assert avaliador.avaliadas == ["1", "2"]
-    assert [resultado.vaga.id_externo for resultado in selecionadas] == ["1"]
-    assert "Empresa 1" in notificador.textos[0]

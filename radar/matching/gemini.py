@@ -19,9 +19,14 @@ class CotaDeAvaliacaoExcedida(ErroDeAvaliacao):
 
 
 class AvaliacaoIA(BaseModel):
+    id_vaga: str
     nota: int = Field(ge=0, le=100)
     motivo: str
     alerta_pegadinha: str | None = None
+
+
+class AvaliacoesIA(BaseModel):
+    avaliacoes: list[AvaliacaoIA]
 
 
 class AvaliadorGemini:
@@ -29,23 +34,20 @@ class AvaliadorGemini:
         self._modelo = settings.gemini_modelo
         self._cliente = cliente
 
-    def avaliar(self, vaga: Vaga, perfil: Perfil) -> ResultadoMatch:
-        avaliacao = self._pedir_avaliacao(montar_prompt(vaga, perfil))
-        return ResultadoMatch(
-            vaga=vaga,
-            nota=avaliacao.nota,
-            motivo=avaliacao.motivo,
-            alerta_pegadinha=avaliacao.alerta_pegadinha,
-        )
+    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
+        if not vagas:
+            return []
+        avaliacoes = self._pedir_avaliacoes(montar_prompt(vagas, perfil))
+        return casar_avaliacoes_com_vagas(avaliacoes, vagas)
 
-    def _pedir_avaliacao(self, prompt: str) -> AvaliacaoIA:
+    def _pedir_avaliacoes(self, prompt: str) -> AvaliacoesIA:
         try:
             resposta = self._cliente.models.generate_content(
                 model=self._modelo,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    response_schema=AvaliacaoIA,
+                    response_schema=AvaliacoesIA,
                     temperature=TEMPERATURA_DETERMINISTICA,
                 ),
             )
@@ -57,10 +59,26 @@ class AvaliadorGemini:
         return interpretar_resposta(resposta.text)
 
 
-def interpretar_resposta(texto: str | None) -> AvaliacaoIA:
+def interpretar_resposta(texto: str | None) -> AvaliacoesIA:
     if not texto:
         raise ErroDeAvaliacao("Gemini devolveu resposta vazia")
     try:
-        return AvaliacaoIA.model_validate_json(texto)
+        return AvaliacoesIA.model_validate_json(texto)
     except ValidationError as erro:
         raise ErroDeAvaliacao(f"Gemini devolveu JSON fora do esperado: {erro}") from None
+
+
+def casar_avaliacoes_com_vagas(avaliacoes: AvaliacoesIA, vagas: list[Vaga]) -> list[ResultadoMatch]:
+    vagas_por_id = {vaga.id_externo: vaga for vaga in vagas}
+    resultados: dict[str, ResultadoMatch] = {}
+    for avaliacao in avaliacoes.avaliacoes:
+        vaga = vagas_por_id.get(avaliacao.id_vaga)
+        if vaga is None or avaliacao.id_vaga in resultados:
+            continue
+        resultados[avaliacao.id_vaga] = ResultadoMatch(
+            vaga=vaga,
+            nota=avaliacao.nota,
+            motivo=avaliacao.motivo,
+            alerta_pegadinha=avaliacao.alerta_pegadinha,
+        )
+    return list(resultados.values())
