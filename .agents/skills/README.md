@@ -14,6 +14,7 @@ Este diretório reúne as instruções reutilizáveis que orientam os agentes du
 | `tdd` | Conduz o ciclo vermelho, verde e refatoração, priorizando comportamento e interfaces públicas. | Ao implementar funcionalidades ou corrigir defeitos com `pytest`. |
 | `code-review` | Revisa uma diferença de código em dois eixos: regras do repositório e aderência à especificação. | Antes de concluir uma branch ou preparar um pull request. |
 | `humanizer` | Reescreve textos artificiais ou genéricos sem alterar fatos e significado. | Ao revisar documentação, mensagens do Telegram e textos voltados ao usuário. |
+| `revenue-centric-design` | Reúne princípios de produto para aquisição, ativação, retenção, monetização e posicionamento. | Ao planejar landing pages, onboarding, modelo de receita, métricas ou estratégia de produto. |
 
 ## Fluxo recomendado
 
@@ -23,10 +24,14 @@ Este diretório reúne as instruções reutilizáveis que orientam os agentes du
 4. Implemente em ciclos curtos com `tdd`.
 5. Finalize com `code-review`, comparando a branch com seu ponto de origem.
 6. Use `humanizer` quando o resultado incluir texto destinado a pessoas.
+7. Consulte `revenue-centric-design` nas decisões de produto, experiência e monetização.
 
 ## Origem
 
 - `humanizer`: [blader/humanizer](https://github.com/blader/humanizer), licença MIT.
-- Demais skills: [mattpocock/skills](https://github.com/mattpocock/skills), licença MIT.
+- Skills de engenharia: [mattpocock/skills](https://github.com/mattpocock/skills), licença MIT.
+- `revenue-centric-design`: [heliocosta-dev/revenue-centric-design](https://github.com/heliocosta-dev/revenue-centric-design), licença própria com atribuição obrigatória e proibição de uso em apostas, cassinos e jogos de azar.
+
+A instalação de `revenue-centric-design` é enxuta: mantém as referências textuais e a licença, mas omite os recursos multimídia e os scripts opcionais de atualização.
 
 As cópias deste diretório são versionadas com o projeto. Atualizações das fontes não são aplicadas automaticamente e devem ser revisadas antes de entrar no repositório.
