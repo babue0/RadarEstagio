@@ -32,3 +32,6 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Ferramentas
+.ruff_cache/
