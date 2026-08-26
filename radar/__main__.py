@@ -1,5 +1,7 @@
 import argparse
+import logging
 import sys
+from datetime import date
 
 import httpx
 from google import genai
@@ -10,11 +12,13 @@ from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.filtering.prefiltro import filtrar
 from radar.matching.gemini import AvaliadorGemini, ErroDeAvaliacao
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
+from radar.pipeline import executar
 from radar.settings import Settings
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 TIMEOUT_HTTP_EM_SEGUNDOS = 30
 LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL = 3
+COMANDO_PADRAO = "rodar"
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -71,24 +75,54 @@ def testar_telegram(settings: Settings) -> None:
     print(f"Mensagem enviada para o chat {settings.telegram_chat_id}")
 
 
-COMANDOS = {"coletar": coletar, "avaliar": avaliar, "testar-telegram": testar_telegram}
+def rodar(settings: Settings) -> None:
+    with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
+        selecionadas = executar(
+            ColetorAdzuna(settings, cliente_http),
+            AvaliadorGemini(settings, genai.Client(api_key=settings.gemini_api_key)),
+            NotificadorTelegram(settings, cliente_http),
+            perfil_do_mvp(),
+            settings.quantidade_vagas_enviadas,
+            date.today(),
+        )
+    print(f"{len(selecionadas)} vagas enviadas para o chat {settings.telegram_chat_id}")
+
+
+COMANDOS = {
+    "verificar": verificar_configuracao,
+    "coletar": coletar,
+    "avaliar": avaliar,
+    "testar-telegram": testar_telegram,
+    "rodar": rodar,
+}
+
+
+def configurar_logging() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.getLogger("google_genai").setLevel(logging.ERROR)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="radar", description="Radar de Estágio")
     subcomandos = parser.add_subparsers(dest="comando")
+    subcomandos.add_parser("rodar", help="executa o fluxo completo e envia a mensagem (padrão)")
+    subcomandos.add_parser(
+        "verificar", help="confere se as variáveis de ambiente estão preenchidas"
+    )
     subcomandos.add_parser("coletar", help="busca vagas reais na Adzuna e imprime título e URL")
     subcomandos.add_parser("avaliar", help="coleta, pré-filtra e avalia algumas vagas com o Gemini")
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     argumentos = parser.parse_args()
 
+    configurar_logging()
     settings = carregar_settings()
     if settings is None:
         sys.exit(1)
 
-    executar = COMANDOS.get(argumentos.comando, verificar_configuracao)
+    comando = COMANDOS[argumentos.comando or COMANDO_PADRAO]
     try:
-        executar(settings)
+        comando(settings)
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao) as erro:
         print(erro, file=sys.stderr)
         sys.exit(1)
