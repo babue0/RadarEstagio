@@ -126,17 +126,22 @@ apenas envia mensagens, o que é uma requisição HTTP simples.
 
 Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 
-- Passos 0 a 5 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
+- Passos 0 a 6 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
   (`Vaga`, `Perfil`, `ResultadoMatch`, ports, perfil fixo), coletor da Adzuna com
   testes e verificação manual (`python -m radar coletar`), pré-filtro por regras
   (`filtering/prefiltro.py`), matching com Gemini (`matching/gemini.py`, saída
   estruturada via `response_schema`, verificado com `python -m radar avaliar`) e
   notificação no Telegram (`notification/formatador.py` monta a mensagem em HTML e
   divide acima de 4096 caracteres; `notification/telegram.py` envia; verificado com
-  `python -m radar testar-telegram`).
+  `python -m radar testar-telegram`) e pipeline (`pipeline.py`, comando padrão
+  `python -m radar`, verificado com envio real de 5 vagas avaliadas pelo Gemini).
 - Modelo Gemini padrão: `gemini-3.6-flash` (configurável por `GEMINI_MODELO`). O
   `gemini-2.5-flash` foi recusado pela API como indisponível para contas novas.
-- Próximos: Passo 6 (pipeline), 7 (GitHub Actions), 8 (README).
+- Cota do Gemini: a camada gratuita do `gemini-3.6-flash` permite ~20 requisições por
+  **dia**. Ao receber HTTP 429 o avaliador levanta `CotaDeAvaliacaoExcedida` e o pipeline
+  para de avaliar e envia o que já tem; tentar de novo com espera não ajuda (limite
+  diário, não por minuto). Evitar rodar `avaliar`/`rodar` várias vezes no mesmo dia.
+- Próximos: Passo 7 (GitHub Actions), 8 (README).
 - Contas criadas e chaves configuradas no `.env` local de cada membro (Adzuna, Gemini,
   Telegram + `chat_id`). O `.env` nunca é commitado; o GitHub Actions receberá as mesmas
   variáveis via secrets no Passo 7.
