@@ -1,0 +1,107 @@
+{
+  "__CLASS__": "Adzuna::API::Response::JobSearchResults",
+  "count": 3,
+  "mean": 14700,
+  "results": [
+    {
+      "adref": "adref-de-teste",
+      "salary_max": 9720,
+      "longitude": -38.686774,
+      "redirect_url": "https://www.adzuna.com.br/details/5855737878?utm_medium=api&utm_source=teste",
+      "created": "2026-08-25T18:49:50Z",
+      "__CLASS__": "Adzuna::API::Response::Job",
+      "salary_is_predicted": "0",
+      "title": "Vaga de Estágio em TI",
+      "salary_min": 9720,
+      "contract_type": "contract",
+      "category": {
+        "__CLASS__": "Adzuna::API::Response::Category",
+        "label": "Vagas em Tecnologia Informática",
+        "tag": "it-jobs"
+      },
+      "latitude": -13.198315,
+      "company": {
+        "__CLASS__": "Adzuna::API::Response::Company",
+        "display_name": "Premier Logistcs"
+      },
+      "id": "5855737878",
+      "location": {
+        "display_name": "Salvador, Bahia",
+        "area": [
+          "Brasil",
+          "Nordeste",
+          "Bahia",
+          "Salvador"
+        ],
+        "__CLASS__": "Adzuna::API::Response::Location"
+      },
+      "description": "Estamos em busca de um(a) Estagiário(a) de TI que tenha interesse em desenvolver seus conhecimentos na prática e crescer profissionalmente na área de Tecnologia da Informação. Principais atividades: Prestar suporte técnico aos usuários (Help Desk), auxiliando na identificação e solução de problemas; Apoiar na instalação, configuração e manutenção de computadores; Realizar suporte básico em hardware e software; Auxiliar na instalação e atualização de programas e sistemas; Apoiar na configuração …"
+    },
+    {
+      "created": "2026-08-24T18:45:10Z",
+      "redirect_url": "https://www.adzuna.com.br/details/5854597840?utm_medium=api&utm_source=teste",
+      "adref": "adref-de-teste",
+      "longitude": -46.75454,
+      "salary_max": 18000,
+      "latitude": -23.52071,
+      "category": {
+        "label": "Vagas em Tecnologia Informática",
+        "__CLASS__": "Adzuna::API::Response::Category",
+        "tag": "it-jobs"
+      },
+      "description": "Empresa de tecnologia , fabricante de equipamentos, localizada em Osasco, contrata: Estagiários em eletrônica Local: Vila Ayrosa - Osasco Horário de trabalho das 7:00Hrs as 12:00hrs de segunda a sexta. Bolsa Auxilio: R$ 1.500,00 Ajuda de custo para alimentação e transporte de R$ 15,00 por dia. REQUISITOS Ensino médio completo Cursando técnico na área de eletrônica / mecatrônica / eletroeletrônica Disponibilidade para fazer o mínimo de 1 ano de estágio Interesse em atuar na área técnica PRINCIPA…",
+      "location": {
+        "area": [
+          "Brasil",
+          "Sudeste",
+          "Estado de São Paulo",
+          "Osasco"
+        ],
+        "display_name": "Osasco, Estado de São Paulo",
+        "__CLASS__": "Adzuna::API::Response::Location"
+      },
+      "id": "5854597840",
+      "company": {
+        "display_name": "WILLISA",
+        "__CLASS__": "Adzuna::API::Response::Company"
+      },
+      "__CLASS__": "Adzuna::API::Response::Job",
+      "title": "Estágio em Eletroeletrônica",
+      "salary_is_predicted": "0",
+      "salary_min": 18000,
+      "contract_type": "contract"
+    },
+    {
+      "title": "Estágio Suporte",
+      "salary_is_predicted": "0",
+      "adref": "adref-de-teste",
+      "__CLASS__": "Adzuna::API::Response::Job",
+      "contract_type": "contract",
+      "longitude": -51.25284,
+      "latitude": -30.11121,
+      "category": {
+        "__CLASS__": "Adzuna::API::Response::Category",
+        "label": "Vagas em Tecnologia Informática",
+        "tag": "it-jobs"
+      },
+      "location": {
+        "display_name": "Porto Alegre, Rio Grande do Sul",
+        "area": [
+          "Brasil",
+          "Sul",
+          "Rio Grande do Sul",
+          "Porto Alegre"
+        ],
+        "__CLASS__": "Adzuna::API::Response::Location"
+      },
+      "created": "2026-08-26T05:36:46Z",
+      "description": "Área e especialização profissional: Informática, TI, Telecomunicações - Suporte Técnico Nível hierárquico: Estagiário Local de trabalho: Porto Alegre, RS Regime de contratação de tipo Estágio Jornada Parcial tardes Realizar atendimento, acompanhamento e triagem de chamados abertos por nossos usuários, auxiliando-os a utilizar o nosso sistema Gemed da melhor forma possível. Os atendimentos são feitos via e-mail, chat ou telefone, utilizamos a ferramenta Zoho para controle dos chamados e obtenção…",
+      "id": "5856578382",
+      "company": {
+        "display_name": "Interprocess Tecnologia da Informação Ltda",
+        "__CLASS__": "Adzuna::API::Response::Company"
+      },
+      "redirect_url": "https://www.adzuna.com.br/details/5856578382?utm_medium=api&utm_source=teste"
+    }
+  ]
+}
