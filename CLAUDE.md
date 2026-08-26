@@ -138,9 +138,14 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 - Modelo Gemini padrão: `gemini-3.6-flash` (configurável por `GEMINI_MODELO`). O
   `gemini-2.5-flash` foi recusado pela API como indisponível para contas novas.
 - Cota do Gemini: a camada gratuita do `gemini-3.6-flash` permite ~20 requisições por
-  **dia**. Ao receber HTTP 429 o avaliador levanta `CotaDeAvaliacaoExcedida` e o pipeline
-  para de avaliar e envia o que já tem; tentar de novo com espera não ajuda (limite
-  diário, não por minuto). Evitar rodar `avaliar`/`rodar` várias vezes no mesmo dia.
+  **dia**; tentar de novo com espera não ajuda (limite diário, não por minuto). Por isso
+  a avaliação é feita em lotes: `AvaliadorGemini` avalia uma lista de vagas em uma única
+  chamada (JSON com `id_vaga` por item), e `matching/lotes.py` (`AvaliadorEmLotes`) divide
+  as vagas em lotes de `GEMINI_VAGAS_POR_LOTE` (padrão 10), reparte ao meio um lote que
+  falhar até isolar a vaga com problema, reavalia sozinha a vaga que o modelo omitir e,
+  em HTTP 429 (`CotaDeAvaliacaoExcedida`), para e devolve o que já tem. O contrato
+  `AvaliadorDeVagas.avaliar` recebe e devolve listas. Evitar rodar `avaliar`/`rodar`
+  várias vezes no mesmo dia.
 - Próximos: Passo 7 (GitHub Actions), 8 (README).
 - Contas criadas e chaves configuradas no `.env` local de cada membro (Adzuna, Gemini,
   Telegram + `chat_id`). O `.env` nunca é commitado; o GitHub Actions receberá as mesmas
