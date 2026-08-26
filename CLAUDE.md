@@ -108,6 +108,17 @@ apenas envia mensagens, o que é uma requisição HTTP simples.
   menção ou "Co-Authored-By" de Claude/Anthropic nos commits.
 - **Commits atômicos**: cada commit representa uma mudança coesa e completa. Sempre
   seguir o ciclo `git add` → `git commit` → `git push` ao final de um commit.
+- **Conventional Commits** (conventionalcommits.org) em toda mensagem de commit:
+  - Formato da primeira linha: `tipo(escopo): descrição`. Escopo é opcional e nomeia a
+    camada ou módulo afetado (`collectors`, `settings`, `ci`...).
+  - Tipos: `feat` (funcionalidade nova), `fix` (correção), `docs`, `test`, `refactor`
+    (sem mudar comportamento), `perf`, `style` (formatação), `build` (dependências),
+    `ci` (GitHub Actions), `chore` (manutenção que não se encaixa nos demais).
+  - Descrição em português, minúscula, no presente do indicativo, sem ponto final,
+    até 72 caracteres. Ex.: `feat(collectors): adiciona coletor da Adzuna`.
+  - Corpo opcional, separado por linha em branco, explicando o *porquê* da mudança.
+  - Mudança incompatível: `!` após o tipo/escopo (`feat(settings)!: ...`) e rodapé
+    `BREAKING CHANGE: <explicação>`.
 - **`.gitignore` sempre atualizado**: nunca commitar segredos (`.env`), bancos locais,
   ambientes virtuais ou artefatos de build.
 
