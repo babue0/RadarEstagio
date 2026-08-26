@@ -2,10 +2,14 @@ from pydantic import ValidationError
 
 from radar.settings import Settings
 
+TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 
-def nomes_das_variaveis_ausentes(erro: ValidationError) -> list[str]:
+
+def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
     return [
-        str(detalhe["loc"][0]).upper() for detalhe in erro.errors() if detalhe["type"] == "missing"
+        str(detalhe["loc"][0]).upper()
+        for detalhe in erro.errors()
+        if detalhe["type"] in TIPOS_DE_ERRO_DE_PREENCHIMENTO
     ]
 
 
@@ -13,8 +17,8 @@ def main() -> None:
     try:
         settings = Settings()
     except ValidationError as erro:
-        print("Variáveis de ambiente ausentes:")
-        for nome in nomes_das_variaveis_ausentes(erro):
+        print("Variáveis de ambiente ausentes ou vazias:")
+        for nome in nomes_das_variaveis_nao_preenchidas(erro):
             print(f"  - {nome}")
         return
 
