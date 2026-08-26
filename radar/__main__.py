@@ -11,6 +11,7 @@ from radar.collectors.adzuna import ColetorAdzuna, ErroDeColeta
 from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.filtering.prefiltro import filtrar
 from radar.matching.gemini import AvaliadorGemini, ErroDeAvaliacao
+from radar.matching.lotes import AvaliadorEmLotes
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import executar
 from radar.settings import Settings
@@ -58,11 +59,10 @@ def avaliar(settings: Settings) -> None:
     perfil = perfil_do_mvp()
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         vagas = filtrar(ColetorAdzuna(settings, cliente_http).coletar(), perfil)
-    avaliador = AvaliadorGemini(settings, genai.Client(api_key=settings.gemini_api_key))
     selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
     print(f"{len(vagas)} vagas após o pré-filtro; avaliando {len(selecionadas)} com o Gemini")
-    for vaga in selecionadas:
-        resultado = avaliador.avaliar(vaga, perfil)
+    for resultado in montar_avaliador(settings).avaliar(selecionadas, perfil):
+        vaga = resultado.vaga
         print(f"- [{resultado.nota:3d}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
         print(f"  Motivo: {resultado.motivo}")
         if resultado.alerta_pegadinha:
@@ -75,11 +75,18 @@ def testar_telegram(settings: Settings) -> None:
     print(f"Mensagem enviada para o chat {settings.telegram_chat_id}")
 
 
+def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
+    cliente_gemini = genai.Client(api_key=settings.gemini_api_key)
+    return AvaliadorEmLotes(
+        AvaliadorGemini(settings, cliente_gemini), settings.gemini_vagas_por_lote
+    )
+
+
 def rodar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         selecionadas = executar(
             ColetorAdzuna(settings, cliente_http),
-            AvaliadorGemini(settings, genai.Client(api_key=settings.gemini_api_key)),
+            montar_avaliador(settings),
             NotificadorTelegram(settings, cliente_http),
             perfil_do_mvp(),
             settings.quantidade_vagas_enviadas,
