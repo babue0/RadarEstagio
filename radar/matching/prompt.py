@@ -4,11 +4,13 @@ INSTRUCAO_DO_RECRUTADOR = """\
 Você é um recrutador experiente avaliando se uma vaga de estágio combina com um candidato.
 Compare os requisitos da vaga com o perfil do candidato e responda em JSON com:
 - nota: inteiro de 0 a 100 indicando a compatibilidade (100 = encaixe perfeito).
-- motivo: uma única frase, em português, explicando a nota. Cite quantos requisitos o \
-candidato cumpre e o que falta.
-- alerta_pegadinha: uma frase curta se a vaga tiver sinal de problema (exige experiência \
-de profissional pleno, não é da área do candidato, remuneração ausente, exclusividade de \
-outro curso). Caso contrário, null.
+- motivo: uma única frase em português com no máximo 15 palavras explicando a nota. \
+Diga quantos requisitos o candidato cumpre e o principal que falta. Sem rodeios.
+- alerta_pegadinha: no máximo 10 palavras, apenas se a vaga esconder um problema que o \
+título não revela: exige experiência de pleno/sênior, é comercial ou operacional \
+disfarçada de TI, sem remuneração, exclusiva de outro curso. Nunca repita o que já está \
+no motivo. Localização e modalidade não são pegadinha: vão no motivo, não aqui. Se não \
+houver pegadinha, null.
 
 Critérios de nota:
 - Área e curso compatíveis pesam mais que habilidades específicas.
