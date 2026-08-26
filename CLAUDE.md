@@ -126,12 +126,14 @@ apenas envia mensagens, o que é uma requisição HTTP simples.
 
 Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 
-- Passos 0 a 3 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
+- Passos 0 a 4 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
   (`Vaga`, `Perfil`, `ResultadoMatch`, ports, perfil fixo), coletor da Adzuna com
-  testes e verificação manual (`python -m radar coletar`) e pré-filtro por regras
-  (`filtering/prefiltro.py`).
-- Próximos: Passo 4 (matching Gemini), 5 (Telegram), 6 (pipeline), 7 (GitHub Actions),
-  8 (README).
+  testes e verificação manual (`python -m radar coletar`), pré-filtro por regras
+  (`filtering/prefiltro.py`) e matching com Gemini (`matching/gemini.py`, saída
+  estruturada via `response_schema`, verificado com `python -m radar avaliar`).
+- Modelo Gemini padrão: `gemini-3.6-flash` (configurável por `GEMINI_MODELO`). O
+  `gemini-2.5-flash` foi recusado pela API como indisponível para contas novas.
+- Próximos: Passo 5 (Telegram), 6 (pipeline), 7 (GitHub Actions), 8 (README).
 - Contas criadas e chaves configuradas no `.env` local de cada membro (Adzuna, Gemini,
   Telegram + `chat_id`). O `.env` nunca é commitado; o GitHub Actions receberá as mesmas
   variáveis via secrets no Passo 7.
