@@ -124,7 +124,15 @@ apenas envia mensagens, o que é uma requisição HTTP simples.
 
 ## Estado do projeto
 
-- Fase 1 (MVP) ainda não implementada — este `CLAUDE.md` e a estrutura de convenções
-  foram criados primeiro.
-- Contas e chaves (Adzuna, Gemini, Telegram) serão configuradas depois; até lá, qualquer
-  código que dependa delas deve ler de variáveis de ambiente, nunca hardcoded.
+Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
+
+- Passos 0 a 2 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
+  (`Vaga`, `Perfil`, `ResultadoMatch`, ports, perfil fixo) e coletor da Adzuna com
+  testes e verificação manual (`python -m radar coletar`).
+- Próximos: Passo 3 (pré-filtro), 4 (matching Gemini), 5 (Telegram), 6 (pipeline),
+  7 (GitHub Actions), 8 (README).
+- Contas criadas e chaves configuradas no `.env` local de cada membro (Adzuna, Gemini,
+  Telegram + `chat_id`). O `.env` nunca é commitado; o GitHub Actions receberá as mesmas
+  variáveis via secrets no Passo 7.
+- Passo 1 está mais avançado que o restante do plano previa: `perfil_fixo.py` já contém
+  o perfil real do usuário nº 1.
