@@ -126,7 +126,7 @@ apenas envia mensagens, o que é uma requisição HTTP simples.
 
 Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 
-- Passos 0 a 6 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
+- Passos 0 a 7 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
   (`Vaga`, `Perfil`, `ResultadoMatch`, ports, perfil fixo), coletor da Adzuna com
   testes e verificação manual (`python -m radar coletar`), pré-filtro por regras
   (`filtering/prefiltro.py`), matching com Gemini (`matching/gemini.py`, saída
@@ -134,7 +134,10 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   notificação no Telegram (`notification/formatador.py` monta a mensagem em HTML e
   divide acima de 4096 caracteres; `notification/telegram.py` envia; verificado com
   `python -m radar testar-telegram`) e pipeline (`pipeline.py`, comando padrão
-  `python -m radar`, verificado com envio real de 5 vagas avaliadas pelo Gemini).
+  `python -m radar`, verificado com envio real de 5 vagas avaliadas pelo Gemini) e
+  agendamento (`.github/workflows/radar-diario.yml`: cron `0 11 * * *` = 08:00 em
+  Brasília + `workflow_dispatch`; os 5 secrets do repositório têm os mesmos nomes das
+  variáveis do `.env`).
 - Modelo Gemini padrão: `gemini-3.6-flash` (configurável por `GEMINI_MODELO`). O
   `gemini-2.5-flash` foi recusado pela API como indisponível para contas novas.
 - Cota do Gemini: a camada gratuita do `gemini-3.6-flash` permite ~20 requisições por
@@ -146,7 +149,7 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   em HTTP 429 (`CotaDeAvaliacaoExcedida`), para e devolve o que já tem. O contrato
   `AvaliadorDeVagas.avaliar` recebe e devolve listas. Evitar rodar `avaliar`/`rodar`
   várias vezes no mesmo dia.
-- Próximos: Passo 7 (GitHub Actions), 8 (README).
+- Próximos: Passo 8 (README).
 - Contas criadas e chaves configuradas no `.env` local de cada membro (Adzuna, Gemini,
   Telegram + `chat_id`). O `.env` nunca é commitado; o GitHub Actions receberá as mesmas
   variáveis via secrets no Passo 7.
