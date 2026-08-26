@@ -4,7 +4,7 @@ from datetime import date
 from radar.domain.models import Perfil, ResultadoMatch, Vaga
 from radar.domain.ports import AvaliadorDeVagas, ColetorDeVagas, Notificador
 from radar.filtering.prefiltro import filtrar
-from radar.matching.gemini import ErroDeAvaliacao
+from radar.matching.gemini import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 from radar.notification.formatador import formatar_mensagem
 
 logger = logging.getLogger(__name__)
@@ -32,9 +32,17 @@ def avaliar_todas(
     avaliador: AvaliadorDeVagas, vagas: list[Vaga], perfil: Perfil
 ) -> list[ResultadoMatch]:
     resultados = []
-    for vaga in vagas:
+    for posicao, vaga in enumerate(vagas):
         try:
             resultados.append(avaliador.avaliar(vaga, perfil))
+        except CotaDeAvaliacaoExcedida as erro:
+            logger.warning(
+                "Cota do Gemini excedida; %d de %d vagas ficaram sem avaliação: %s",
+                len(vagas) - posicao,
+                len(vagas),
+                erro,
+            )
+            break
         except ErroDeAvaliacao as erro:
             logger.warning("Vaga %s ignorada: %s", vaga.id_externo, erro)
     return resultados

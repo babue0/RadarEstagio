@@ -7,9 +7,14 @@ from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
 TEMPERATURA_DETERMINISTICA = 0
+HTTP_COTA_EXCEDIDA = 429
 
 
 class ErroDeAvaliacao(Exception):
+    pass
+
+
+class CotaDeAvaliacaoExcedida(ErroDeAvaliacao):
     pass
 
 
@@ -45,7 +50,10 @@ class AvaliadorGemini:
                 ),
             )
         except errors.APIError as erro:
-            raise ErroDeAvaliacao(f"Gemini respondeu HTTP {erro.code}: {erro.message}") from None
+            mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
+            if erro.code == HTTP_COTA_EXCEDIDA:
+                raise CotaDeAvaliacaoExcedida(mensagem) from None
+            raise ErroDeAvaliacao(mensagem) from None
         return interpretar_resposta(resposta.text)
 
 

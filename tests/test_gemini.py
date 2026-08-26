@@ -5,7 +5,7 @@ import pytest
 from google.genai import errors
 
 from radar.domain.models import Modalidade, Perfil, Vaga
-from radar.matching.gemini import AvaliadorGemini, ErroDeAvaliacao
+from radar.matching.gemini import AvaliadorGemini, CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
@@ -137,6 +137,25 @@ def test_erro_da_api_levanta_erro_de_avaliacao_com_status():
 
     with pytest.raises(ErroDeAvaliacao, match="429"):
         avaliador.avaliar(vaga_exemplo(), perfil_exemplo())
+
+
+def test_cota_excedida_levanta_erro_especifico():
+    avaliador, _ = avaliador_com(
+        errors.APIError(429, {"error": {"message": "quota", "status": "RESOURCE_EXHAUSTED"}})
+    )
+
+    with pytest.raises(CotaDeAvaliacaoExcedida):
+        avaliador.avaliar(vaga_exemplo(), perfil_exemplo())
+
+
+def test_outros_erros_da_api_nao_sao_cota_excedida():
+    avaliador, _ = avaliador_com(
+        errors.APIError(503, {"error": {"message": "sobrecarga", "status": "UNAVAILABLE"}})
+    )
+
+    with pytest.raises(ErroDeAvaliacao) as capturado:
+        avaliador.avaliar(vaga_exemplo(), perfil_exemplo())
+    assert not isinstance(capturado.value, CotaDeAvaliacaoExcedida)
 
 
 def test_prompt_contem_perfil_e_vaga():
