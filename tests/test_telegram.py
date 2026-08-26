@@ -52,7 +52,7 @@ def test_texto_acima_do_limite_vira_varias_requisicoes(
     httpx_mock: HTTPXMock, notificador: NotificadorTelegram
 ):
     httpx_mock.add_response(json={"ok": True}, is_reusable=True)
-    texto = "\n\n".join("bloco " + "x" * 1000 for _ in range(6))
+    texto = "\n\n───────────────\n\n".join("bloco " + "x" * 1000 for _ in range(6))
 
     notificador.enviar(texto)
 
@@ -60,7 +60,7 @@ def test_texto_acima_do_limite_vira_varias_requisicoes(
     assert len(requisicoes) > 1
     textos = [json.loads(requisicao.content)["text"] for requisicao in requisicoes]
     assert all(len(parte) <= LIMITE_DE_CARACTERES_DO_TELEGRAM for parte in textos)
-    assert "\n\n".join(textos) == texto
+    assert "\n\n───────────────\n\n".join(textos) == texto
 
 
 def test_erro_http_levanta_erro_de_notificacao_com_descricao(

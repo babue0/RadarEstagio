@@ -4,7 +4,7 @@ from html import escape
 from radar.domain.models import ResultadoMatch
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
-SEPARADOR_ENTRE_VAGAS = "\n\n"
+SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 
 
 def formatar_mensagem(resultados: list[ResultadoMatch], data: date) -> str:
@@ -15,7 +15,7 @@ def formatar_mensagem(resultados: list[ResultadoMatch], data: date) -> str:
     blocos = [
         formatar_vaga(posicao, resultado) for posicao, resultado in enumerate(ranqueados, start=1)
     ]
-    return cabecalho + SEPARADOR_ENTRE_VAGAS + SEPARADOR_ENTRE_VAGAS.join(blocos)
+    return cabecalho + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
 
 
 def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:

@@ -85,6 +85,13 @@ def test_escapa_caracteres_html_dos_dados_da_vaga():
     assert "<Júnior>" not in texto
 
 
+def test_vagas_sao_separadas_por_linha_divisoria():
+    texto = formatar_mensagem([resultado(50, numero=1), resultado(40, numero=2)], DATA_DE_TESTE)
+
+    assert texto.count("───────────────") == 1
+    assert texto.index("1. ") < texto.index("───────────────") < texto.index("2. ")
+
+
 def test_mensagem_curta_nao_e_dividida():
     texto = formatar_mensagem([resultado(50)], DATA_DE_TESTE)
 
@@ -102,4 +109,4 @@ def test_mensagem_longa_e_dividida_sem_quebrar_vagas():
     assert len(partes) > 1
     assert all(len(parte) <= LIMITE_DE_CARACTERES_DO_TELEGRAM for parte in partes)
     assert all(parte.count("<b>") == parte.count("</b>") for parte in partes)
-    assert "\n\n".join(partes) == texto
+    assert "\n\n───────────────\n\n".join(partes) == texto
