@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     adzuna_app_id: str = Field(min_length=1)
     adzuna_app_key: str = Field(min_length=1)
     gemini_api_key: str = Field(min_length=1)
+    gemini_modelo: str = "gemini-3.6-flash"
     telegram_bot_token: str = Field(min_length=1)
     telegram_chat_id: str = Field(min_length=1)
     adzuna_dias_recentes: int = 2
