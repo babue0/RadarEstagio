@@ -1,8 +1,14 @@
+import argparse
+import sys
+
+import httpx
 from pydantic import ValidationError
 
+from radar.collectors.adzuna import ColetorAdzuna, ErroDeColeta
 from radar.settings import Settings
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
+TIMEOUT_HTTP_EM_SEGUNDOS = 30
 
 
 def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
@@ -13,18 +19,50 @@ def nomes_das_variaveis_nao_preenchidas(erro: ValidationError) -> list[str]:
     ]
 
 
-def main() -> None:
+def carregar_settings() -> Settings | None:
     try:
-        settings = Settings()
+        return Settings()
     except ValidationError as erro:
-        print("Variáveis de ambiente ausentes ou vazias:")
+        print("Variáveis de ambiente ausentes ou vazias:", file=sys.stderr)
         for nome in nomes_das_variaveis_nao_preenchidas(erro):
-            print(f"  - {nome}")
-        return
+            print(f"  - {nome}", file=sys.stderr)
+        return None
 
+
+def verificar_configuracao(settings: Settings) -> None:
     print("Configuração carregada com sucesso.")
     print(f"Dias recentes na Adzuna: {settings.adzuna_dias_recentes}")
     print(f"Vagas enviadas por execução: {settings.quantidade_vagas_enviadas}")
+
+
+def coletar(settings: Settings) -> None:
+    with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
+        vagas = ColetorAdzuna(settings, cliente_http).coletar()
+    print(f"{len(vagas)} vagas coletadas na Adzuna")
+    for vaga in vagas:
+        print(f"- {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
+        print(f"  {vaga.url}")
+
+
+COMANDOS = {"coletar": coletar}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="radar", description="Radar de Estágio")
+    subcomandos = parser.add_subparsers(dest="comando")
+    subcomandos.add_parser("coletar", help="busca vagas reais na Adzuna e imprime título e URL")
+    argumentos = parser.parse_args()
+
+    settings = carregar_settings()
+    if settings is None:
+        sys.exit(1)
+
+    executar = COMANDOS.get(argumentos.comando, verificar_configuracao)
+    try:
+        executar(settings)
+    except ErroDeColeta as erro:
+        print(erro, file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
