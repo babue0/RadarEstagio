@@ -5,6 +5,8 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com o motivo
 
 - Proposta completa: [`docs/proposta.md`](docs/proposta.md)
 - Plano do MVP, passo a passo: [`docs/plano-mvp.md`](docs/plano-mvp.md)
+- O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
+- Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
 
 ## Como funciona
