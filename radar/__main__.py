@@ -9,6 +9,7 @@ from radar.collectors.adzuna import ColetorAdzuna, ErroDeColeta
 from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.filtering.prefiltro import filtrar
 from radar.matching.gemini import AvaliadorGemini, ErroDeAvaliacao
+from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.settings import Settings
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
@@ -64,7 +65,13 @@ def avaliar(settings: Settings) -> None:
             print(f"  Alerta: {resultado.alerta_pegadinha}")
 
 
-COMANDOS = {"coletar": coletar, "avaliar": avaliar}
+def testar_telegram(settings: Settings) -> None:
+    with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
+        NotificadorTelegram(settings, cliente_http).enviar("Radar OK")
+    print(f"Mensagem enviada para o chat {settings.telegram_chat_id}")
+
+
+COMANDOS = {"coletar": coletar, "avaliar": avaliar, "testar-telegram": testar_telegram}
 
 
 def main() -> None:
@@ -72,6 +79,7 @@ def main() -> None:
     subcomandos = parser.add_subparsers(dest="comando")
     subcomandos.add_parser("coletar", help="busca vagas reais na Adzuna e imprime título e URL")
     subcomandos.add_parser("avaliar", help="coleta, pré-filtra e avalia algumas vagas com o Gemini")
+    subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     argumentos = parser.parse_args()
 
     settings = carregar_settings()
@@ -81,7 +89,7 @@ def main() -> None:
     executar = COMANDOS.get(argumentos.comando, verificar_configuracao)
     try:
         executar(settings)
-    except (ErroDeColeta, ErroDeAvaliacao) as erro:
+    except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao) as erro:
         print(erro, file=sys.stderr)
         sys.exit(1)
 
