@@ -91,6 +91,24 @@ def test_linha_de_pontos_some_quando_a_lista_esta_vazia():
     assert "❌" not in so_a_favor
 
 
+def test_exibe_no_maximo_tres_pontos_de_cada_tipo():
+    texto = formatar_mensagem(
+        [
+            resultado(
+                80,
+                a_favor=["Python", "SQL", "Git", "Docker"],
+                contra=["Java", "AWS", "Presencial", "Inglês"],
+            )
+        ],
+        DATA_DE_TESTE,
+    )
+
+    assert "✅ Python · SQL · Git" in texto
+    assert "❌ Java · AWS · Presencial" in texto
+    assert "Docker" not in texto
+    assert "Inglês" not in texto
+
+
 def test_alerta_aparece_somente_quando_existe():
     com_alerta = formatar_mensagem([resultado(30, alerta="Exige pleno")], DATA_DE_TESTE)
     sem_alerta = formatar_mensagem([resultado(30)], DATA_DE_TESTE)

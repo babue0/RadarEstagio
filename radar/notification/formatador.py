@@ -4,6 +4,7 @@ from html import escape
 from radar.domain.models import ResultadoMatch
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
+MAXIMO_DE_PONTOS_EXIBIDOS = 3
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 
 
@@ -35,7 +36,8 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
 
 
 def formatar_pontos(pontos: list[str]) -> str:
-    return " · ".join(escape(ponto) for ponto in pontos)
+    selecionados = pontos[:MAXIMO_DE_PONTOS_EXIBIDOS]
+    return " · ".join(escape(ponto) for ponto in selecionados)
 
 
 def dividir_em_mensagens(texto: str) -> list[str]:
