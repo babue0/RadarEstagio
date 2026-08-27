@@ -38,7 +38,7 @@ faltantes.
 - `radar/domain/models.py`: as três entidades do sistema.
   - `Vaga` — o que vem da fonte: id, título, empresa, localização, descrição, url, data.
   - `Perfil` — curso, período, habilidades, cidade, modalidade (remoto/presencial/híbrido).
-  - `ResultadoMatch` — uma vaga + nota (0–100) + motivo + alerta de pegadinha opcional.
+  - `ResultadoMatch` — uma vaga + nota (0–100) + pontos a favor e contra + alerta de pegadinha opcional.
 - `radar/domain/ports.py`: os **contratos** (`Protocol`) que as outras camadas cumprem:
   `ColetorDeVagas`, `AvaliadorDeVagas`, `Notificador`.
 - `radar/domain/perfil_fixo.py`: o perfil do usuário nº 1 (Engenharia de Software, 4º
@@ -117,7 +117,7 @@ variações em inglês.
 **Por quê**
 
 Saída estruturada elimina o parsing frágil de texto livre: ou vem um JSON válido no formato
-`{nota, motivo, alerta_pegadinha}` ou é erro. Temperatura 0 faz a mesma vaga receber a mesma
+`{nota, pontos_a_favor, pontos_contra, alerta_pegadinha}` ou é erro (na época, um único campo `motivo` em frase). Temperatura 0 faz a mesma vaga receber a mesma
 nota em dias diferentes.
 
 **O que aprendemos**
@@ -141,7 +141,7 @@ nota em dias diferentes.
 
 - `radar/notification/formatador.py`: transforma a lista de `ResultadoMatch` em texto HTML
   do Telegram — cabeçalho com data, vagas ordenadas por nota com título, empresa, nota,
-  motivo, alerta (só se houver) e link; separador `───` entre vagas; "nenhuma vaga hoje"
+  pontos a favor/contra, alerta (só se houver) e link; separador `───` entre vagas; "nenhuma vaga hoje"
   quando a lista está vazia. Caracteres `<`, `>`, `&` são escapados. Mensagem acima de
   4096 caracteres (limite do Telegram) é dividida **sem cortar uma vaga no meio**.
 - `radar/notification/telegram.py`: `NotificadorTelegram` faz um POST em
@@ -234,6 +234,30 @@ disfarçado de TI, sem remuneração) — localização e modalidade ficam só n
 
 Confirmado no run seguinte: cada vaga em 1 linha de motivo, alerta só onde havia pegadinha
 de verdade.
+
+---
+
+## Melhoria — Pontos a favor e contra no lugar do motivo
+
+Com 15 palavras o motivo ficou vago ("cumpre 1 requisito da área de TI"). A frase foi
+substituída por duas listas de até 3 itens concretos (`pontos_a_favor`, `pontos_contra`),
+cada item com no máximo 4 palavras. A mensagem mostra `✅ Python · SQL · Remoto` e
+`❌ Exige Docker`. Mesmo tamanho, muito mais informação, e a proporção de ✅/❌ explica a
+nota visualmente.
+
+---
+
+## Melhoria — Modalidade respeitada
+
+Um run real listou 4 vagas em outras cidades para um perfil remoto, com nota até 85. Duas
+causas: o pré-filtro só avaliava localização para perfil **presencial**, e a IA deduzia
+"presencial" pela cidade em vagas que não informavam a modalidade.
+
+- `prefiltro.py`: para perfil remoto, vaga que menciona presencial/híbrido sem citar remoto
+  é descartada; vaga remota passa de qualquer cidade; vaga sem modalidade passa.
+- Prompt: proibido deduzir modalidade pela cidade; sem modalidade → "Modalidade não
+  informada" nos pontos contra e ~10 pontos a menos; remota → cidade não é ponto contra;
+  explicitamente presencial → nota máxima 30.
 
 ---
 

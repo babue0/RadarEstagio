@@ -1,7 +1,7 @@
 # Radar de Estágio
 
 Agente que busca vagas de estágio todos os dias, avalia cada uma com IA contra o perfil do
-usuário e entrega no Telegram só as compatíveis — ranqueadas e com o motivo da nota.
+usuário e entrega no Telegram só as compatíveis — ranqueadas e com os pontos a favor e contra de cada uma.
 
 - Proposta completa: [`docs/proposta.md`](docs/proposta.md)
 - Plano do MVP, passo a passo: [`docs/plano-mvp.md`](docs/plano-mvp.md)
@@ -14,7 +14,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com o motivo
 ```
 Adzuna (vagas dos últimos 2 dias)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
-  → Gemini avalia em lotes: nota 0–100, motivo, alerta de pegadinha
+  → Gemini avalia em lotes: nota 0–100, pontos a favor e contra, alerta de pegadinha
   → ranqueia e pega as 5 melhores
   → envia a mensagem no Telegram
 ```

@@ -96,7 +96,7 @@ opções gratuitas piores).
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA é obrigada a devolver JSON no
-  formato `{id_vaga, nota, motivo, alerta_pegadinha}`. Sem parsing de texto livre, sem
+  formato `{id_vaga, nota, pontos_a_favor, pontos_contra, alerta_pegadinha}`. Sem parsing de texto livre, sem
   regex em cima de resposta de IA.
 - **Temperatura 0**: mesma vaga, mesma nota. Importante para o usuário confiar no ranking.
 - **Trocar de modelo** é uma variável de ambiente (`GEMINI_MODELO`). Trocar de provedor é
