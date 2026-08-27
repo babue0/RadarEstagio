@@ -8,6 +8,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 - O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
+- Protótipo visual do painel da Fase 3: [`web/README.md`](web/README.md)
 
 ## Como funciona
 
@@ -199,4 +200,5 @@ radar/
   pipeline.py    orquestra coleta → filtro → avaliação → envio
   __main__.py    comandos de linha de comando
 tests/           testes automatizados (pytest)
+web/             protótipo visual do painel da Fase 3 (HTML/CSS/JS estático, sem back-end)
 ```
