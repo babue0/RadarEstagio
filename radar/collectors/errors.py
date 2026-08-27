@@ -1,0 +1,2 @@
+class ErroDeColeta(Exception):
+    pass

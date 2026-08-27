@@ -6,7 +6,8 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from radar.collectors.adzuna import URL_BUSCA, ColetorAdzuna, ErroDeColeta
+from radar.collectors.adzuna import URL_BUSCA, ColetorAdzuna
+from radar.collectors.errors import ErroDeColeta
 from radar.settings import Settings
 
 CAMINHO_DO_FIXTURE = Path(__file__).parent / "fixtures" / "adzuna_resposta.json"

@@ -6,7 +6,8 @@ from datetime import date
 import httpx
 from pydantic import ValidationError
 
-from radar.collectors.adzuna import ColetorAdzuna, ErroDeColeta
+from radar.collectors.adzuna import ColetorAdzuna
+from radar.collectors.errors import ErroDeColeta
 from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.filtering.prefiltro import filtrar
 from radar.matching.errors import ErroDeAvaliacao

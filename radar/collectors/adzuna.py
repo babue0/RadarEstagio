@@ -1,5 +1,6 @@
 import httpx
 
+from radar.collectors.errors import ErroDeColeta
 from radar.domain.models import Vaga
 from radar.settings import Settings
 
@@ -8,10 +9,6 @@ FONTE = "adzuna"
 TERMO_DE_BUSCA = "estágio"
 CATEGORIA_TECNOLOGIA = "it-jobs"
 RESULTADOS_POR_PAGINA = 50
-
-
-class ErroDeColeta(Exception):
-    pass
 
 
 class ColetorAdzuna:
