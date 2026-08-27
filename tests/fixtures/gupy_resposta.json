@@ -1,0 +1,76 @@
+{
+  "data": [
+    {
+      "id": 12262661,
+      "companyId": 86992,
+      "name": "Estagiário de TI - Vila Olímpia/SP ",
+      "description": "Venha fazer parte de um ecossistema vivo onde o futuro dos negócios é criado e vivido todos os dias. Faça parte desta transformação!Na LUZA Group, a paixão, a perseverança e a vontade de superar limites definem o nosso caminho para o sucesso.Fundada em 2006, somos uma multinacional portuguesa com mais de 1.200 profissionais talentosos e um volume de negócios. Com presença em mercados estratégicos como Portugal, Espanha, Marrocos, Brasil, México, Estados Unidos e China, oferecemos soluções inovadoras em engenharia, TI, design, consultoria, Indústria 4.0, treinamento e recrutamento. Tudo o que f",
+      "careerPageId": 224047,
+      "careerPageName": "LUZA GROUP BRASIL LTDA",
+      "careerPageLogo": "https://attachments.gupy.io/production/companies/86992/career/224047/images/2025-09-16_18-11_companyLogoUrl.png",
+      "careerPageUrl": "https://luzagroup.gupy.io/eyJzb3VyY2UiOiJndXB5X3BvcnRhbCJ9",
+      "type": "vacancy_type_internship",
+      "publishedDate": "2026-08-26T13:50:23.283Z",
+      "applicationDeadline": "2026-10-23",
+      "isRemoteWork": false,
+      "city": "São Paulo",
+      "state": "São Paulo",
+      "country": "Brasil",
+      "jobUrl": "https://luzagroup.gupy.io/job/eyJqb2JJZCI6MTIyNjI2NjEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+      "workplaceType": "on-site",
+      "disabilities": true,
+      "skills": []
+    },
+    {
+      "id": 12284537,
+      "companyId": 1144,
+      "name": "Estagiário de TI",
+      "description": "Buscamos uma pessoa para integrar o time de Tecnologia do Produto&nbsp;Vibe, apoiando o desenvolvimento, sustentação e evolução da plataforma.A oportunidade é voltada para estudantes que desejam desenvolver experiência prática em desenvolvimento de software, APIs, banco de dados, cloud e operação de aplicações, trabalhando em conjunto com desenvolvedores e demais profissionais do time.Responsabilidades e atribuições\nApoiar na análise e correção de bugs e problemas identificados nas aplicações.Auxiliar na realização de testes e validações das funcionalidades desenvolvidas.Apoiar consultas e aná",
+      "careerPageId": 1833,
+      "careerPageName": "Vertem",
+      "careerPageLogo": "https://attachments.gupy.io/production/companies/1144/career/1833/images/2024-08-01_20-08_companyLogoUrl.png",
+      "careerPageUrl": "https://queroservertem.gupy.io/eyJzb3VyY2UiOiJndXB5X3BvcnRhbCJ9",
+      "type": "vacancy_type_internship",
+      "publishedDate": "2026-08-26T18:12:36.318Z",
+      "applicationDeadline": "2026-11-25",
+      "isRemoteWork": false,
+      "city": "Barueri",
+      "state": "São Paulo",
+      "country": "Brasil",
+      "jobUrl": "https://queroservertem.gupy.io/job/eyJqb2JJZCI6MTIyODQ1MzcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+      "badges": {
+        "friendlyBadge": true,
+        "isPWD": true
+      },
+      "workplaceType": "hybrid",
+      "disabilities": true,
+      "skills": []
+    },
+    {
+      "id": 12213277,
+      "companyId": 78049,
+      "name": "Estagiário Administrativo (Dados) | APGGov",
+      "description": "Estamos em busca de um(a)&nbsp;Estagiário(a) Administrativo (Dados / People Analytics), para apoiar nossos processos operacional do time de atração e seleção de talentos. Essa pessoa será responsável por conduzir etapas do processo admissional e garantir uma experiência positiva para candidatos e gestores, além de contribuir para a qualidade das contratações.A pessoa será responsável por criar dashboards e relatórios interativos para analise de métricas de contratação e admissões. Ele transforma dados de processos seletivos em insights estratégicos para otimizar o tempo de preenchimento de vag",
+      "careerPageId": 208604,
+      "careerPageName": "APG GOV",
+      "careerPageLogo": "https://attachments.gupy.io/production/companies/78049/career/208604/images/2025-11-12_18-55_companyLogoUrl.png",
+      "careerPageUrl": "https://apg-gov.gupy.io/eyJzb3VyY2UiOiJndXB5X3BvcnRhbCJ9",
+      "type": "vacancy_type_internship",
+      "publishedDate": "2026-08-21T13:07:39.149Z",
+      "applicationDeadline": "2026-09-30",
+      "isRemoteWork": true,
+      "city": "",
+      "state": "",
+      "country": "Brasil",
+      "jobUrl": "https://apg-gov.gupy.io/job/eyJqb2JJZCI6MTIyMTMyNzcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+      "workplaceType": "remote",
+      "disabilities": true,
+      "skills": []
+    }
+  ],
+  "pagination": {
+    "total": 3,
+    "limit": 100,
+    "offset": 0
+  }
+}
