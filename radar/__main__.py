@@ -68,7 +68,8 @@ def avaliar(settings: Settings) -> None:
     for resultado in montar_avaliador(settings).avaliar(selecionadas, perfil):
         vaga = resultado.vaga
         print(f"- [{resultado.nota:3d}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
-        print(f"  Motivo: {resultado.motivo}")
+        print(f"  A favor: {', '.join(resultado.pontos_a_favor) or '-'}")
+        print(f"  Contra: {', '.join(resultado.pontos_contra) or '-'}")
         if resultado.alerta_pegadinha:
             print(f"  Alerta: {resultado.alerta_pegadinha}")
 

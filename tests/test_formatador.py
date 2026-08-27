@@ -24,12 +24,18 @@ def vaga(titulo: str = "Estágio Python", numero: int = 1) -> Vaga:
 
 
 def resultado(
-    nota: int, titulo: str = "Estágio Python", alerta: str | None = None, numero: int = 1
+    nota: int,
+    titulo: str = "Estágio Python",
+    alerta: str | None = None,
+    numero: int = 1,
+    a_favor: list[str] | None = None,
+    contra: list[str] | None = None,
 ) -> ResultadoMatch:
     return ResultadoMatch(
         vaga=vaga(titulo, numero),
         nota=nota,
-        motivo=f"Motivo da nota {nota}.",
+        pontos_a_favor=["Python"] if a_favor is None else a_favor,
+        pontos_contra=["Exige Java"] if contra is None else contra,
         alerta_pegadinha=alerta,
     )
 
@@ -60,14 +66,29 @@ def test_ordena_por_nota_decrescente_e_numera():
     assert texto.index("1. Alta") < texto.index("2. Média") < texto.index("3. Baixa")
 
 
-def test_inclui_titulo_empresa_nota_motivo_e_link():
-    texto = formatar_mensagem([resultado(85)], DATA_DE_TESTE)
+def test_inclui_titulo_empresa_nota_pontos_e_link():
+    texto = formatar_mensagem(
+        [resultado(85, a_favor=["Python", "SQL"], contra=["Presencial em SP"])], DATA_DE_TESTE
+    )
 
     assert "Estágio Python" in texto
     assert "Empresa Exemplo" in texto
     assert "Nota 85" in texto
-    assert "Motivo da nota 85." in texto
+    assert "✅ Python · SQL" in texto
+    assert "❌ Presencial em SP" in texto
     assert '<a href="https://exemplo.com/vaga/1">' in texto
+
+
+def test_linha_de_pontos_some_quando_a_lista_esta_vazia():
+    so_contra = formatar_mensagem(
+        [resultado(10, a_favor=[], contra=["Fora da área"])], DATA_DE_TESTE
+    )
+    so_a_favor = formatar_mensagem([resultado(95, a_favor=["Python"], contra=[])], DATA_DE_TESTE)
+
+    assert "✅" not in so_contra
+    assert "❌ Fora da área" in so_contra
+    assert "✅ Python" in so_a_favor
+    assert "❌" not in so_a_favor
 
 
 def test_alerta_aparece_somente_quando_existe():
@@ -78,10 +99,13 @@ def test_alerta_aparece_somente_quando_existe():
     assert "⚠️" not in sem_alerta
 
 
-def test_escapa_caracteres_html_dos_dados_da_vaga():
-    texto = formatar_mensagem([resultado(50, titulo="Dev <Júnior> & Estágio")], DATA_DE_TESTE)
+def test_escapa_caracteres_html_dos_dados_da_vaga_e_dos_pontos():
+    texto = formatar_mensagem(
+        [resultado(50, titulo="Dev <Júnior> & Estágio", contra=["C++ & <Go>"])], DATA_DE_TESTE
+    )
 
     assert "Dev &lt;Júnior&gt; &amp; Estágio" in texto
+    assert "C++ &amp; &lt;Go&gt;" in texto
     assert "<Júnior>" not in texto
 
 

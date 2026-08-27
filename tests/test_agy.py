@@ -72,7 +72,7 @@ def test_avalia_vagas_com_saida_estruturada_do_agy():
                 {
                     "id_vaga": "vaga-1",
                     "nota": 88,
-                    "motivo": "Compatível com Python e SQL.",
+                    "pontos_a_favor": ["Python", "SQL"],
                     "alerta_pegadinha": None,
                 }
             ]
@@ -88,7 +88,7 @@ def test_avalia_vagas_com_saida_estruturada_do_agy():
     assert len(resultados) == 1
     assert resultados[0].vaga.id_externo == "vaga-1"
     assert resultados[0].nota == 88
-    assert resultados[0].motivo == "Compatível com Python e SQL."
+    assert resultados[0].pontos_a_favor == ["Python", "SQL"]
 
 
 def test_falha_do_processo_agy_vira_erro_de_avaliacao():

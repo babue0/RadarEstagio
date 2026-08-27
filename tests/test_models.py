@@ -22,18 +22,18 @@ def vaga_exemplo() -> Vaga:
 
 def test_resultado_match_aceita_nota_nos_limites():
     for nota in (0, 100):
-        resultado = ResultadoMatch(vaga=vaga_exemplo(), nota=nota, motivo="ok")
+        resultado = ResultadoMatch(vaga=vaga_exemplo(), nota=nota)
         assert resultado.nota == nota
 
 
 @pytest.mark.parametrize("nota", [-1, 101])
 def test_resultado_match_rejeita_nota_fora_do_intervalo(nota):
     with pytest.raises(ValidationError):
-        ResultadoMatch(vaga=vaga_exemplo(), nota=nota, motivo="ok")
+        ResultadoMatch(vaga=vaga_exemplo(), nota=nota)
 
 
 def test_resultado_match_alerta_pegadinha_e_opcional():
-    resultado = ResultadoMatch(vaga=vaga_exemplo(), nota=80, motivo="ok")
+    resultado = ResultadoMatch(vaga=vaga_exemplo(), nota=80)
     assert resultado.alerta_pegadinha is None
 
 

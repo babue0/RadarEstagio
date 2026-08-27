@@ -33,5 +33,6 @@ class Perfil(BaseModel):
 class ResultadoMatch(BaseModel):
     vaga: Vaga
     nota: int = Field(ge=0, le=100)
-    motivo: str
+    pontos_a_favor: list[str] = Field(default_factory=list)
+    pontos_contra: list[str] = Field(default_factory=list)
     alerta_pegadinha: str | None = None

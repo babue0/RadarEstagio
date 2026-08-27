@@ -22,12 +22,20 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
     vaga = resultado.vaga
     linhas = [
         f"<b>{posicao}. {escape(vaga.titulo)}</b> — {escape(vaga.empresa)}",
-        f"Nota {resultado.nota} · {escape(resultado.motivo)}",
+        f"Nota {resultado.nota}",
     ]
+    if resultado.pontos_a_favor:
+        linhas.append(f"✅ {formatar_pontos(resultado.pontos_a_favor)}")
+    if resultado.pontos_contra:
+        linhas.append(f"❌ {formatar_pontos(resultado.pontos_contra)}")
     if resultado.alerta_pegadinha:
         linhas.append(f"⚠️ {escape(resultado.alerta_pegadinha)}")
     linhas.append(f'🔗 <a href="{escape(vaga.url)}">Ver vaga</a>')
     return "\n".join(linhas)
+
+
+def formatar_pontos(pontos: list[str]) -> str:
+    return " · ".join(escape(ponto) for ponto in pontos)
 
 
 def dividir_em_mensagens(texto: str) -> list[str]:

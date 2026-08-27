@@ -6,12 +6,17 @@ Compare os requisitos de cada vaga com o perfil do candidato e responda em JSON 
 "avaliacoes", contendo exatamente um item por vaga recebida, com:
 - id_vaga: o id informado no título da vaga, copiado sem alteração.
 - nota: inteiro de 0 a 100 indicando a compatibilidade (100 = encaixe perfeito).
-- motivo: uma única frase em português com no máximo 15 palavras explicando a nota. \
-Diga quantos requisitos o candidato cumpre e o principal que falta. Sem rodeios.
+- pontos_a_favor: lista com até 3 itens do que a vaga tem em comum com o candidato. \
+Cada item com no máximo 4 palavras, citando o nome concreto (ex.: "Python", "SQL", \
+"Remoto", "Área de desenvolvimento"). Lista vazia se não houver nada em comum.
+- pontos_contra: lista com até 3 itens do que a vaga pede e o candidato não tem, ou do que \
+não bate com a preferência dele. Cada item com no máximo 4 palavras e concreto (ex.: \
+"Exige Java avançado", "Presencial em São Paulo", "Foco em suporte"). Nunca escreva \
+"1 requisito" ou "alguns requisitos": diga qual.
 - alerta_pegadinha: no máximo 10 palavras, apenas se a vaga esconder um problema que o \
 título não revela: exige experiência de pleno/sênior, é comercial ou operacional \
 disfarçada de TI, sem remuneração, exclusiva de outro curso. Nunca repita o que já está \
-no motivo. Localização e modalidade não são pegadinha: vão no motivo, não aqui. Se não \
+nos pontos contra. Localização e modalidade não são pegadinha: vão nos pontos contra. Se não \
 houver pegadinha, null.
 
 Critérios de nota:

@@ -83,8 +83,10 @@ def test_converte_json_do_gemini_em_resultados_na_ordem_da_resposta():
     avaliador, _ = avaliador_com(
         RespostaFalsa(
             '{"avaliacoes": ['
-            '{"id_vaga": "2", "nota": 40, "motivo": "Fraco.", "alerta_pegadinha": "Exige pleno."},'
-            '{"id_vaga": "1", "nota": 85, "motivo": "Cumpre 2 de 2.", "alerta_pegadinha": null}'
+            '{"id_vaga": "2", "nota": 40, "pontos_contra": ["Exige Java"], '
+            '"alerta_pegadinha": "Exige pleno."},'
+            '{"id_vaga": "1", "nota": 85, "pontos_a_favor": ["Python", "SQL"], '
+            '"alerta_pegadinha": null}'
             "]}"
         )
     )
@@ -93,7 +95,8 @@ def test_converte_json_do_gemini_em_resultados_na_ordem_da_resposta():
 
     assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 40), ("1", 85)]
     assert resultados[0].alerta_pegadinha == "Exige pleno."
-    assert resultados[1].motivo == "Cumpre 2 de 2."
+    assert resultados[0].pontos_contra == ["Exige Java"]
+    assert resultados[1].pontos_a_favor == ["Python", "SQL"]
     assert resultados[1].alerta_pegadinha is None
 
 
@@ -121,22 +124,20 @@ def test_ignora_avaliacoes_com_id_desconhecido_ou_repetido():
     avaliador, _ = avaliador_com(
         RespostaFalsa(
             '{"avaliacoes": ['
-            '{"id_vaga": "1", "nota": 80, "motivo": "primeira"},'
-            '{"id_vaga": "1", "nota": 10, "motivo": "repetida"},'
-            '{"id_vaga": "999", "nota": 50, "motivo": "inventada"}'
+            '{"id_vaga": "1", "nota": 80, "pontos_a_favor": ["primeira"]},'
+            '{"id_vaga": "1", "nota": 10, "pontos_a_favor": ["repetida"]},'
+            '{"id_vaga": "999", "nota": 50, "pontos_a_favor": ["inventada"]}'
             "]}"
         )
     )
 
     resultados = avaliador.avaliar([vaga_exemplo(1)], perfil_exemplo())
 
-    assert [(r.vaga.id_externo, r.motivo) for r in resultados] == [("1", "primeira")]
+    assert [(r.vaga.id_externo, r.pontos_a_favor) for r in resultados] == [("1", ["primeira"])]
 
 
 def test_vaga_ausente_na_resposta_simplesmente_nao_e_devolvida():
-    avaliador, _ = avaliador_com(
-        RespostaFalsa('{"avaliacoes": [{"id_vaga": "1", "nota": 80, "motivo": "ok"}]}')
-    )
+    avaliador, _ = avaliador_com(RespostaFalsa('{"avaliacoes": [{"id_vaga": "1", "nota": 80}]}'))
 
     resultados = avaliador.avaliar([vaga_exemplo(1), vaga_exemplo(2)], perfil_exemplo())
 
@@ -147,9 +148,9 @@ def test_vaga_ausente_na_resposta_simplesmente_nao_e_devolvida():
     "texto",
     [
         "isso não é json",
-        '{"avaliacoes": [{"id_vaga": "1", "nota": 150, "motivo": "acima do limite"}]}',
-        '{"avaliacoes": [{"id_vaga": "1", "motivo": "sem nota"}]}',
-        '{"nota": 50, "motivo": "formato antigo, sem lista"}',
+        '{"avaliacoes": [{"id_vaga": "1", "nota": 150}]}',
+        '{"avaliacoes": [{"id_vaga": "1", "pontos_a_favor": ["sem nota"]}]}',
+        '{"nota": 50, "pontos_a_favor": ["formato antigo, sem lista"]}',
         "",
         None,
     ],
@@ -186,4 +187,6 @@ def test_prompt_contem_perfil_e_todas_as_vagas_identificadas():
     assert "Vaga id=1" in prompt
     assert "Vaga id=2" in prompt
     assert "Estágio em Desenvolvimento Python 2" in prompt
+    assert "pontos_a_favor" in prompt
+    assert "pontos_contra" in prompt
     assert "alerta_pegadinha" in prompt

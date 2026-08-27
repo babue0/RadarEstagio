@@ -60,7 +60,7 @@ class AvaliadorDeLoteFalso:
         if len(lote) > 1:
             omitidos |= self._ids_omitidos_apenas_em_lote
         return [
-            ResultadoMatch(vaga=vaga, nota=int(vaga.id_externo), motivo="ok")
+            ResultadoMatch(vaga=vaga, nota=int(vaga.id_externo))
             for vaga in lote
             if vaga.id_externo not in omitidos
         ]

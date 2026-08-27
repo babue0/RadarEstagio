@@ -46,7 +46,9 @@ class AvaliadorFalso:
         self.avaliadas.extend(vaga.id_externo for vaga in vagas)
         return [
             ResultadoMatch(
-                vaga=vaga, nota=self._notas[vaga.id_externo], motivo=f"Motivo {vaga.id_externo}"
+                vaga=vaga,
+                nota=self._notas[vaga.id_externo],
+                pontos_a_favor=[f"Ponto {vaga.id_externo}"],
             )
             for vaga in vagas
             if vaga.id_externo in self._notas
