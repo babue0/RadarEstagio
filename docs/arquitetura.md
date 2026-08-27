@@ -11,11 +11,11 @@ avalia com IA e envia uma mensagem no Telegram — **sem servidor e sem banco de
 ## O fluxo
 
 ```
-┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐
-│  coletar   │ → │ pré-filtrar│ → │  avaliar   │ → │  ranquear  │ → │   enviar   │
-│  (Adzuna)  │   │  (regras)  │   │  (Gemini)  │   │  (top N)   │   │ (Telegram) │
-└────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘
-   ~15 vagas        ~14 vagas       2 requisições      5 vagas        1 mensagem
+┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐
+│  coletar   │ → │  dedupe    │ → │ pré-filtrar│ → │  avaliar   │ → │  ranquear  │ → │   enviar   │
+│Adzuna+Gupy │   │título+emp. │   │  (regras)  │   │  (Gemini)  │   │  (top N)   │   │ (Telegram) │
+└────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘
+   ~35 vagas        ~33 vagas       ~20 vagas       2 requisições      5 vagas        1 mensagem
 ```
 
 Cada caixa é uma camada independente. O `pipeline.py` só liga uma na outra.
@@ -25,8 +25,8 @@ Cada caixa é uma camada independente. O `pipeline.py` só liga uma na outra.
 ```
 radar/
   domain/        o centro: entidades e contratos. Não depende de nada.
-  collectors/    de onde vêm as vagas          → cumpre ColetorDeVagas
-  filtering/     regras baratas antes da IA
+  collectors/    de onde vêm as vagas (um por fonte + composto) → cumpre ColetorDeVagas
+  filtering/     dedupe e regras baratas antes da IA
   matching/      IA: prompt, cliente, lotes    → cumpre AvaliadorDeVagas
   notification/  formatar e enviar a mensagem  → cumpre Notificador
   pipeline.py    orquestra; sem lógica própria
@@ -60,7 +60,8 @@ muda (infraestrutura) fica na borda; a parte que não muda (domínio) fica no ce
 ```python
 def executar(coletor, avaliador, notificador, perfil, quantidade, data):
     coletadas = coletor.coletar()
-    candidatas = filtrar(coletadas, perfil)
+    unicas = remover_duplicatas(coletadas)
+    candidatas = filtrar(unicas, perfil)
     resultados = avaliador.avaliar(candidatas, perfil)
     selecionadas = ranquear(resultados)[:quantidade]
     notificador.enviar(formatar_mensagem(selecionadas, data))
@@ -160,6 +161,22 @@ diferença. Adzuna e Telegram são obrigatórios; `GEMINI_API_KEY` é condiciona
 O restante tem padrão. O `.env`
 nunca é commitado; no GitHub as mesmas variáveis vêm dos secrets.
 
+### 9. Várias fontes somadas, com dedupe sem banco
+
+A Adzuna devolve descrição truncada e raramente informa modalidade; a Gupy tem API interna
+(sem chave) com `workplaceType` estruturado e descrição completa. As duas são somadas por
+`ColetorComposto` (`collectors/composto.py`), que cumpre `ColetorDeVagas` como qualquer
+coletor: o pipeline não sabe quantas fontes existem. Uma fonte fora do ar vira `warning`; só
+falha se nenhuma responder. `FONTES` liga e desliga fontes sem mexer no código.
+
+A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa
+normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
+descrição mais longa. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
+que muda é a informação que chega ao avaliador.
+
+`Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
+quando existe e só recorre a regex no texto quando a fonte não informa.
+
 ## Como cada ferramenta se encaixa
 
 | Ferramenta | Papel | Por que essa |
@@ -191,6 +208,6 @@ Tudo abaixo entra **sem reescrever** o que existe — só adicionando na borda:
   não do `.env`.
 - **Cadastro pelo bot**: `python-telegram-bot` num processo separado; escreve o perfil no
   banco.
-- **Mais fontes**: Gupy (API interna), Vagas.com/InfoJobs (scraping) — cada uma é uma classe
-  em `collectors/` cumprindo `ColetorDeVagas`.
+- **Mais fontes**: Vagas.com/InfoJobs (scraping) — cada uma é uma classe em `collectors/`
+  cumprindo `ColetorDeVagas`, registrada na factory e em `FONTES`.
 - **Cota da IA**: billing no Gemini (centavos por mês) ou `AvaliadorClaude` em `matching/`.

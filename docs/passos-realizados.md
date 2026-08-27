@@ -63,7 +63,7 @@ habilidade é rejeitado etc.).
 **O que foi feito**
 
 `radar/collectors/adzuna.py`: `ColetorAdzuna` chama a API oficial buscando `estágio` na
-categoria `it-jobs` do Brasil, publicadas nos últimos `ADZUNA_DIAS_RECENTES` dias (padrão 2),
+categoria `it-jobs` do Brasil, publicadas nos últimos `DIAS_RECENTES` dias (padrão 2),
 50 por página. Converte cada item da resposta em `Vaga`. Erros HTTP e de rede viram
 `ErroDeColeta` com mensagem limpa — sem vazar a chave da API no traceback.
 
@@ -291,6 +291,41 @@ o workflow pela API do GitHub.
 
 ---
 
+## Melhoria — Gupy, múltiplas fontes e dedupe
+
+**O que foi feito**
+
+- `Vaga.modalidade` opcional (`domain/models.py`). O pré-filtro decide por ela quando a fonte
+  informa e só usa regex no texto quando não; o prompt mostra a modalidade à IA.
+- `collectors/gupy.py`: `ColetorGupy` usa a API interna do portal
+  (`employability-portal.gupy.io/api/v1/jobs`, sem chave), busca estágios por termos de
+  tecnologia, pagina até `DIAS_RECENTES`, une por id, limpa o HTML da descrição e mapeia
+  `workplaceType` → `Modalidade`.
+- `collectors/composto.py`: `ColetorComposto` soma as fontes; uma fora do ar vira aviso e só
+  falha se nenhuma responder.
+- `filtering/duplicatas.py`: `remover_duplicatas` agrupa por título + empresa normalizados.
+- `FONTES` (padrão `adzuna,gupy`) e `DIAS_RECENTES` (antiga `ADZUNA_DIAS_RECENTES`);
+  `collectors/factory.py` monta o composto a partir de `FONTES`.
+
+**Por quê**
+
+A Adzuna raramente informa modalidade, e a IA acabava escrevendo "Modalidade não informada" em
+quase toda vaga. A Gupy resolve isso de forma estruturada e traz vagas que a Adzuna não tem.
+
+**Como escolher entre duplicatas**
+
+É a mesma vaga, então a nota seria a mesma — não faz sentido gastar IA. Fica a versão mais
+completa: quem informa modalidade ganha; empate → descrição mais longa. Na prática a Gupy vence
+quando a vaga está nas duas.
+
+**Como foi testado**
+
+Testes unitários com fixture real da Gupy (`tests/fixtures/gupy_resposta.json`), paginação,
+corte por data, união entre termos, composto com fonte falhando, dedupe. `coletar` real:
+27 Adzuna + 9 Gupy → 34 únicas, todas as da Gupy com modalidade.
+
+---
+
 ## Passo 8 — README
 
 `README.md` para quem clona o projeto do zero: instalação na ordem, onde pegar cada chave,
@@ -302,7 +337,7 @@ disparar o workflow no GitHub.
 ## Números finais do MVP
 
 - 9 passos, ~40 commits atômicos em Conventional Commits.
-- 91 testes automatizados, nenhum precisa de chave ou internet.
+- 165 testes automatizados, nenhum precisa de chave ou internet.
 - 1 execução diária automática; 2 requisições ao Gemini por execução.
 
 ## Pendências para o grupo decidir

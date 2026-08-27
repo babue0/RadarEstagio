@@ -9,24 +9,28 @@ Resumo do produto e da proposta completa em `docs/proposta.md`.
 
 Escopo da Fase 1, conforme roadmap:
 
-- Uma única fonte de vagas (Adzuna, API oficial gratuita)
+- Duas fontes de vagas somadas: Adzuna (API oficial gratuita) e Gupy (API interna do
+  portal, sem chave, com modalidade estruturada)
 - Perfil de usuário fixo (sem cadastro conversacional ainda)
 - Matching de compatibilidade via IA (Gemini API ou Antigravity CLI/AGY)
 - Entrega da mensagem ranqueada no Telegram
 - Agendamento diário via GitHub Actions
-- Sem banco de dados: a execução é sem estado. O papel de dedupe é coberto pelo filtro
-  de data da Adzuna (apenas vagas publicadas nos últimos dias)
+- Sem banco de dados: a execução é sem estado. O dedupe é feito dentro da execução
+  (`filtering/duplicatas.py`, por título + empresa normalizados); o filtro de data
+  (`DIAS_RECENTES`) evita reenviar vagas antigas
 
-Fora do escopo da Fase 1 (fica para Fase 2/3): múltiplas fontes de vagas, banco com
-histórico/dedupe, cadastro conversacional, múltiplos usuários, feedback curtir/descartar,
+Fora do escopo da Fase 1 (fica para Fase 2/3): Vagas.com/InfoJobs, banco com
+histórico/dedupe entre dias, cadastro conversacional, múltiplos usuários, feedback curtir/descartar,
 painel web.
 
 ## Stack
 
 - **Linguagem**: Python
-- **Coleta de vagas**: Adzuna API (oficial). Gupy (API interna) e Vagas.com/InfoJobs
-  (scraping com requests + BeautifulSoup) entram nas fases seguintes. LinkedIn está
-  fora de escopo (bloqueia coleta automatizada).
+- **Coleta de vagas**: Adzuna API (oficial) e Gupy (API interna
+  `employability-portal.gupy.io/api/v1/jobs`, sem chave, campo `workplaceType`). As fontes
+  ativas vêm de `FONTES` (padrão `adzuna,gupy`) e são somadas por `ColetorComposto`, que
+  ignora uma fonte fora do ar e só falha se nenhuma responder. Vagas.com/InfoJobs (scraping)
+  entram nas fases seguintes. LinkedIn está fora de escopo (bloqueia coleta automatizada).
 - **IA de matching**: Google Gemini (modelos Flash), com dois adapters: Gemini Developer
   API para CI/produção e Antigravity CLI (`agy`) para testes locais.
 - **Notificação**: Telegram Bot API. Bot: `RadarEstagioBot`.
@@ -181,6 +185,9 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   em HTTP 429 (`CotaDeAvaliacaoExcedida`), para e devolve o que já tem. O contrato
   `AvaliadorDeVagas.avaliar` recebe e devolve listas. Evitar rodar `avaliar`/`rodar`
   repetidamente sem necessidade.
+- Melhoria pós-MVP: `Vaga.modalidade` (opcional) preenchida pela Gupy; o pré-filtro decide
+  por ela quando existe e só usa regex no texto quando a fonte não informa. Duplicata entre
+  fontes: fica a versão que informa modalidade e, em empate, a de descrição mais longa.
 - MVP completo. Pendências: nota mínima para entrar na mensagem; cota do Gemini para
   vários usuários (billing ou Claude); decisão do grupo sobre `.agents/skills`.
 - Contas criadas e credenciais configuradas no `.env` local (Adzuna e Telegram; Gemini

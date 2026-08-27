@@ -13,7 +13,8 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 ## Como funciona
 
 ```
-Adzuna (vagas dos últimos 2 dias)
+Adzuna + Gupy (vagas dos últimos 2 dias)
+  → remove duplicatas entre as fontes (título + empresa)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
   → Gemini avalia em lotes: nota 0–100, pontos a favor e contra, alerta de pegadinha
   → ranqueia e pega as 5 melhores
@@ -71,6 +72,8 @@ commite o `.env`.
 
 1. Crie uma conta em <https://developer.adzuna.com/signup>.
 2. Em *Dashboard* aparecem **Application ID** e **Application Key**.
+
+A **Gupy**, a segunda fonte, não precisa de chave: o projeto usa a API pública do portal.
 
 ### 2.2 Avaliador por IA
 
@@ -140,7 +143,8 @@ Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatóri
 | `GEMINI_VAGAS_POR_LOTE` | `10` | vagas avaliadas por requisição |
 | `AGY_MODELO` | `gemini-3.6-flash-low` | modelo usado pelo Antigravity CLI |
 | `AGY_TIMEOUT_SEGUNDOS` | `300` | tempo máximo de uma execução do AGY |
-| `ADZUNA_DIAS_RECENTES` | `2` | busca vagas publicadas nos últimos N dias |
+| `FONTES` | `adzuna,gupy` | fontes consultadas, separadas por vírgula |
+| `DIAS_RECENTES` | `2` | busca vagas publicadas nos últimos N dias |
 | `QUANTIDADE_VAGAS_ENVIADAS` | `5` | quantas vagas vão na mensagem |
 
 O `.env` está no `.gitignore` e nunca vai para o GitHub.
@@ -158,7 +162,7 @@ Se faltar alguma variável, ele lista quais. Depois, teste cada parte:
 | Comando | O que faz | Usa IA? |
 |---|---|---|
 | `uv run python -m radar testar-telegram` | manda "Radar OK" para o seu chat | não |
-| `uv run python -m radar coletar` | lista as vagas da Adzuna | não |
+| `uv run python -m radar coletar` | lista as vagas de todas as fontes, sem duplicatas | não |
 | `uv run python -m radar avaliar` | avalia 3 vagas e imprime as notas | sim |
 | `uv run python -m radar` | **fluxo completo**: coleta → avalia → envia no Telegram | sim |
 
@@ -193,8 +197,8 @@ Para disparar na hora (teste ou demo):
 ```
 radar/
   domain/        entidades (Vaga, Perfil, ResultadoMatch), contratos e perfil fixo do MVP
-  collectors/    coleta de vagas (Adzuna)
-  filtering/     pré-filtro por regras, antes da IA
+  collectors/    coleta de vagas (Adzuna, Gupy) e o composto que soma as fontes
+  filtering/     remoção de duplicatas e pré-filtro por regras, antes da IA
   matching/      prompt, cliente do Gemini e avaliação em lotes
   notification/  formatação da mensagem e envio no Telegram
   pipeline.py    orquestra coleta → filtro → avaliação → envio
