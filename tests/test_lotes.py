@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Vaga
-from radar.matching.gemini import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 from radar.matching.lotes import AvaliadorEmLotes
 
 

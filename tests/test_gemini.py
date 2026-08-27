@@ -5,7 +5,8 @@ import pytest
 from google.genai import errors
 
 from radar.domain.models import Modalidade, Perfil, Vaga
-from radar.matching.gemini import AvaliadorGemini, CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.gemini import AvaliadorGemini
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 

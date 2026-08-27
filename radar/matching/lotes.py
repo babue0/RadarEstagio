@@ -2,7 +2,7 @@ import logging
 
 from radar.domain.models import Perfil, ResultadoMatch, Vaga
 from radar.domain.ports import AvaliadorDeVagas
-from radar.matching.gemini import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 
 logger = logging.getLogger(__name__)
 

@@ -4,13 +4,13 @@ import sys
 from datetime import date
 
 import httpx
-from google import genai
 from pydantic import ValidationError
 
 from radar.collectors.adzuna import ColetorAdzuna, ErroDeColeta
 from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.filtering.prefiltro import filtrar
-from radar.matching.gemini import AvaliadorGemini, ErroDeAvaliacao
+from radar.matching.errors import ErroDeAvaliacao
+from radar.matching.factory import criar_avaliador
 from radar.matching.lotes import AvaliadorEmLotes
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import executar
@@ -42,6 +42,7 @@ def carregar_settings() -> Settings | None:
 
 def verificar_configuracao(settings: Settings) -> None:
     print("Configuração carregada com sucesso.")
+    print(f"Avaliador: {settings.avaliador}")
     print(f"Dias recentes na Adzuna: {settings.adzuna_dias_recentes}")
     print(f"Vagas enviadas por execução: {settings.quantidade_vagas_enviadas}")
 
@@ -60,7 +61,10 @@ def avaliar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         vagas = filtrar(ColetorAdzuna(settings, cliente_http).coletar(), perfil)
     selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
-    print(f"{len(vagas)} vagas após o pré-filtro; avaliando {len(selecionadas)} com o Gemini")
+    print(
+        f"{len(vagas)} vagas após o pré-filtro; "
+        f"avaliando {len(selecionadas)} com {settings.avaliador}"
+    )
     for resultado in montar_avaliador(settings).avaliar(selecionadas, perfil):
         vaga = resultado.vaga
         print(f"- [{resultado.nota:3d}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
@@ -76,10 +80,7 @@ def testar_telegram(settings: Settings) -> None:
 
 
 def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
-    cliente_gemini = genai.Client(api_key=settings.gemini_api_key)
-    return AvaliadorEmLotes(
-        AvaliadorGemini(settings, cliente_gemini), settings.gemini_vagas_por_lote
-    )
+    return AvaliadorEmLotes(criar_avaliador(settings), settings.gemini_vagas_por_lote)
 
 
 def rodar(settings: Settings) -> None:
@@ -118,7 +119,9 @@ def main() -> None:
         "verificar", help="confere se as variáveis de ambiente estão preenchidas"
     )
     subcomandos.add_parser("coletar", help="busca vagas reais na Adzuna e imprime título e URL")
-    subcomandos.add_parser("avaliar", help="coleta, pré-filtra e avalia algumas vagas com o Gemini")
+    subcomandos.add_parser(
+        "avaliar", help="coleta, pré-filtra e avalia algumas vagas com o avaliador configurado"
+    )
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     argumentos = parser.parse_args()
 
