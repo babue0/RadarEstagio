@@ -76,11 +76,13 @@ def descrever_perfil(perfil: Perfil) -> str:
 
 
 def descrever_vaga(vaga: Vaga) -> str:
+    modalidade = f"Modalidade: {vaga.modalidade.value}\n" if vaga.modalidade else ""
     return (
         f"### Vaga id={vaga.id_externo}\n"
         f"Título: {vaga.titulo}\n"
         f"Empresa: {vaga.empresa}\n"
         f"Localização: {vaga.localizacao}\n"
+        f"{modalidade}"
         f"Descrição: {vaga.descricao}"
     )
 

@@ -20,6 +20,15 @@ def vaga_exemplo() -> Vaga:
     )
 
 
+def test_vaga_nasce_sem_modalidade_informada():
+    assert vaga_exemplo().modalidade is None
+
+
+def test_vaga_aceita_modalidade_informada_pela_fonte():
+    vaga = vaga_exemplo().model_copy(update={"modalidade": Modalidade.REMOTO})
+    assert vaga.modalidade is Modalidade.REMOTO
+
+
 def test_resultado_match_aceita_nota_nos_limites():
     for nota in (0, 100):
         resultado = ResultadoMatch(vaga=vaga_exemplo(), nota=nota)

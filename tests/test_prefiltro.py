@@ -17,6 +17,7 @@ def vaga(
     titulo: str = "Estágio em Desenvolvimento",
     descricao: str = "Vaga de estágio para estudantes de tecnologia.",
     localizacao: str = "Rio de Janeiro, Rio de Janeiro",
+    modalidade: Modalidade | None = None,
 ) -> Vaga:
     return Vaga(
         id_externo="1",
@@ -27,6 +28,7 @@ def vaga(
         descricao=descricao,
         url="https://exemplo.com/vaga/1",
         publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
+        modalidade=modalidade,
     )
 
 
@@ -173,6 +175,23 @@ def test_remoto_descarta_vaga_presencial_ou_hibrida(descricao: str):
 def test_remoto_mantem_vaga_remota_de_qualquer_lugar(descricao: str):
     vaga_remota = vaga(localizacao="Lisboa, Portugal", descricao=descricao)
     assert not modalidade_incompativel(vaga_remota, perfil(modalidade=Modalidade.REMOTO))
+
+
+@pytest.mark.parametrize("modalidade", [Modalidade.PRESENCIAL, Modalidade.HIBRIDO])
+def test_remoto_descarta_pela_modalidade_informada_pela_fonte(modalidade: Modalidade):
+    vaga_com_texto_remoto = vaga(descricao="Trabalho remoto.", modalidade=modalidade)
+    assert modalidade_incompativel(vaga_com_texto_remoto, perfil(modalidade=Modalidade.REMOTO))
+
+
+def test_remoto_mantem_vaga_marcada_como_remota_pela_fonte_mesmo_com_texto_presencial():
+    vaga_remota = vaga(descricao="Escritório presencial em SP.", modalidade=Modalidade.REMOTO)
+    assert not modalidade_incompativel(vaga_remota, perfil(modalidade=Modalidade.REMOTO))
+
+
+def test_presencial_mantem_vaga_marcada_como_remota_pela_fonte_em_outra_cidade():
+    presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
+    vaga_remota = vaga(localizacao="Salvador, Bahia", modalidade=Modalidade.REMOTO)
+    assert not localizacao_incompativel(vaga_remota, presencial)
 
 
 def test_remoto_mantem_vaga_sem_modalidade_informada():

@@ -20,6 +20,7 @@ class Vaga(BaseModel):
     descricao: str
     url: str
     publicada_em: datetime
+    modalidade: Modalidade | None = None
 
 
 class Perfil(BaseModel):

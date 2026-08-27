@@ -1,4 +1,26 @@
-from radar.matching.prompt import INSTRUCAO_DO_RECRUTADOR
+from datetime import UTC, datetime
+
+from radar.domain.models import Modalidade, Vaga
+from radar.matching.prompt import INSTRUCAO_DO_RECRUTADOR, descrever_vaga
+
+
+def vaga(modalidade: Modalidade | None = None) -> Vaga:
+    return Vaga(
+        id_externo="1",
+        fonte="gupy",
+        titulo="Estágio Dev",
+        empresa="Empresa",
+        localizacao="Rio de Janeiro, RJ",
+        descricao="descrição",
+        url="https://exemplo.com/vaga/1",
+        publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
+        modalidade=modalidade,
+    )
+
+
+def test_descricao_da_vaga_inclui_modalidade_somente_quando_informada():
+    assert "Modalidade: remoto\n" in descrever_vaga(vaga(Modalidade.REMOTO))
+    assert "Modalidade" not in descrever_vaga(vaga())
 
 
 def test_habilidade_nao_declarada_e_tratada_como_informacao_ausente():
