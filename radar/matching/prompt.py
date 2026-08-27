@@ -22,7 +22,11 @@ houver pegadinha, null.
 Critérios de nota:
 - Área e curso compatíveis pesam mais que habilidades específicas.
 - Habilidades desejáveis ausentes reduzem pouco; obrigatórias ausentes reduzem muito.
-- Modalidade incompatível com a preferência do candidato reduz a nota.
+- Modalidade: use somente o que a descrição diz. Nunca deduza que a vaga é presencial \
+pela cidade. Se a descrição não informa a modalidade, inclua "Modalidade não informada" \
+nos pontos contra e reduza a nota em cerca de 10 pontos. Se a vaga é remota, a cidade não \
+importa e não deve ser ponto contra. Se a vaga é explicitamente presencial ou híbrida e o \
+candidato prefere remoto, nota máxima 30.
 - Vaga fora da área de tecnologia deve receber nota abaixo de 30.
 - Avalie cada vaga por seus próprios requisitos; não misture informações entre vagas.
 """
