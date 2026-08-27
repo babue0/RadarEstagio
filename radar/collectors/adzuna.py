@@ -35,7 +35,7 @@ class ColetorAdzuna:
             "app_key": self._settings.adzuna_app_key,
             "what": TERMO_DE_BUSCA,
             "category": CATEGORIA_TECNOLOGIA,
-            "max_days_old": self._settings.adzuna_dias_recentes,
+            "max_days_old": self._settings.dias_recentes,
             "results_per_page": RESULTADOS_POR_PAGINA,
             "content-type": "application/json",
         }

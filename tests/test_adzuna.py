@@ -22,7 +22,7 @@ def settings_de_teste() -> Settings:
         gemini_api_key="gemini-de-teste",
         telegram_bot_token="token-de-teste",
         telegram_chat_id="123",
-        adzuna_dias_recentes=3,
+        dias_recentes=3,
     )
 
 

@@ -1,14 +1,16 @@
 import argparse
 import logging
 import sys
-from datetime import date
+from datetime import UTC, date, datetime
 
 import httpx
 from pydantic import ValidationError
 
-from radar.collectors.adzuna import ColetorAdzuna
 from radar.collectors.errors import ErroDeColeta
+from radar.collectors.factory import criar_coletor
 from radar.domain.perfil_fixo import perfil_do_mvp
+from radar.domain.ports import ColetorDeVagas
+from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.factory import criar_avaliador
@@ -44,23 +46,29 @@ def carregar_settings() -> Settings | None:
 def verificar_configuracao(settings: Settings) -> None:
     print("Configuração carregada com sucesso.")
     print(f"Avaliador: {settings.avaliador}")
-    print(f"Dias recentes na Adzuna: {settings.adzuna_dias_recentes}")
+    print(f"Fontes: {', '.join(settings.fontes_selecionadas())}")
+    print(f"Dias recentes: {settings.dias_recentes}")
     print(f"Vagas enviadas por execução: {settings.quantidade_vagas_enviadas}")
 
 
 def coletar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
-        vagas = ColetorAdzuna(settings, cliente_http).coletar()
-    print(f"{len(vagas)} vagas coletadas na Adzuna")
+        coletadas = montar_coletor(settings, cliente_http).coletar()
+    vagas = remover_duplicatas(coletadas)
+    print(f"{len(coletadas)} vagas coletadas, {len(vagas)} após remover duplicatas")
     for vaga in vagas:
-        print(f"- {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
+        modalidade = vaga.modalidade.value if vaga.modalidade else "modalidade não informada"
+        print(
+            f"- [{vaga.fonte}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao} | {modalidade}"
+        )
         print(f"  {vaga.url}")
 
 
 def avaliar(settings: Settings) -> None:
     perfil = perfil_do_mvp()
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
-        vagas = filtrar(ColetorAdzuna(settings, cliente_http).coletar(), perfil)
+        coletadas = montar_coletor(settings, cliente_http).coletar()
+    vagas = filtrar(remover_duplicatas(coletadas), perfil)
     selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
     print(
         f"{len(vagas)} vagas após o pré-filtro; "
@@ -81,6 +89,10 @@ def testar_telegram(settings: Settings) -> None:
     print(f"Mensagem enviada para o chat {settings.telegram_chat_id}")
 
 
+def montar_coletor(settings: Settings, cliente_http: httpx.Client) -> ColetorDeVagas:
+    return criar_coletor(settings, cliente_http, datetime.now(UTC))
+
+
 def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
     return AvaliadorEmLotes(criar_avaliador(settings), settings.gemini_vagas_por_lote)
 
@@ -88,7 +100,7 @@ def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
 def rodar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         selecionadas = executar(
-            ColetorAdzuna(settings, cliente_http),
+            montar_coletor(settings, cliente_http),
             montar_avaliador(settings),
             NotificadorTelegram(settings, cliente_http),
             perfil_do_mvp(),
@@ -120,7 +132,9 @@ def main() -> None:
     subcomandos.add_parser(
         "verificar", help="confere se as variáveis de ambiente estão preenchidas"
     )
-    subcomandos.add_parser("coletar", help="busca vagas reais na Adzuna e imprime título e URL")
+    subcomandos.add_parser(
+        "coletar", help="busca vagas reais nas fontes configuradas e imprime título e URL"
+    )
     subcomandos.add_parser(
         "avaliar", help="coleta, pré-filtra e avalia algumas vagas com o avaliador configurado"
     )
