@@ -1,6 +1,8 @@
 # Radar de Estágio — Documento de Definição (Pré-PRD)
 
-**Status:** em validação<br>
+**Status:** Fase 1 implementada; validação técnica e de produto em andamento<br>
+**Atualizado em:** 27/08/2026<br>
+**Entrega prevista:** 02/09/2026<br>
 **Objetivo:** avaliar a viabilidade do projeto antes da elaboração do PRD<br>
 **Base:** visão do produto, plano do MVP e prova técnica já executada pelo grupo
 
@@ -18,19 +20,20 @@ Este Pré-PRD organiza o que já sabemos sobre o Radar de Estágio e o que ainda
 
 ## 2. Resumo executivo
 
-O Radar de Estágio reduz o esforço diário de estudantes que procuram o primeiro estágio. O sistema coleta vagas, elimina anúncios claramente incompatíveis, compara as oportunidades com o perfil do estudante e entrega pelo Telegram uma lista curta, ranqueada e explicada.
+O Radar de Estágio reduz o esforço diário de estudantes que procuram o primeiro estágio. O sistema coleta vagas da Adzuna e da Gupy, remove duplicatas, elimina anúncios claramente incompatíveis, compara as oportunidades com o perfil do estudante e entrega pelo Telegram uma lista curta, ranqueada e explicada.
 
-A prova técnica principal já existe: o projeto coletou vagas reais da Adzuna, aplicou pré-filtro, avaliou as oportunidades com Gemini e enviou cinco recomendações reais pelo Telegram. Portanto, a maior incerteza deixou de ser a integração básica entre as tecnologias.
+A prova técnica principal já existe: o projeto coletou vagas reais, aplicou pré-filtro, avaliou as oportunidades com Gemini e enviou cinco recomendações pelo Telegram. O fluxo também pode usar o AGY localmente para testes sem consumir a cota da API direta. O GitHub Actions foi executado manualmente com sucesso duas vezes, embora essas execuções sejam anteriores à inclusão da Gupy. A base atual possui 165 testes automatizados passando.
 
 As principais incertezas agora são de produto e operação:
 
-- a Adzuna oferece volume suficiente de vagas relevantes?
+- Adzuna e Gupy oferecem volume suficiente de vagas relevantes?
 - os estudantes confiam no ranking e nas justificativas?
 - Telegram é um canal aceitável para o público?
-- a cota disponível do Gemini suporta a frequência e a quantidade de análises?
+- a versão atual executa de forma estável no agendamento diário?
+- a cota disponível do Gemini suporta a frequência e a quantidade de análises no CI?
 - o benefício percebido é suficiente para gerar uso recorrente?
 
-> **Veredito preliminar:** o projeto é tecnicamente viável como prova de ponta a ponta. A viabilidade como produto depende da cobertura das fontes, da confiança no matching, da aceitação do canal e da capacidade de operar dentro dos limites das APIs.
+> **Veredito preliminar:** a Fase 1 é tecnicamente viável e está implementada. A viabilidade como produto ainda depende da cobertura das fontes, da confiança no matching, da aceitação do canal e da operação contínua dentro dos limites das APIs.
 
 ## 3. Problema que queremos resolver
 
@@ -77,8 +80,7 @@ Na visão de produto, o usuário preenche um cadastro curto com curso, período,
 
 - título, empresa e localização;
 - nota de compatibilidade entre 0 e 100;
-- justificativa curta e específica;
-- requisitos atendidos e lacunas relevantes;
+- até três pontos concretos a favor e três pontos contra;
 - alerta de possível inconsistência ou “pegadinha”;
 - link para candidatura.
 
@@ -88,12 +90,14 @@ O Radar não se candidata em nome do usuário, não substitui os portais de vaga
 
 Para preservar a viabilidade, a visão completa não deve ser tratada como uma única entrega.
 
-#### Fase 1 — Prova técnica de ponta a ponta
+#### Fase 1 — Prova técnica de ponta a ponta (implementada)
 
-- Uma fonte oficial: Adzuna.
+- Duas fontes: Adzuna, por API oficial, e Gupy, por endpoint público não oficial.
+- Coleta combinada com tolerância à falha parcial e deduplicação por título e empresa.
 - Um perfil fixo.
 - Pré-filtro determinístico.
-- Matching com Gemini.
+- Matching com Gemini API no CI ou AGY em testes locais.
+- Avaliação em lotes e saída estruturada validada por schema.
 - Mensagem ranqueada no Telegram.
 - Execução diária pelo GitHub Actions.
 - Sem banco de dados.
@@ -126,27 +130,37 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 
 - O ambiente Python e as dependências funcionam localmente com `uv`.
 - A API oficial da Adzuna pode ser consultada com as credenciais do grupo.
-- A resposta da Adzuna pode ser convertida para o modelo de domínio do projeto.
+- A Gupy pode ser consultada sem credenciais pelo endpoint utilizado no portal.
+- As respostas das duas fontes podem ser convertidas para o mesmo modelo de domínio.
+- As fontes podem ser combinadas; se uma falhar, a outra ainda pode fornecer vagas.
+- Duplicatas da mesma execução são removidas por título e empresa, preservando a versão com mais informações.
 - O pré-filtro elimina casos incompatíveis antes do uso de IA.
-- O Gemini retorna avaliação estruturada com nota, motivo e alerta.
+- Gemini API e AGY retornam a mesma avaliação estruturada com nota, pontos a favor, pontos contra e alerta.
+- A avaliação em lotes reduz o número de requisições e isola falhas de vagas específicas.
 - O Telegram recebe mensagens formatadas e divididas quando necessário.
+- O formatador limita a exibição a três pontos a favor e três contra sem invalidar a avaliação.
 - O pipeline completo já enviou uma lista real com cinco vagas avaliadas.
-- As integrações principais possuem testes automatizados sem chamadas reais de rede.
+- O GitHub Actions teve execuções manuais bem-sucedidas em 26 e 27/08/2026 na versão anterior à Gupy.
+- O README documenta instalação, configuração, comandos locais e execução pelo Actions.
+- Em 27/08/2026, os 165 testes automatizados passam sem chamadas reais de rede.
 
 ### 6.2 Limitações já observadas
 
-- A camada gratuita disponível do modelo Gemini usado pelo projeto permite aproximadamente vinte avaliações por dia.
+- A camada gratuita observada do Gemini permite aproximadamente vinte requisições por dia; o valor pode mudar.
+- O uso de lotes reduz requisições, mas uma falha pode gerar novas tentativas e consumir cota adicional.
 - Ao atingir a cota diária, novas tentativas imediatas não resolvem o problema.
-- O número de vagas que pode ser analisado precisa ser controlado antes da chamada à IA.
-- A cobertura real da Adzuna para estágios de tecnologia no Brasil ainda precisa ser medida durante vários dias.
+- O AGY aumenta a capacidade de testes locais, mas não está disponível no GitHub Actions e não substitui a API no agendamento.
+- A Gupy é acessada por um endpoint não oficial, que pode mudar sem aviso.
+- A deduplicação atual ocorre apenas entre vagas da mesma execução; sem banco, uma vaga pode reaparecer em dias diferentes.
+- A cobertura conjunta de Adzuna e Gupy para estágios de tecnologia no Brasil ainda precisa ser medida durante vários dias.
 
 ### 6.3 Trabalho técnico restante na Fase 1
 
-- Configurar a execução diária no GitHub Actions.
-- Configurar os segredos no repositório.
-- Criar o README operacional.
-- Observar execuções automáticas por vários dias.
+- Disparar a versão atual manualmente no GitHub Actions após a inclusão da Gupy.
+- Observar o cron da versão atual por vários dias.
 - Registrar volume coletado, volume filtrado, avaliações realizadas e falhas.
+- Comparar uma amostra de resultados com avaliações humanas.
+- Consolidar as evidências para a entrega de 02/09/2026.
 
 ## 7. Hipóteses e testes de baixo custo
 
@@ -156,7 +170,7 @@ Os limites abaixo são propostas iniciais. O grupo deve confirmá-los antes da v
 | --- | --- | --- |
 | H1 — Estudantes preferem receber vagas selecionadas a fazer toda a busca manualmente. | Entrevistar de 15 a 20 estudantes e oferecer uma demonstração. | Pelo menos 60% afirmam que usariam o serviço semanalmente. |
 | H2 — O matching é confiável o suficiente para orientar a triagem. | Separar 20 vagas reais; três integrantes avaliam relevância sem ver a nota da IA; depois comparar. | Concordância entre classificação humana e sistema em pelo menos 75% dos casos. |
-| H3 — A Adzuna possui cobertura útil para o nicho inicial. | Executar a coleta diariamente por sete dias e classificar os resultados. | Volume suficiente para entregar recomendações relevantes na maioria dos dias úteis. |
+| H3 — As fontes atuais possuem cobertura útil para o nicho inicial. | Executar Adzuna e Gupy diariamente por sete dias e classificar os resultados. | Volume suficiente para entregar recomendações relevantes na maioria dos dias úteis. |
 | H4 — Telegram é um canal aceitável para o público inicial. | Incluir a pergunta nas entrevistas e permitir que os participantes testem a entrega. | Pelo menos 60% aceitam o canal sem considerar isso uma barreira. |
 | H5 — A entrega gera uma ação útil. | Enviar recomendações durante duas semanas para o grupo e convidados. | Usuários abrem vagas, salvam oportunidades ou relatam candidatura. |
 | H6 — O sistema opera dentro da cota e do custo disponíveis. | Medir vagas coletadas, descartadas e enviadas à IA em cada execução. | O pré-filtro mantém as avaliações diárias abaixo do limite operacional definido. |
@@ -181,7 +195,8 @@ Esta lista serve para priorização. Uma característica só deve entrar no prod
 | Pausar e retomar entregas | Dá controle ao usuário | Importante | 2 | A discutir |
 | Editar perfil | Evita recomendações baseadas em dados antigos | Importante | 2 | A discutir |
 | Feedback Gostei / Não gostei / Candidatei-me | Mede utilidade e pode orientar melhorias | Importante | 2 | A discutir |
-| Mais fontes de vagas | Aumenta cobertura e reduz dependência | Importante | Posterior | A discutir |
+| Adzuna e Gupy | Aumentam cobertura e reduzem dependência de uma única fonte | Importante | 1 | Confirmada |
+| Fontes além de Adzuna e Gupy | Podem ampliar a cobertura se as fontes atuais forem insuficientes | Importante | Posterior | A discutir |
 | Alerta instantâneo | Reduz o tempo até vagas muito relevantes | Desejável | Posterior | Não priorizada |
 | Tendências de habilidades | Ajuda no planejamento de estudos | Desejável | Posterior | Não priorizada |
 | Aplicação automática | Retira a decisão do usuário e amplia riscos | Fora do escopo | — | Rejeitada |
@@ -201,19 +216,20 @@ Para cada item marcado como “A discutir”, o grupo deve responder:
 
 | Vulnerabilidade | Impacto | Probabilidade | Situação | Mitigação proposta |
 | --- | --- | --- | --- | --- |
-| Baixa cobertura da Adzuna para o nicho | Alto | Média | Não medida | Executar por sete dias, medir vagas úteis e definir critério para adicionar outra fonte. |
-| Cota diária do Gemini | Alto | Alta | Comprovada | Pré-filtrar, limitar avaliações, interromper ao receber cota excedida e estimar alternativa paga. |
+| Baixa cobertura de Adzuna e Gupy para o nicho | Alto | Média | Não medida | Executar por sete dias, medir vagas úteis e definir critério para adicionar outra fonte. |
+| Mudança no endpoint não oficial da Gupy | Alto | Média | Risco permanente | Isolar o coletor, registrar falhas e continuar com Adzuna quando a Gupy estiver indisponível. |
+| Cota diária do Gemini | Alto | Alta | Comprovada | Pré-filtrar, avaliar em lotes, interromper ao receber cota excedida e estimar alternativa paga. |
 | Match Score incorreto | Alto | Média | Não validada | Comparação cega com avaliação humana, justificativa explícita e coleta de feedback. |
 | Vagas falsas, expiradas ou enganosas | Alto | Média | Não medida | Mostrar fonte e data, sinalizar inconsistências e permitir que o usuário reporte problemas. |
 | Falha silenciosa de coleta | Alto | Média | Parcialmente tratada | Logs, falha visível no GitHub Actions e alerta operacional ao grupo. |
-| Dependência de um único provedor de vagas | Médio | Alta | Aceita na Fase 1 | Tratar como limite consciente; adicionar fonte somente se H3 falhar. |
+| Dependência de poucos provedores de vagas | Médio | Média | Parcialmente reduzida | Medir cobertura conjunta e adicionar outra fonte somente se H3 falhar. |
 | Dependência do Telegram | Médio | Média | Aceita inicialmente | Validar aceitação e manter a camada de notificação isolada. |
 | Perda de usuários entre site e Telegram | Médio | Alta | Fase 2 | Deep link com token seguro, poucas etapas e medição do funil. |
 | Exposição de perfil e identificador do Telegram | Alto | Baixa/média | Fase 2 | Coleta mínima, controle de acesso, exclusão de dados e política clara de finalidade. |
 | Token previsível ou reutilizável no deep link | Alto | Baixa/média | Fase 2 | Token aleatório, expirável, de uso único e invalidado após o vínculo. |
 | Aumento de escopo durante o semestre | Alto | Alta | Risco atual | Separar fases e impedir que oportunidades futuras entrem automaticamente no MVP. |
 | Limites gratuitos ou preços mudarem | Médio | Média | Permanente | Registrar data e premissas de custo; recalcular antes do PRD e da apresentação. |
-| GitHub Actions atrasar ou falhar | Médio | Baixa/média | Ainda não testada | Execução manual, logs, alertas e observação por sete dias. |
+| GitHub Actions atrasar ou falhar | Médio | Baixa/média | Disparo manual comprovado; cron pendente | Logs, alerta de job vermelho e observação do agendamento por vários dias. |
 
 ## 10. Oportunidades
 
@@ -231,7 +247,7 @@ Oportunidades são caminhos de expansão, não compromissos do MVP.
 - **Learning Loop:** usar feedback para melhorar recomendações futuras.
 - **Career Gap:** mostrar habilidades recorrentes que faltam ao perfil.
 - **Radar do mercado:** resumir tecnologias e áreas mais solicitadas.
-- **Novas fontes:** aumentar cobertura quando houver evidência de necessidade.
+- **Novas fontes adicionais:** aumentar cobertura se Adzuna e Gupy não forem suficientes.
 
 ### Longo prazo
 
@@ -244,11 +260,11 @@ Oportunidades são caminhos de expansão, não compromissos do MVP.
 
 ### 11.1 Viabilidade técnica
 
-**Avaliação: demonstrada parcialmente e favorável.**
+**Avaliação: favorável, com a Fase 1 implementada.**
 
-As integrações centrais já funcionaram juntas em uma execução real. Nenhuma parte da Fase 1 exige tecnologia experimental. O principal risco técnico conhecido é a cota diária da IA, que limita quantas vagas podem ser avaliadas e exige disciplina no pré-filtro.
+As integrações centrais já funcionaram juntas em execuções reais. O projeto possui coletores independentes, deduplicação, pré-filtro, dois adapters de IA, avaliação em lotes, saída estruturada, formatação e envio pelo Telegram. Nenhuma parte da Fase 1 exige tecnologia experimental. Os principais riscos técnicos conhecidos são a cota diária da IA e a dependência do endpoint não oficial da Gupy.
 
-Para concluir a demonstração técnica, o sistema ainda precisa executar automaticamente e de forma estável pelo GitHub Actions durante vários dias.
+O Actions já funcionou sob disparo manual na versão anterior. Para concluir a demonstração da versão atual, ainda é necessário executar o pipeline com Adzuna e Gupy no Actions e observar o cron durante vários dias.
 
 ### 11.2 Viabilidade financeira
 
@@ -267,7 +283,7 @@ Antes do PRD, o grupo deve registrar uma memória de cálculo com volume diário
 
 **Avaliação: favorável para poucos usuários, ainda não comprovada em operação contínua.**
 
-A execução pode ser automatizada, mas “rodar sozinho” não significa ausência de manutenção. O grupo precisará acompanhar:
+A execução já está automatizada, mas “rodar sozinho” não significa ausência de manutenção. O grupo precisará acompanhar:
 
 - falhas de coleta e autenticação;
 - mudanças nas APIs;
@@ -276,13 +292,13 @@ A execução pode ser automatizada, mas “rodar sozinho” não significa ausê
 - qualidade das recomendações;
 - rotação e proteção de credenciais.
 
-A operação da Fase 1 é simples porque usa uma fonte, um perfil e uma entrega diária. A complexidade cresce de forma relevante quando entram banco, múltiplos usuários, feedback e mais fontes.
+A operação da Fase 1 continua simples porque usa duas fontes, um perfil e uma entrega diária. A complexidade cresce de forma relevante quando entram banco, múltiplos usuários, feedback e novas fontes.
 
 ### 11.4 Viabilidade de prazo
 
-**Avaliação: favorável para a Fase 1; indefinida para a visão completa.**
+**Avaliação: favorável para entregar a Fase 1 em 02/09/2026; indefinida para a visão completa.**
 
-O núcleo da Fase 1 está implementado. Restam automação, documentação e observação de estabilidade. Cadastro web, Supabase, vínculo com Telegram e multiusuário devem receber uma estimativa separada antes de serem tratados como compromisso.
+O núcleo da Fase 1, a automação e a documentação operacional estão implementados. Até a entrega, o foco deve ser validar a versão atual no Actions, coletar evidências e corrigir apenas falhas que impeçam a demonstração. Cadastro web, Supabase, vínculo com Telegram e multiusuário devem receber uma estimativa separada antes de serem tratados como compromisso.
 
 ### 11.5 Viabilidade de produto
 
@@ -294,7 +310,7 @@ Ainda não foi comprovado que estudantes usarão o Radar de forma recorrente, co
 
 | Dimensão | Avaliação atual | Evidência faltante |
 | --- | --- | --- |
-| Técnica | Favorável | Execução automática estável por vários dias |
+| Técnica | Favorável | Execução da versão atual no Actions e observação do cron |
 | Financeira | Favorável em baixo volume | Memória de cálculo e cenário pago |
 | Operacional | Favorável para a Fase 1 | Monitoramento de execuções reais |
 | Prazo | Favorável para a Fase 1 | Estimativa separada da Fase 2 |
@@ -321,10 +337,10 @@ Ainda não foi comprovado que estudantes usarão o Radar de forma recorrente, co
 
 ### Fontes
 
-- Qual volume de vagas relevantes torna a Adzuna suficiente para a Fase 1?
-- Quando a baixa cobertura justifica adicionar uma segunda fonte?
+- Qual volume de vagas relevantes torna Adzuna e Gupy suficientes para a Fase 1?
+- Quando a baixa cobertura justifica adicionar uma fonte além das duas atuais?
 - Quais fontes possuem uso permitido e estabilidade aceitável?
-- Como detectar duplicatas quando houver mais de uma fonte?
+- Como medir erros da deduplicação atual e evitar repetições entre dias sem banco?
 
 ### Canal e cadastro
 
@@ -344,8 +360,9 @@ Ainda não foi comprovado que estudantes usarão o Radar de forma recorrente, co
 O grupo deve avançar ao PRD quando:
 
 - o escopo da Fase 1 estiver congelado;
+- a versão atual tiver sido executada com sucesso no GitHub Actions;
 - a execução automática tiver funcionado durante o período de observação definido;
-- a cobertura da Adzuna tiver sido medida;
+- a cobertura conjunta de Adzuna e Gupy tiver sido medida;
 - o teste de concordância do matching tiver sido executado;
 - o grupo tiver realizado entrevistas com estudantes do público inicial;
 - os limites de aprovação de H1 a H6 estiverem definidos antes da análise dos resultados;
@@ -357,7 +374,7 @@ O grupo deve avançar ao PRD quando:
 ## 14. Perguntas prioritárias para a próxima reunião
 
 1. Estamos validando apenas a prova técnica ou também o cadastro com usuários externos neste semestre?
-2. Qual resultado mínimo da coleta torna a Adzuna suficiente?
+2. Qual resultado mínimo da coleta torna Adzuna e Gupy suficientes?
 3. Qual regra inicial torna o Match Score explicável?
 4. Qual concordância mínima entre avaliação humana e sistema consideramos aceitável?
 5. Quantas vagas devem ser enviadas e qual comportamento usar em dias sem recomendação?
@@ -367,14 +384,14 @@ O grupo deve avançar ao PRD quando:
 
 ## 15. Próximos passos sugeridos
 
-1. Finalizar GitHub Actions e README da Fase 1.
-2. Observar sete dias de execução e registrar volume e falhas.
-3. Avaliar manualmente vinte vagas e comparar com o sistema.
-4. Entrevistar de 15 a 20 estudantes de tecnologia.
-5. Consolidar as respostas da próxima reunião.
-6. Revisar o veredito de viabilidade com as evidências obtidas.
-7. Elaborar o PRD somente para a fase aprovada.
+1. Até 28/08: executar manualmente no Actions a versão com Adzuna e Gupy e guardar a evidência.
+2. De 28/08 a 01/09: observar o cron e registrar volume coletado, vagas únicas, vagas filtradas, avaliações, envios e falhas.
+3. Até 31/08: avaliar manualmente uma amostra de vinte vagas e comparar com o sistema, se o grupo conseguir reunir os avaliadores.
+4. Até 01/09: definir as três métricas e os prints ou logs que entrarão na apresentação.
+5. Em 01/09: congelar o escopo, revisar o documento e ensaiar a demonstração.
+6. Em 02/09: entregar a Fase 1 com as evidências obtidas e declarar como pendentes as hipóteses de produto ainda não testadas.
+7. Após a entrega: entrevistar estudantes, concluir H1 a H6 e elaborar o PRD somente para a fase aprovada.
 
 ---
 
-**Status do documento:** EM VALIDAÇÃO — o projeto possui prova técnica favorável, mas ainda precisa comprovar cobertura, confiança e uso recorrente antes de assumir a viabilidade completa do produto.
+**Status do documento:** FASE 1 IMPLEMENTADA E EM VALIDAÇÃO — a prova técnica é favorável; antes da entrega, falta validar a versão atual no Actions e reunir evidências operacionais. Cobertura, confiança e uso recorrente continuam pendentes para comprovar a viabilidade do produto.
