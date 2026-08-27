@@ -71,13 +71,23 @@ commite o `.env`.
 1. Crie uma conta em <https://developer.adzuna.com/signup>.
 2. Em *Dashboard* aparecem **Application ID** e **Application Key**.
 
-### 2.2 Gemini (IA de avaliação)
+### 2.2 Avaliador por IA
+
+O projeto aceita dois adapters, escolhidos por `AVALIADOR`:
+
+- `gemini_api`: chama a Gemini Developer API diretamente; é o padrão e funciona no CI.
+- `agy`: executa o Antigravity CLI local em modo headless; indicado para testes locais.
+
+Para usar a API direta:
 
 1. Acesse <https://aistudio.google.com/app/apikey> com uma conta Google.
 2. **Create API key** → copie a chave.
 
-A camada gratuita permite cerca de **20 requisições por dia**. Cada execução completa
-gasta ~2. Não fique rodando várias vezes seguidas para testar.
+Os limites dependem do modelo e do projeto e podem incluir requisições por minuto e por dia.
+
+Para usar AGY, instale o comando `agy`, autentique uma vez em uma sessão interativa e confirme
+o modelo com `agy models`. Esse modo usa as cotas/créditos do Antigravity, não a cota da Gemini
+Developer API.
 
 ### 2.3 Telegram (bot + seu chat)
 
@@ -112,18 +122,23 @@ O `.env` fica assim (sem aspas, sem espaço em volta do `=`):
 ```
 ADZUNA_APP_ID=seu_application_id
 ADZUNA_APP_KEY=sua_application_key
-GEMINI_API_KEY=sua_chave_do_gemini
+AVALIADOR=agy
+AGY_MODELO=gemini-3.6-flash-low
+GEMINI_API_KEY=
 TELEGRAM_BOT_TOKEN=123456789:AAF...
 TELEGRAM_CHAT_ID=123456789
 ```
 
-Essas 5 são obrigatórias. As outras do `.env.example` são opcionais e já têm valor
-padrão no código:
+Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatória quando
+`AVALIADOR=gemini_api`. As demais variáveis têm valor padrão:
 
 | Variável | Padrão | O que faz |
 |---|---|---|
+| `AVALIADOR` | `gemini_api` | seleciona `gemini_api` ou `agy` |
 | `GEMINI_MODELO` | `gemini-3.6-flash` | modelo do Gemini |
 | `GEMINI_VAGAS_POR_LOTE` | `10` | vagas avaliadas por requisição |
+| `AGY_MODELO` | `gemini-3.6-flash-low` | modelo usado pelo Antigravity CLI |
+| `AGY_TIMEOUT_SEGUNDOS` | `300` | tempo máximo de uma execução do AGY |
 | `ADZUNA_DIAS_RECENTES` | `2` | busca vagas publicadas nos últimos N dias |
 | `QUANTIDADE_VAGAS_ENVIADAS` | `5` | quantas vagas vão na mensagem |
 
@@ -139,12 +154,12 @@ uv run python -m radar verificar
 
 Se faltar alguma variável, ele lista quais. Depois, teste cada parte:
 
-| Comando | O que faz | Gasta cota do Gemini? |
+| Comando | O que faz | Usa IA? |
 |---|---|---|
 | `uv run python -m radar testar-telegram` | manda "Radar OK" para o seu chat | não |
 | `uv run python -m radar coletar` | lista as vagas da Adzuna | não |
-| `uv run python -m radar avaliar` | avalia 3 vagas e imprime as notas | sim (1) |
-| `uv run python -m radar` | **fluxo completo**: coleta → avalia → envia no Telegram | sim (~2) |
+| `uv run python -m radar avaliar` | avalia 3 vagas e imprime as notas | sim |
+| `uv run python -m radar` | **fluxo completo**: coleta → avalia → envia no Telegram | sim |
 
 Testes automatizados e lint (não usam chave nenhuma):
 

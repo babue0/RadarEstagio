@@ -59,7 +59,7 @@ muda (infraestrutura) fica na borda; a parte que não muda (domínio) fica no ce
 
 ```python
 def executar(coletor, avaliador, notificador, perfil, quantidade, data):
-    coletadas  = coletor.coletar()
+    coletadas = coletor.coletar()
     candidatas = filtrar(coletadas, perfil)
     resultados = avaliador.avaliar(candidatas, perfil)
     selecionadas = ranquear(resultados)[:quantidade]
@@ -92,7 +92,7 @@ opções gratuitas piores).
 É um script disparado por cron, não um serviço HTTP. Flask/FastAPI seriam peso morto.
 `httpx` para as duas chamadas HTTP (Adzuna e Telegram) basta.
 
-### 3. Gemini Flash com saída estruturada
+### 3. Avaliadores com saída estruturada
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA é obrigada a devolver JSON no
@@ -100,7 +100,11 @@ opções gratuitas piores).
   regex em cima de resposta de IA.
 - **Temperatura 0**: mesma vaga, mesma nota. Importante para o usuário confiar no ranking.
 - **Trocar de modelo** é uma variável de ambiente (`GEMINI_MODELO`). Trocar de provedor é
-  uma classe nova em `matching/`.
+  um adapter novo em `matching/`.
+- **Dois adapters** implementam a mesma interface: `AvaliadorGemini`, pela Developer API,
+  e `AvaliadorAgy`, pelo Antigravity CLI local. `AVALIADOR=gemini_api|agy` escolhe qual usar.
+- O adapter AGY roda em diretório temporário, com sandbox, timeout e JSON Schema; o fluxo do
+  domínio recebe os mesmos `ResultadoMatch` em ambos os casos.
 
 ### 4. Pré-filtro por regras antes da IA
 
@@ -118,10 +122,10 @@ A solução é em duas camadas, separadas de propósito:
 AvaliadorEmLotes  (matching/lotes.py)   — sabe dividir, tentar de novo, desistir
       │  usa
       ▼
-AvaliadorGemini   (matching/gemini.py)  — sabe falar com o Gemini. Só isso.
+AvaliadorGemini/AvaliadorAgy            — sabem falar com seu mecanismo. Só isso.
 ```
 
-`AvaliadorGemini` recebe uma lista de vagas, faz **uma** chamada, devolve os resultados que
+O adapter selecionado recebe uma lista de vagas, faz **uma** chamada, devolve os resultados que
 conseguiu casar por id. Não sabe o que é "tentar de novo".
 
 `AvaliadorEmLotes` embrulha qualquer avaliador e aplica a estratégia:
@@ -134,8 +138,8 @@ conseguiu casar por id. Não sabe o que é "tentar de novo".
 | esqueceu mesmo sozinha | ignora e registra |
 | cota excedida (HTTP 429) | para tudo, envia o que já tem |
 
-Por que separar: a estratégia de resiliência não tem nada a ver com Gemini. Se amanhã
-entrar um `AvaliadorClaude`, o `AvaliadorEmLotes` embrulha ele igual, sem mudar uma linha.
+Por que separar: a estratégia de resiliência não tem nada a ver com o mecanismo de IA.
+`AvaliadorEmLotes` embrulha os dois adapters sem conhecer Gemini API ou AGY.
 
 ### 6. Formatar ≠ enviar
 
@@ -152,7 +156,8 @@ com código 1 — o GitHub Actions fica vermelho e mostra o motivo em uma linha.
 ### 8. Configuração só por variável de ambiente
 
 `Settings` (pydantic-settings) lê do `.env` local ou do ambiente do CI — o código não sabe a
-diferença. As 5 chaves são obrigatórias e validadas na partida; o resto tem padrão. O `.env`
+diferença. Adzuna e Telegram são obrigatórios; `GEMINI_API_KEY` é condicional ao adapter.
+O restante tem padrão. O `.env`
 nunca é commitado; no GitHub as mesmas variáveis vêm dos secrets.
 
 ## Como cada ferramenta se encaixa
