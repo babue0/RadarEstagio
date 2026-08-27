@@ -10,6 +10,7 @@ PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
 )
 PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
+PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
 
 
@@ -47,12 +48,22 @@ def localizacao_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
     return PADRAO_TRABALHO_REMOTO.search(texto) is None
 
 
+def modalidade_incompativel(vaga: Vaga, perfil: Perfil) -> bool:
+    if perfil.modalidade is not Modalidade.REMOTO:
+        return False
+    texto = normalizar(f"{vaga.titulo} {vaga.descricao}")
+    exige_presenca = PADRAO_TRABALHO_PRESENCIAL.search(texto) is not None
+    admite_remoto = PADRAO_TRABALHO_REMOTO.search(texto) is not None
+    return exige_presenca and not admite_remoto
+
+
 def deve_descartar(vaga: Vaga, perfil: Perfil) -> bool:
     return (
         nao_e_estagio(vaga)
         or exige_senioridade(vaga)
         or exige_anos_de_experiencia(vaga)
         or localizacao_incompativel(vaga, perfil)
+        or modalidade_incompativel(vaga, perfil)
     )
 
 

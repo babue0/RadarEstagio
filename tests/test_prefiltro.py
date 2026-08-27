@@ -8,6 +8,7 @@ from radar.filtering.prefiltro import (
     exige_senioridade,
     filtrar,
     localizacao_incompativel,
+    modalidade_incompativel,
     nao_e_estagio,
 )
 
@@ -143,6 +144,47 @@ def test_presencial_mantem_vaga_remota_de_outra_cidade(descricao: str):
     assert not localizacao_incompativel(vaga_remota, presencial)
 
 
+@pytest.mark.parametrize(
+    "modalidade", [Modalidade.PRESENCIAL, Modalidade.HIBRIDO, Modalidade.INDIFERENTE]
+)
+def test_modalidade_so_e_avaliada_para_perfil_remoto(modalidade: Modalidade):
+    vaga_presencial = vaga(descricao="Trabalho presencial na sede.")
+    assert not modalidade_incompativel(vaga_presencial, perfil(modalidade=modalidade))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Trabalho presencial na sede.",
+        "Atuação presencialmente em São Paulo.",
+        "Modelo híbrido, 3 dias no escritório.",
+        "Hybrid work model.",
+        "On-site position.",
+    ],
+)
+def test_remoto_descarta_vaga_presencial_ou_hibrida(descricao: str):
+    assert modalidade_incompativel(vaga(descricao=descricao), perfil(modalidade=Modalidade.REMOTO))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    ["Trabalho 100% remoto.", "Regime de home office.", "Fully remote position."],
+)
+def test_remoto_mantem_vaga_remota_de_qualquer_lugar(descricao: str):
+    vaga_remota = vaga(localizacao="Lisboa, Portugal", descricao=descricao)
+    assert not modalidade_incompativel(vaga_remota, perfil(modalidade=Modalidade.REMOTO))
+
+
+def test_remoto_mantem_vaga_sem_modalidade_informada():
+    sem_modalidade = vaga(localizacao="São Paulo, São Paulo", descricao="Vaga de estágio em TI.")
+    assert not modalidade_incompativel(sem_modalidade, perfil(modalidade=Modalidade.REMOTO))
+
+
+def test_remoto_mantem_vaga_que_menciona_presencial_e_remoto():
+    ambigua = vaga(descricao="Presencial ou remoto, a combinar.")
+    assert not modalidade_incompativel(ambigua, perfil(modalidade=Modalidade.REMOTO))
+
+
 def test_filtrar_remove_apenas_vagas_com_motivo_de_descarte():
     limpa = vaga(titulo="Estágio em Desenvolvimento")
     nao_estagio = vaga(titulo="Analista de Suporte")
@@ -156,6 +198,16 @@ def test_filtrar_remove_apenas_vagas_com_motivo_de_descarte():
     )
 
     assert resultado == [limpa]
+
+
+def test_filtrar_para_perfil_remoto_remove_presencial_e_mantem_sem_modalidade():
+    remota = vaga(titulo="Estágio Dev", localizacao="Lisboa, Portugal", descricao="100% remoto.")
+    sem_modalidade = vaga(titulo="Estágio Dev", localizacao="São Paulo, São Paulo")
+    presencial = vaga(titulo="Estágio Dev", descricao="Trabalho presencial.")
+
+    resultado = filtrar([remota, sem_modalidade, presencial], perfil(modalidade=Modalidade.REMOTO))
+
+    assert resultado == [remota, sem_modalidade]
 
 
 def test_filtrar_preserva_ordem_e_aceita_lista_vazia():
