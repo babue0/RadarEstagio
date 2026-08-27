@@ -23,7 +23,7 @@ Adzuna (vagas dos últimos 2 dias)
 Roda de duas formas:
 
 - **No seu computador**, com as suas chaves, mandando para o **seu** Telegram.
-- **Sozinho no GitHub Actions**, todo dia às 08:00 (Brasília), com as chaves cadastradas nos
+- **Sozinho no GitHub Actions**, todo dia às 07:23 (Brasília), com as chaves cadastradas nos
   secrets do repositório, mandando para o Telegram de quem cadastrou.
 
 ## 1. Instalar (na ordem)
@@ -172,7 +172,7 @@ uv run ruff check . && uv run ruff format --check .
 ## 5. Execução automática no GitHub
 
 O arquivo [`.github/workflows/radar-diario.yml`](.github/workflows/radar-diario.yml)
-roda o fluxo completo todo dia às 11:00 UTC (08:00 em Brasília). O horário pode atrasar
+roda o fluxo completo todo dia às 10:23 UTC (07:23 em Brasília). O minuto 23 evita o topo da hora, quando o GitHub costuma pular ou atrasar agendamentos. Mesmo assim o horário pode atrasar
 alguns minutos — é normal no GitHub Actions.
 
 As chaves vêm dos **secrets do repositório** (Settings → Secrets and variables →

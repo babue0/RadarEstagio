@@ -265,7 +265,7 @@ causas: o pré-filtro só avaliava localização para perfil **presencial**, e a
 
 **O que foi feito**
 
-`.github/workflows/radar-diario.yml`: todo dia às 11:00 UTC (08:00 Brasília) e sob demanda
+`.github/workflows/radar-diario.yml`: todo dia às 10:23 UTC (07:23 Brasília) e sob demanda
 (botão *Run workflow*), o GitHub liga uma máquina, baixa o código, instala o `uv` e as
 dependências travadas no `uv.lock`, e roda `uv run python -m radar`. As chaves vêm dos
 secrets do repositório, com os mesmos nomes do `.env`.
@@ -279,6 +279,15 @@ banco na Fase 1: a máquina é destruída ao final de cada execução.
 
 Disparo manual pelo site → job verde → mensagem com vagas reais chegou no Telegram vinda
 da máquina do GitHub.
+
+**O que aprendemos — o cron não é garantido**
+
+No primeiro dia agendado (`0 11 * * *`, 08:00) o GitHub simplesmente não disparou o run:
+a API do repositório mostrava apenas o disparo manual. Não foi erro de código nem de chave —
+o `schedule` do GitHub Actions é "melhor esforço", e o minuto `:00` de hora cheia é o horário
+mais congestionado. Por isso o cron passou para `23 10 * * *` (07:23 em Brasília), fora do
+topo da hora. Quando o horário exato virar requisito (Fase 2), um relógio externo pode disparar
+o workflow pela API do GitHub.
 
 ---
 
