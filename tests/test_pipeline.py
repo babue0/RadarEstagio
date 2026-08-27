@@ -104,6 +104,17 @@ def test_aplica_o_prefiltro_antes_de_avaliar():
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["1"]
 
 
+def test_mesma_vaga_em_duas_fontes_e_avaliada_e_enviada_uma_vez():
+    da_adzuna = vaga(1)
+    da_gupy = vaga(2).model_copy(update={"fonte": "gupy", "empresa": "Empresa 1"})
+
+    selecionadas, notificador, avaliador = rodar([da_adzuna, da_gupy], {"1": 80, "2": 80})
+
+    assert avaliador.avaliadas == ["1"]
+    assert len(selecionadas) == 1
+    assert notificador.textos[0].count("Empresa 1") == 1
+
+
 def test_sem_vagas_envia_mensagem_de_nenhuma_vaga():
     selecionadas, notificador, _ = rodar([], {})
 

@@ -3,6 +3,7 @@ from datetime import date
 
 from radar.domain.models import Perfil, ResultadoMatch
 from radar.domain.ports import AvaliadorDeVagas, ColetorDeVagas, Notificador
+from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.notification.formatador import formatar_mensagem
 
@@ -18,8 +19,14 @@ def executar(
     data: date,
 ) -> list[ResultadoMatch]:
     coletadas = coletor.coletar()
-    candidatas = filtrar(coletadas, perfil)
-    logger.info("%d vagas coletadas, %d após o pré-filtro", len(coletadas), len(candidatas))
+    unicas = remover_duplicatas(coletadas)
+    candidatas = filtrar(unicas, perfil)
+    logger.info(
+        "%d vagas coletadas, %d únicas, %d após o pré-filtro",
+        len(coletadas),
+        len(unicas),
+        len(candidatas),
+    )
     resultados = avaliador.avaliar(candidatas, perfil)
     logger.info("%d de %d vagas avaliadas", len(resultados), len(candidatas))
     selecionadas = ranquear(resultados)[:quantidade]
