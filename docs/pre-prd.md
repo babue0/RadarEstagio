@@ -3,6 +3,9 @@
 **Status:** Fase 1 implementada; validação técnica e de produto em andamento<br>
 **Atualizado em:** 27/08/2026<br>
 **Entrega prevista:** 02/09/2026<br>
+**Disciplina:** Métodos e Aplicações de IA (IBM3116), turma 8001<br>
+**Professor:** Alvaro Riz<br>
+**Integrantes:** Igor Costa, Ian Dias e Miguel Esteves<br>
 **Objetivo:** avaliar a viabilidade do projeto antes da elaboração do PRD<br>
 **Base:** visão do produto, plano do MVP e prova técnica já executada pelo grupo
 
@@ -108,7 +111,9 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 #### Fase 2 — MVP de validação com usuários
 
 - Cadastro estruturado do perfil.
-- Persistência em PostgreSQL/Supabase.
+- Persistência de perfis, vagas e avaliações em PostgreSQL/Supabase.
+- Reutilização da avaliação quando a mesma vaga reaparecer.
+- Explicação mais detalhada da nota sem aumentar a mensagem principal no Telegram.
 - Vínculo seguro entre cadastro e Telegram.
 - Suporte a vários usuários.
 - Pausar, retomar e editar o perfil.
@@ -118,11 +123,38 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 #### Evoluções posteriores
 
 - Mais fontes de vagas.
-- Deduplicação entre fontes.
+- Deduplicação entre execuções e histórico de vagas já vistas.
 - Alertas instantâneos para oportunidades excepcionais.
 - Aprendizado com histórico de feedback.
 - Tendências do mercado e lacunas de competências.
 - Outros cursos e níveis profissionais.
+
+### 5.3 Tecnologias escolhidas
+
+| Tecnologia | Uso no projeto | Motivo da escolha |
+| --- | --- | --- |
+| Python | Implementação do pipeline e das regras | Permite integrar APIs e escrever regras com uma base de código pequena. |
+| uv | Ambiente e dependências | Reproduz o ambiente local e o ambiente do GitHub Actions a partir do arquivo de lock. |
+| Pydantic | Modelos, configurações e saída da IA | Valida dados de entrada, variáveis de ambiente e respostas estruturadas. |
+| httpx | Comunicação HTTP | Atende às integrações externas síncronas usadas pelo MVP. |
+| Adzuna | Fonte oficial de vagas | Possui API documentada e credenciais próprias para consulta. |
+| Gupy | Segunda fonte de vagas | Aumenta a cobertura e fornece descrições e modalidade mais completas, embora o endpoint não seja oficial. |
+| Gemini API | Matching no GitHub Actions | Oferece saída estruturada e camada gratuita suficiente para o volume inicial, com uso de lotes. |
+| AGY | Matching em testes locais | Permite testar o mesmo fluxo localmente sem consumir a cota da API direta. |
+| Telegram Bot API | Entrega das recomendações | Envia mensagens e links sem exigir o desenvolvimento de um aplicativo próprio. |
+| GitHub Actions | Agendamento diário | Executa o pipeline sem servidor dedicado e também permite disparo manual. |
+| pytest e Ruff | Testes e qualidade de código | Detectam regressões e verificam o padrão do código sem acessar serviços reais. |
+| PostgreSQL/Supabase | Persistência planejada para a Fase 2 | Permitirá guardar perfis, vagas e avaliações fora da máquina temporária do Actions. |
+
+### 5.4 Alternativas consideradas
+
+| Alternativa | Decisão |
+| --- | --- |
+| LinkedIn | Descartado porque a plataforma restringe coleta automatizada. |
+| WhatsApp | Adiado por exigir uma integração mais cara e burocrática que o Telegram. |
+| SQLite no GitHub Actions | Descartado porque o arquivo não sobrevive ao fim de cada execução. |
+| Servidor próprio e framework web | Adiados porque o MVP funciona como uma tarefa diária e não precisa expor uma API HTTP. |
+| Uma única fonte de vagas | Substituída pela combinação de Adzuna e Gupy para aumentar a cobertura. |
 
 ## 6. Evidências disponíveis
 
@@ -220,6 +252,7 @@ Para cada item marcado como “A discutir”, o grupo deve responder:
 | Mudança no endpoint não oficial da Gupy | Alto | Média | Risco permanente | Isolar o coletor, registrar falhas e continuar com Adzuna quando a Gupy estiver indisponível. |
 | Cota diária do Gemini | Alto | Alta | Comprovada | Pré-filtrar, avaliar em lotes, interromper ao receber cota excedida e estimar alternativa paga. |
 | Match Score incorreto | Alto | Média | Não validada | Comparação cega com avaliação humana, justificativa explícita e coleta de feedback. |
+| Notas diferentes para a mesma vaga | Médio | Média | Possível sem histórico | Persistir a avaliação e reutilizá-la quando a vaga reaparecer para o mesmo perfil. |
 | Vagas falsas, expiradas ou enganosas | Alto | Média | Não medida | Mostrar fonte e data, sinalizar inconsistências e permitir que o usuário reporte problemas. |
 | Falha silenciosa de coleta | Alto | Média | Parcialmente tratada | Logs, falha visível no GitHub Actions e alerta operacional ao grupo. |
 | Dependência de poucos provedores de vagas | Médio | Média | Parcialmente reduzida | Medir cobertura conjunta e adicionar outra fonte somente se H3 falhar. |
@@ -238,7 +271,7 @@ Oportunidades são caminhos de expansão, não compromissos do MVP.
 ### Curto prazo
 
 - **Early Alert:** antecipar vagas com compatibilidade muito alta.
-- **Explicabilidade:** tornar os fatores do Match Score mais claros.
+- **Explicabilidade:** oferecer mais detalhes sobre a nota sem aumentar a mensagem principal no Telegram.
 - **Métricas reais:** mostrar coleta, filtragem, avaliações, cliques e candidaturas na apresentação.
 - **Parcerias acadêmicas:** testar o Radar com colegas e centrais de carreira.
 
@@ -390,7 +423,8 @@ O grupo deve avançar ao PRD quando:
 4. Até 01/09: definir as três métricas e os prints ou logs que entrarão na apresentação.
 5. Em 01/09: congelar o escopo, revisar o documento e ensaiar a demonstração.
 6. Em 02/09: entregar a Fase 1 com as evidências obtidas e declarar como pendentes as hipóteses de produto ainda não testadas.
-7. Após a entrega: entrevistar estudantes, concluir H1 a H6 e elaborar o PRD somente para a fase aprovada.
+7. Após a entrega: projetar a explicação detalhada da nota e a persistência de vagas e avaliações.
+8. Depois: entrevistar estudantes, concluir H1 a H6 e elaborar o PRD somente para a fase aprovada.
 
 ---
 
