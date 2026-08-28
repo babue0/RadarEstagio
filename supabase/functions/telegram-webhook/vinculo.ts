@@ -16,7 +16,7 @@ export interface PedidoDeVinculo {
 }
 
 export const RESPOSTA_VINCULADO =
-  "Telegram vinculado! Você vai receber as vagas compatíveis com o seu perfil todos os dias.";
+  "Telegram vinculado! Você vai receber as vagas compatíveis com o seu perfil todos os dias de manhã.";
 export const RESPOSTA_TOKEN_INVALIDO =
   "Link inválido. Abra o site do Radar de Estágio e clique de novo em vincular o Telegram.";
 export const RESPOSTA_SEM_TOKEN =
