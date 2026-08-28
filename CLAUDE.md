@@ -124,7 +124,8 @@ grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os pe
 
 O front é responsabilidade de outra pessoa e a stack dele é livre. O contrato entre o
 site e o `radar/` é o schema do banco no Supabase: o site escreve `perfis`, o `radar/` lê
-`perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro.
+`perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
+contrato completo para o front está em `docs/contrato-front.md`.
 
 ### Seleção do avaliador de IA
 

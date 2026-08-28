@@ -251,6 +251,9 @@ que já foi enviado. É o que permite vários usuários e evita repetir vaga ent
 
 ## 7. Webhook do vínculo com o Telegram (opcional, Fase 2)
 
+Quem faz o site deve ler [`docs/contrato-front.md`](docs/contrato-front.md): o que gravar
+em `perfis`, permissões e o botão do Telegram.
+
 Com o banco, o `chat_id` de cada usuário passa a ser gravado pelo próprio Telegram: o site
 abre `t.me/RadarEstagio_bot?start=<token_vinculo>` e o bot chama a Edge Function
 [`supabase/functions/telegram-webhook/`](supabase/functions/telegram-webhook/), que grava o
