@@ -8,7 +8,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 - O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
-- Protótipo visual do painel da Fase 3: [`web/README.md`](web/README.md)
+- Landing page e decisões de frontend: [`web/README.md`](web/README.md)
 
 ## Como funciona
 
@@ -31,6 +31,25 @@ Roda de duas formas:
 - **No seu computador**, com as suas chaves, mandando para o **seu** Telegram.
 - **Sozinho no GitHub Actions**, todo dia às 07:23 (Brasília), com as chaves cadastradas nos
   secrets do repositório.
+
+## Frontend
+
+O escopo confirmado do frontend é uma landing page que apresenta o Radar e coleta o perfil do
+estudante. Não há dashboard planejado no momento: a experiência recorrente continua concentrada
+no Telegram.
+
+Decisões atuais:
+
+- HTML, CSS e JavaScript, sem framework ou etapa de build;
+- formulário com nome, e-mail, curso, período, habilidades, cidade e modalidade preferida;
+- integração futura com o backend Python por HTTP;
+- vínculo com o Telegram por link do bot contendo token temporário, sem pedir `@username` ou
+  `chat_id` no formulário;
+- React, Next.js ou outro framework só serão avaliados novamente se surgir uma necessidade real
+  de interface mais complexa.
+
+Enquanto a integração não existe, o protótipo salva o perfil apenas no `localStorage` do
+navegador e não envia dados pela rede. Veja instruções e detalhes em [`web/README.md`](web/README.md).
 
 ## 1. Instalar (na ordem)
 
@@ -242,5 +261,5 @@ radar/
   __main__.py    comandos de linha de comando
 supabase/        migrations do banco (schema versionado)
 tests/           testes automatizados (pytest)
-web/             protótipo visual do painel da Fase 3 (HTML/CSS/JS estático, sem back-end)
+web/             landing page e cadastro demonstrativo (HTML/CSS/JS estático, sem back-end)
 ```

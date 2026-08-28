@@ -1,44 +1,36 @@
-# Painel web — protótipo visual
+# Landing page — Radar de Estágio
 
-Mockup navegável do painel da **Fase 3** (roadmap em [`../docs/proposta.md`](../docs/proposta.md)).
-Serve para discutir layout e fluxo com o grupo antes de comprometer arquitetura.
+Landing page responsiva do projeto, com apresentação da proposta e fluxo de cadastro do perfil.
 
-**Não é o produto.** Não tem back-end, não faz requisição nenhuma e nenhuma ação tem
-efeito real — os dados em [`assets/data.js`](assets/data.js) são fictícios. O código do
-`radar/` não depende deste diretório e não é afetado por ele.
+## Experiência
+
+- comunica o problema e a promessa do Radar na primeira dobra;
+- demonstra como uma recomendação chega no Telegram;
+- explica coleta, matching e entrega em três passos;
+- explicita que modalidade ausente não é inferida pela localização;
+- oferece um único CTA para cadastro;
+- coleta nome, e-mail, curso, período, habilidades, cidade e modalidade em duas etapas.
+
+Enquanto a API de perfis não existe, o cadastro é salvo apenas no `localStorage` do navegador,
+na chave `radar-perfil`. Nenhum dado é enviado pela rede.
 
 ## Como abrir
 
-Abra `web/index.html` no navegador (duplo clique) ou sirva a pasta:
-
 ```bash
-python -m http.server -d web 8000
+uv run python -m http.server 8000 -d web
 ```
 
-E acesse <http://localhost:8000>.
+Acesse <http://localhost:8000>. Também é possível abrir `index.html` diretamente no navegador.
 
-## O que tem
+O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a stack do produto final.
 
-HTML/CSS/JS puro, sem build e sem dependências. Roteamento por hash (`#/hoje`,
-`#/historico`, ...).
+## Decisões de frontend
 
-| Tela | Conteúdo |
-|---|---|
-| Hoje | Vagas do dia ranqueadas, nota e motivo da IA, alerta de pegadinha, curtir/descartar |
-| Histórico | Vagas de dias anteriores, com filtros |
-| Mercado | Estatísticas: habilidades pedidas, modalidade, empresas |
-| Perfil | Formulário do perfil (hoje fixo em `radar/domain/perfil_fixo.py`) |
-| Configurações | Entrega no Telegram, janela de busca, fontes de vagas |
-
-## Decisões de UI
-
-- Escala de espaçamento única (`--space-1..8`) e tokens de cor em `assets/styles.css`;
-  sem valores soltos.
-- Cor por tipo de ação, consistente: azul = primária, vermelho = destrutiva; avisos em
-  verde (sucesso), âmbar (atenção) e vermelho (erro).
-- Localização sempre visível: título da tela, trilha (breadcrumb) e item de menu ativo.
-- Todo clicável tem cor/`cursor: pointer`/estado de foco; nada de ação sem retorno
-  (toasts em `aria-live`).
-- Ícones sempre com rótulo de texto ao lado; um único set (linha, estilo Lucide) inline
-  no `index.html`.
-- Tema claro/escuro seguindo o do sistema, com alternância manual.
+- O escopo atual é uma landing page com cadastro, não um dashboard.
+- A implementação usa HTML, CSS e JavaScript, sem framework, build ou dependências.
+- O formulário será conectado ao backend Python por HTTP quando existir persistência de perfis.
+- O front não pedirá `@username` nem `chat_id` do Telegram.
+- Após salvar o perfil, o backend deverá devolver um link do bot com token temporário. Ao abrir
+  esse link, o comando `/start` vinculará o usuário real do Telegram ao perfil cadastrado.
+- React, Next.js, Astro, roteador e biblioteca de estado só serão reconsiderados se o escopo do
+  frontend crescer de forma concreta.
