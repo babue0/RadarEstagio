@@ -383,6 +383,35 @@ avaliações e 5 envios. Segunda execução logo depois: 20 candidatas (as 5 env
 
 ---
 
+## Passo 10 — Webhook do vínculo com o Telegram (Fase 2)
+
+**O que foi feito**
+
+- `supabase/functions/telegram-webhook/`: Edge Function em Deno. `index.ts` recebe o POST do
+  Telegram, rejeita chamadas sem o header `X-Telegram-Bot-Api-Secret-Token` correto,
+  atualiza `perfis.telegram_chat_id` onde `token_vinculo` bate e responde ao usuário no chat.
+  `vinculo.ts` isola a regra pura (extrair token e `chat_id` da mensagem), coberta por
+  `vinculo_test.ts` (`deno test`).
+- `supabase/config.toml` com `verify_jwt = false` para essa função: quem chama é o Telegram,
+  sem sessão do Supabase.
+- Publicada com `supabase functions deploy`, segredos via `supabase secrets set` e webhook
+  registrado com `setWebhook` (`secret_token`, `allowed_updates=["message"]`).
+
+**Por quê**
+
+Fecha o fluxo "criou conta → clicou no botão → recebe mensagem" sem digitar `chat_id` no
+painel. Não depende do site: o link `t.me/RadarEstagio_bot?start=<token_vinculo>` funciona
+com o token copiado da tabela.
+
+**Como foi testado**
+
+7 testes da regra pura. Real, em 28/08/2026: `telegram_chat_id` apagado no painel, link
+aberto com o `token_vinculo`, bot respondeu "Telegram vinculado!" e `verificar` voltou a
+mostrar 1 usuário ativo com Telegram vinculado. Descoberto no caminho que o username real do
+bot é `RadarEstagio_bot`, corrigido nos docs.
+
+---
+
 ## Números finais do MVP
 
 - 9 passos, ~40 commits atômicos em Conventional Commits.

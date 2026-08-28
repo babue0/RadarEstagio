@@ -33,7 +33,7 @@ feedback curtir/descartar, painel web.
   entram nas fases seguintes. LinkedIn está fora de escopo (bloqueia coleta automatizada).
 - **IA de matching**: Google Gemini (modelos Flash), com dois adapters: Gemini Developer
   API para CI/produção e Antigravity CLI (`agy`) para testes locais.
-- **Notificação**: Telegram Bot API. Bot: `RadarEstagioBot`.
+- **Notificação**: Telegram Bot API. Bot: `RadarEstagio_bot`.
 - **Agendamento**: GitHub Actions (cron diário), repositório público.
 - **Persistência**: PostgreSQL gerenciado (Supabase), opcional: com `DATABASE_URL` o job
   lê os usuários do banco e guarda vagas, notas e envios; sem ela roda com o perfil fixo e
@@ -117,7 +117,7 @@ mais claro que uma conversa; editar depois é abrir a página; o bot continua se
 sem máquina de conversa; o Supabase já resolve conta (Auth) e banco de uma vez.
 
 Fluxo: o usuário cria a conta no site → preenche o perfil (editável) → clica no botão do
-Telegram, que abre `t.me/RadarEstagioBot?start=<token>` com um token único da conta →
+Telegram, que abre `t.me/RadarEstagio_bot?start=<token>` com um token único da conta →
 o Telegram chama o webhook (Edge Function do Supabase) com `/start <token>` → a função
 grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os perfis com
 `chat_id` do banco no lugar do `perfil_fixo` e envia uma mensagem por usuário.
@@ -217,8 +217,13 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 - MVP completo. Pendências: nota mínima para entrar na mensagem; cota do Gemini para
   vários usuários (billing ou Claude); decisão do grupo sobre `.agents/skills`.
 - Passo 9 (Fase 2) no código: banco Supabase opcional (`DATABASE_URL`), pipeline por
-  usuário, `Usuario` no domínio, `storage/`. Próximos: webhook do `/start` (Edge Function)
-  para gravar o `chat_id`, depois o site (outra pessoa faz o front).
+  usuário, `Usuario` no domínio, `storage/`.
+- Passo 10 (Fase 2): webhook do `/start` em `supabase/functions/telegram-webhook/` (Edge
+  Function em Deno/TypeScript, fora do `radar/`), publicada com `supabase functions deploy`
+  e registrada no Telegram por `setWebhook` com `secret_token`; segredos
+  `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` em `supabase secrets`. Testada de ponta a
+  ponta em 28/08/2026. Com o webhook ativo, `getUpdates` deixa de funcionar nesse bot.
+  Próximo: o site (outra pessoa faz o front).
 - Contas criadas e credenciais configuradas no `.env` local (Adzuna e Telegram; Gemini
   somente quando `AVALIADOR=gemini_api`). O `.env` nunca é commitado; o GitHub Actions usa
   os secrets do repositório e o adapter padrão `gemini_api`.

@@ -221,7 +221,7 @@ Necessárias a partir do Passo 2 (manual), 4 (manual), 5 (manual) e 7 (obrigató
 |---|---|---|
 | Adzuna | developer.adzuna.com | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` |
 | Gemini | aistudio.google.com → API keys | `GEMINI_API_KEY` |
-| Telegram | @BotFather → `/newbot` → `RadarEstagioBot` | `TELEGRAM_BOT_TOKEN` |
+| Telegram | @BotFather → `/newbot` → `RadarEstagio_bot` | `TELEGRAM_BOT_TOKEN` |
 | Chat ID | mandar `/start` pro bot e abrir `https://api.telegram.org/bot<token>/getUpdates` | `TELEGRAM_CHAT_ID` |
 
 Os testes unitários de todos os passos rodam **sem** chave alguma; só as verificações manuais dependem delas.

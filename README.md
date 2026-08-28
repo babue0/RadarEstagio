@@ -136,6 +136,8 @@ Você cria o **seu próprio bot** — cada pessoa tem o seu, com o próprio toke
 
    Procure `"chat":{"id":123456789,...}`. Esse número é o `TELEGRAM_CHAT_ID`.
    Se aparecer `"result":[]`, mande `/start` de novo e recarregue a página.
+   Se aparecer erro 409, é porque esse bot tem webhook registrado (seção 7); nesse caso o
+   `chat_id` vem pelo vínculo, não por aqui.
 
 ## 3. Configurar o `.env`
 
@@ -247,6 +249,35 @@ que já foi enviado. É o que permite vários usuários e evita repetir vaga ent
 5. `uv run python -m radar verificar` deve mostrar `Banco: conectado, N usuários ativos`.
 6. Para o Actions usar o banco, crie o secret `DATABASE_URL`.
 
+## 7. Webhook do vínculo com o Telegram (opcional, Fase 2)
+
+Com o banco, o `chat_id` de cada usuário passa a ser gravado pelo próprio Telegram: o site
+abre `t.me/RadarEstagio_bot?start=<token_vinculo>` e o bot chama a Edge Function
+[`supabase/functions/telegram-webhook/`](supabase/functions/telegram-webhook/), que grava o
+`chat_id` no perfil daquele token. Só quem administra o bot precisa fazer isto, uma vez:
+
+1. Invente um segredo (`openssl rand -hex 24`) e coloque em `TELEGRAM_WEBHOOK_SECRET` no
+   `.env`. O Telegram manda esse valor em toda chamada e a função rejeita quem não o tem.
+2. Publique a função e os segredos:
+
+   ```bash
+   supabase functions deploy telegram-webhook
+   supabase secrets set TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=...
+   ```
+
+3. Registre o webhook (troque `<TOKEN>`, `<REF>` e `<SEGREDO>`):
+
+   ```
+   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<REF>.supabase.co/functions/v1/telegram-webhook&secret_token=<SEGREDO>
+   ```
+
+   `getWebhookInfo` no lugar de `setWebhook` mostra se ficou registrado.
+4. Para testar sem o site: no Table Editor, copie o `token_vinculo` do seu perfil, apague o
+   `telegram_chat_id`, abra `https://t.me/RadarEstagio_bot?start=<token>` e aperte Start.
+   O bot responde "Telegram vinculado!" e a coluna volta preenchida.
+
+Os testes da função rodam com `deno test` dentro da pasta (`brew install deno`).
+
 ## Estrutura do código
 
 ```
@@ -259,7 +290,7 @@ radar/
   storage/       repositórios: Postgres (Supabase) ou em memória (perfil fixo)
   pipeline.py    orquestra coleta → filtro → avaliação → envio, por usuário
   __main__.py    comandos de linha de comando
-supabase/        migrations do banco (schema versionado)
+supabase/        migrations do banco (schema versionado) e a Edge Function do webhook
 tests/           testes automatizados (pytest)
 web/             landing page e cadastro demonstrativo (HTML/CSS/JS estático, sem back-end)
 ```

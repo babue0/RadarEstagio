@@ -231,10 +231,12 @@ Tudo abaixo entra **sem reescrever** o que existe — só adicionando na borda:
 - **Cadastro no site**: o usuário cria conta (Supabase Auth) e preenche/edita o perfil em
   um formulário, gravado direto no banco. O front é feito por outra pessoa, em stack
   própria; o contrato entre as partes é o schema do banco, não uma API do `radar/`.
-- **Vínculo com o Telegram**: o site abre `t.me/RadarEstagioBot?start=<token>` com um
-  token único do usuário. O Telegram chama um **webhook** (Edge Function do Supabase) no
-  `/start`, que troca o token pelo `chat_id` e grava no perfil. O bot continua só
-  enviando mensagens; nada de `python-telegram-bot` nem processo escutando.
+- ~~**Vínculo com o Telegram**~~ — feito (Passo 10). O site abre
+  `t.me/RadarEstagio_bot?start=<token>` com o `token_vinculo` do usuário; o Telegram chama a
+  Edge Function `supabase/functions/telegram-webhook/`, que confere o segredo do webhook,
+  troca o token pelo `chat_id` e grava no perfil. A função fica fora do `radar/` (Deno é a
+  plataforma das Edge Functions) e só tem uma regra pura testada (`vinculo.ts`). O bot
+  continua só enviando mensagens; nada de `python-telegram-bot` nem processo escutando.
 - **Mais fontes**: Vagas.com/InfoJobs (scraping) — cada uma é uma classe em `collectors/`
   cumprindo `ColetorDeVagas`, registrada na factory e em `FONTES`.
 - **Cota da IA**: billing no Gemini (centavos por mês) ou `AvaliadorClaude` em `matching/`.
