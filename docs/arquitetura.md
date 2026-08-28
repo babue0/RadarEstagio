@@ -6,7 +6,8 @@ caminho. O histórico passo a passo está em [`passos-realizados.md`](passos-rea
 ## Em uma frase
 
 Um script Python, disparado uma vez por dia pelo GitHub Actions, que coleta vagas, filtra,
-avalia com IA e envia uma mensagem no Telegram — **sem servidor e sem banco de dados**.
+avalia com IA e envia uma mensagem no Telegram para cada usuário — **sem servidor**; o banco
+(Supabase) é opcional e fica atrás de uma interface.
 
 ## O fluxo
 
@@ -18,7 +19,9 @@ avalia com IA e envia uma mensagem no Telegram — **sem servidor e sem banco de
    ~35 vagas        ~33 vagas       ~20 vagas       2 requisições      5 vagas        1 mensagem
 ```
 
-Cada caixa é uma camada independente. O `pipeline.py` só liga uma na outra.
+Cada caixa é uma camada independente. O `pipeline.py` só liga uma na outra. Com banco, as
+três últimas caixas rodam uma vez por usuário, e o `storage/` entra antes de avaliar (o que
+já tem nota e o que já foi enviado) e depois de enviar (grava vagas, notas e envios).
 
 ## As camadas
 
@@ -29,6 +32,7 @@ radar/
   filtering/     dedupe e regras baratas antes da IA
   matching/      IA: prompt, cliente, lotes    → cumpre AvaliadorDeVagas
   notification/  formatar e enviar a mensagem  → cumpre Notificador
+  storage/       usuários, notas e envios      → cumpre Repositorio (Postgres ou memória)
   pipeline.py    orquestra; sem lógica própria
   __main__.py    linha de comando; monta as peças reais
   settings.py    variáveis de ambiente
@@ -36,8 +40,9 @@ radar/
 
 ### `domain/` — o que o sistema *é*
 
-Três entidades (`Vaga`, `Perfil`, `ResultadoMatch`) e três contratos (`ColetorDeVagas`,
-`AvaliadorDeVagas`, `Notificador`). Nada aqui sabe que Adzuna, Gemini ou Telegram existem.
+Quatro entidades (`Vaga`, `Perfil`, `Usuario`, `ResultadoMatch`) e os contratos
+(`ColetorDeVagas`, `AvaliadorDeVagas`, `Notificador`, `RepositorioDeUsuarios`,
+`RepositorioDeAvaliacoes`). Nada aqui sabe que Adzuna, Gemini ou Telegram existem.
 
 A regra de dependência é uma só: **tudo aponta para o domínio; o domínio não aponta para
 nada.** `collectors/` importa de `domain/`; `domain/` nunca importa de `collectors/`.
@@ -83,10 +88,10 @@ guardar um arquivo entre um dia e outro. Então:
   e o job precisaria de permissão de escrita.
 - `actions/cache`: não é durável, sofre evicção.
 
-Na Fase 1 o filtro por data da Adzuna (últimos 2 dias) faz o papel de dedupe. Na Fase 2
-entra **PostgreSQL no Supabase** — que a proposta já previa para o painel web, então adotar
+Na Fase 1 o filtro por data (`DIAS_RECENTES`) faz o papel de dedupe. Na Fase 2 entrou
+**PostgreSQL no Supabase** — que a proposta já previa para o painel web, então adotar
 agora evita migrar duas vezes. MySQL foi considerado e não oferece vantagem (JSON pior,
-opções gratuitas piores).
+opções gratuitas piores). Ver a decisão 10.
 
 ### 2. Sem framework web
 
@@ -177,6 +182,26 @@ que muda é a informação que chega ao avaliador.
 `Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
 quando existe e só recorre a regex no texto quando a fonte não informa.
 
+### 10. Banco atrás de interface, com objeto nulo
+
+O `pipeline.py` fala com um `Repositorio` (`domain/ports.py`) e nunca com o Postgres. Há
+duas implementações em `storage/`: `RepositorioPostgres` (SQL puro com `psycopg`, sem ORM)
+e `RepositorioEmMemoria`, que devolve o perfil fixo e não guarda nada. `abrir_repositorio`
+escolhe pela presença de `DATABASE_URL`. O pipeline tem um único caminho: não existe
+`if banco` em lugar nenhum fora da factory.
+
+Regras para não afetar quem já usa:
+
+- **Ler usuários é a única falha fatal.** Erro ao enviar para um usuário ou ao gravar depois
+  do envio vira `warning` e o job segue para o próximo. Enviar é o produto; gravar é otimização.
+- **Transação por usuário**: vagas, notas e envios daquele usuário entram juntos ou não entram.
+- **Schema versionado** em `supabase/migrations/`, aplicado com `supabase db push`. É o
+  contrato com o site: ninguém altera tabela pelo painel.
+- **RLS** em todas as tabelas. Só `perfis` tem policy (cada usuário lê e edita a própria
+  linha, para o site com a chave anônima). O job usa a string de conexão do Postgres, que
+  ignora RLS, e ela só existe no `.env` e nos secrets.
+- **Conexão pelo Session pooler** do Supabase: o runner do Actions só tem IPv4.
+
 ## Como cada ferramenta se encaixa
 
 | Ferramenta | Papel | Por que essa |
@@ -202,10 +227,7 @@ quando existe e só recorre a regex no texto quando a fonte não informa.
 
 Tudo abaixo entra **sem reescrever** o que existe — só adicionando na borda:
 
-- **Banco (Supabase/PostgreSQL)**: `storage/` implementando um repositório definido em
-  `domain/`. Histórico de vagas enviadas (dedupe real) e perfis dos usuários.
-- **Vários usuários**: o pipeline roda uma vez e avalia por perfil; `chat_id` vem do banco,
-  não do `.env`.
+- ~~**Banco (Supabase/PostgreSQL)** e **vários usuários**~~ — feito (Passo 9, decisão 10).
 - **Cadastro no site**: o usuário cria conta (Supabase Auth) e preenche/edita o perfil em
   um formulário, gravado direto no banco. O front é feito por outra pessoa, em stack
   própria; o contrato entre as partes é o schema do banco, não uma API do `radar/`.

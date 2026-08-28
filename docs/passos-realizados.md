@@ -345,6 +345,38 @@ disparar o workflow no GitHub.
 
 ---
 
+## Passo 9 — Banco no Supabase e vários usuários (Fase 2)
+
+**O que foi feito**
+
+- `domain/`: entidade `Usuario` (id, perfil, `chat_id`) e contratos `RepositorioDeUsuarios`
+  e `RepositorioDeAvaliacoes`; `Notificador.enviar` recebe o `chat_id`.
+- `supabase/migrations/0001_tabelas_iniciais.sql`: `perfis` (com `token_vinculo` e
+  `telegram_chat_id` já preparados para o webhook), `vagas`, `avaliacoes`, `envios`; RLS em
+  todas, policy só em `perfis`.
+- `storage/postgres.py` (`psycopg`, SQL puro, transação por usuário, erros viram
+  `ErroDeArmazenamento`), `storage/memoria.py` (objeto nulo com o perfil fixo) e
+  `storage/factory.py` (`abrir_repositorio`, decide por `DATABASE_URL`).
+- `pipeline.py`: coleta e dedupe uma vez; por usuário, pré-filtra, tira o que ele já recebeu,
+  avalia só o que não tem nota guardada, envia para o `chat_id` dele e grava. Erro no Telegram
+  ou ao gravar de um usuário é aviso; os outros seguem.
+- `DATABASE_URL` no `Settings` e no workflow; `TELEGRAM_CHAT_ID` só é obrigatório sem banco.
+
+**Por quê**
+
+É o pré-requisito de tudo da Fase 2: o site grava perfis, o webhook grava o `chat_id`, o job
+lê os usuários. De quebra resolve duas dores do MVP: vaga não repete entre dias e a mesma
+vaga não volta ao Gemini (cota).
+
+**Como foi testado**
+
+Testes unitários de pipeline (dois usuários, erro isolado, vaga já enviada, nota guardada,
+falha ao gravar), memória e factory; `tests/test_storage_postgres.py` roda contra um Postgres
+real quando `DATABASE_URL_TESTE` está definido e é pulado no CI. Sem `DATABASE_URL`, `verificar`
+mostra "Banco: nenhum (perfil fixo)" e o comportamento é o mesmo do MVP.
+
+---
+
 ## Números finais do MVP
 
 - 9 passos, ~40 commits atômicos em Conventional Commits.

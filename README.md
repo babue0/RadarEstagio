@@ -21,11 +21,16 @@ Adzuna + Gupy (vagas dos últimos 2 dias)
   → envia a mensagem no Telegram
 ```
 
+Com banco configurado (`DATABASE_URL`), o mesmo fluxo roda **para cada usuário** cadastrado
+no Supabase: pré-filtro com o perfil dele, sem repetir vaga que ele já recebeu, sem mandar ao
+Gemini vaga que já tem nota guardada, e a mensagem vai para o Telegram dele. Sem banco, usa o
+perfil fixo do código e o `TELEGRAM_CHAT_ID` do `.env`.
+
 Roda de duas formas:
 
 - **No seu computador**, com as suas chaves, mandando para o **seu** Telegram.
 - **Sozinho no GitHub Actions**, todo dia às 07:23 (Brasília), com as chaves cadastradas nos
-  secrets do repositório, mandando para o Telegram de quem cadastrou.
+  secrets do repositório.
 
 ## 1. Instalar (na ordem)
 
@@ -146,6 +151,7 @@ Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatóri
 | `FONTES` | `adzuna,gupy` | fontes consultadas, separadas por vírgula |
 | `DIAS_RECENTES` | `2` | busca vagas publicadas nos últimos N dias |
 | `QUANTIDADE_VAGAS_ENVIADAS` | `5` | quantas vagas vão na mensagem |
+| `DATABASE_URL` | vazio | string do Supabase; vazio = perfil fixo, sem histórico (seção 6) |
 
 O `.env` está no `.gitignore` e nunca vai para o GitHub.
 
@@ -184,8 +190,9 @@ O `schedule` nativo do GitHub Actions foi removido: ficou dois dias sem disparar
 
 As chaves vêm dos **secrets do repositório** (Settings → Secrets and variables →
 Actions), com exatamente os mesmos nomes do `.env`: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`,
-`GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Só existe um conjunto de
-secrets por repositório, então a mensagem diária vai para o Telegram de quem os cadastrou.
+`GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` e, com banco, `DATABASE_URL`.
+Sem `DATABASE_URL`, a mensagem diária vai para o Telegram de quem cadastrou o
+`TELEGRAM_CHAT_ID`; com ele, vai para cada usuário do banco.
 
 Para disparar na hora (teste ou demo):
 
@@ -195,17 +202,45 @@ Para disparar na hora (teste ou demo):
 4. Em ~1 minuto o job fica verde e a mensagem chega no Telegram. Se ficar vermelho, abra
    o passo **Executar o radar** para ver o erro.
 
+## 6. Banco de dados (opcional, Fase 2)
+
+O banco guarda os perfis dos usuários (com o `chat_id` de cada um), as vagas, as notas e o
+que já foi enviado. É o que permite vários usuários e evita repetir vaga entre dias.
+
+1. Crie um projeto em <https://supabase.com> (região São Paulo) e guarde a senha do banco.
+2. Instale a CLI e ligue-a ao projeto:
+
+   ```bash
+   brew install supabase/tap/supabase
+   supabase login
+   supabase link --project-ref <ref do projeto>
+   supabase db push
+   ```
+
+   O `db push` aplica [`supabase/migrations/`](supabase/migrations/) e cria as tabelas
+   `perfis`, `vagas`, `avaliacoes` e `envios`. Nunca crie ou altere tabelas pelo painel:
+   a migration é o contrato entre o site e o radar.
+3. Em **Project Settings → Database**, copie a string **Session pooler** (o GitHub Actions só
+   tem IPv4) e coloque em `DATABASE_URL` no `.env`.
+4. Enquanto o site não existe, cadastre um usuário na mão: **Authentication → Add user** e,
+   no **Table Editor**, uma linha em `perfis` com `user_id` desse usuário, o perfil e
+   `telegram_chat_id`. Perfil sem `telegram_chat_id` ou com `ativo = false` é ignorado.
+5. `uv run python -m radar verificar` deve mostrar `Banco: conectado, N usuários ativos`.
+6. Para o Actions usar o banco, crie o secret `DATABASE_URL`.
+
 ## Estrutura do código
 
 ```
 radar/
-  domain/        entidades (Vaga, Perfil, ResultadoMatch), contratos e perfil fixo do MVP
+  domain/        entidades (Vaga, Perfil, Usuario, ResultadoMatch), contratos e perfil fixo
   collectors/    coleta de vagas (Adzuna, Gupy) e o composto que soma as fontes
   filtering/     remoção de duplicatas e pré-filtro por regras, antes da IA
   matching/      prompt, cliente do Gemini e avaliação em lotes
   notification/  formatação da mensagem e envio no Telegram
-  pipeline.py    orquestra coleta → filtro → avaliação → envio
+  storage/       repositórios: Postgres (Supabase) ou em memória (perfil fixo)
+  pipeline.py    orquestra coleta → filtro → avaliação → envio, por usuário
   __main__.py    comandos de linha de comando
+supabase/        migrations do banco (schema versionado)
 tests/           testes automatizados (pytest)
 web/             protótipo visual do painel da Fase 3 (HTML/CSS/JS estático, sem back-end)
 ```

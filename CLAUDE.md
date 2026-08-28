@@ -35,8 +35,10 @@ feedback curtir/descartar, painel web.
   API para CI/produção e Antigravity CLI (`agy`) para testes locais.
 - **Notificação**: Telegram Bot API. Bot: `RadarEstagioBot`.
 - **Agendamento**: GitHub Actions (cron diário), repositório público.
-- **Persistência**: nenhuma na Fase 1. A partir da Fase 2, PostgreSQL gerenciado
-  (Supabase). SQLite foi descartado — ver "Decisões técnicas".
+- **Persistência**: PostgreSQL gerenciado (Supabase), opcional: com `DATABASE_URL` o job
+  lê os usuários do banco e guarda vagas, notas e envios; sem ela roda com o perfil fixo e
+  sem histórico. Acesso por `psycopg` com SQL puro; schema em `supabase/migrations/`.
+  SQLite foi descartado — ver "Decisões técnicas".
 - **Contas e chaves de API**: configuradas por variáveis de ambiente (`.env`, nunca
   commitado).
 
@@ -51,8 +53,9 @@ Arquitetura limpa, separando por responsabilidade:
 - `matching/` — adapters de IA e lógica de pontuação/justificativa. `factory.py` escolhe
   entre `AvaliadorGemini` e `AvaliadorAgy`; ambos implementam `AvaliadorDeVagas`.
 - `notification/` — formatação e envio de mensagens (Telegram).
-- `storage/` — acesso a dados, isolado atrás de uma interface de repositório definida no
-  `domain/`. Não existe na Fase 1; entra na Fase 2 com PostgreSQL.
+- `storage/` — acesso a dados atrás dos contratos `RepositorioDeUsuarios` e
+  `RepositorioDeAvaliacoes` do `domain/`: `postgres.py` (Supabase) e `memoria.py` (objeto
+  nulo com o perfil fixo). `factory.py` escolhe pela presença de `DATABASE_URL`.
 - `pipeline.py` (ou equivalente) — orquestra coleta → dedupe → pré-filtro → matching →
   entrega, sem conter lógica de negócio própria.
 
@@ -84,14 +87,18 @@ das fontes.
 MySQL foi considerado e não oferece vantagem neste caso: suporte a JSON mais limitado e
 opções gerenciadas gratuitas piores que as de PostgreSQL.
 
-A Fase 1 não usa banco algum. Dedupe e histórico só entram na Fase 2, e o filtro por data
-da Adzuna já restringe o resultado a vagas recentes.
+A Fase 1 não usava banco. O Passo 9 (Fase 2) adicionou o Supabase como opcional: tabelas
+`perfis`, `vagas`, `avaliacoes` e `envios`, todas com RLS; só `perfis` tem policy (para o
+site). O pipeline só conhece `Repositorio`; a falha de leitura dos usuários é a única fatal,
+erros ao enviar ou gravar de um usuário viram aviso. Nunca alterar tabela pelo painel — só
+por migration em `supabase/migrations/`.
 
 ### Bibliotecas
 
 Sem framework web: a aplicação é um script disparado por cron, não um serviço HTTP.
 
-- `httpx` para chamadas HTTP (Adzuna e Telegram)
+- `httpx` para chamadas HTTP (Adzuna, Gupy e Telegram)
+- `psycopg` 3 para o PostgreSQL, SQL puro, sem ORM
 - `google-genai` para o Gemini
 - `agy` (dependência externa local) para executar o Antigravity CLI em modo headless
 - `pydantic` para as entidades do `domain/` e para tipar a saída estruturada da IA
@@ -209,6 +216,9 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   fontes: fica a versão que informa modalidade e, em empate, a de descrição mais longa.
 - MVP completo. Pendências: nota mínima para entrar na mensagem; cota do Gemini para
   vários usuários (billing ou Claude); decisão do grupo sobre `.agents/skills`.
+- Passo 9 (Fase 2) no código: banco Supabase opcional (`DATABASE_URL`), pipeline por
+  usuário, `Usuario` no domínio, `storage/`. Próximos: webhook do `/start` (Edge Function)
+  para gravar o `chat_id`, depois o site (outra pessoa faz o front).
 - Contas criadas e credenciais configuradas no `.env` local (Adzuna e Telegram; Gemini
   somente quando `AVALIADOR=gemini_api`). O `.env` nunca é commitado; o GitHub Actions usa
   os secrets do repositório e o adapter padrão `gemini_api`.
