@@ -1,149 +1,203 @@
 <!doctype html>
-<html lang="pt-BR" data-tema="auto">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Radar de Estágio — Painel (mockup)</title>
-    <meta
-      name="description"
-      content="Protótipo visual do painel web da Fase 3 do Radar de Estágio. Dados fictícios, sem back-end."
-    />
+    <meta name="theme-color" content="#101b18" />
+    <title>Radar de Estágio — As vagas certas chegam até você</title>
+    <meta name="description" content="O Radar de Estágio encontra, compara e envia pelo Telegram as vagas que mais combinam com o seu perfil." />
+    <meta property="og:title" content="Radar de Estágio — As vagas certas chegam até você" />
+    <meta property="og:description" content="Cadastre seu perfil uma vez. O Radar encontra, compara e entrega as melhores vagas de estágio no Telegram." />
     <link rel="stylesheet" href="assets/styles.css" />
+    <script src="assets/app.js" defer></script>
   </head>
   <body>
-    <div class="faixa-mockup" role="note">
-      Protótipo visual — dados fictícios, nenhuma ação tem efeito real
-    </div>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
 
-    <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
-
-    <header class="barra-topo">
-      <a class="marca" href="#/hoje" aria-label="Radar de Estágio, ir para Hoje">
-        <svg class="icone icone-lg" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-radar"></use></svg>
-        <span class="marca-nome">Radar de Estágio</span>
-      </a>
-
-      <form class="busca" role="search" onsubmit="return false">
-        <svg class="icone busca-icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-busca"></use></svg>
-        <input
-          type="search"
-          id="busca-global"
-          placeholder="Buscar vaga, empresa ou skill (ex.: React, Nubank)"
-          aria-label="Buscar"
-        />
-      </form>
-
-      <button class="botao-icone" id="alternar-tema" type="button" aria-label="Alternar tema claro e escuro">
-        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tema"></use></svg>
-      </button>
-
-      <a class="usuario" href="#/perfil" aria-label="Abrir seu perfil">
-        <span class="avatar" aria-hidden="true">MF</span>
-        <span class="usuario-nome">Miguel F.</span>
-      </a>
-
-      <button class="botao-icone menu-alternar" id="alternar-menu" type="button" aria-label="Abrir menu">
-        <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-menu"></use></svg>
-      </button>
+    <header class="site-header" id="inicio">
+      <div class="container header-inner">
+        <a class="brand" href="#inicio" aria-label="Radar de Estágio, início">
+          <span class="radar-mark" aria-hidden="true"><i></i></span>
+          <span>Radar<span>Estágio</span></span>
+        </a>
+        <nav class="desktop-nav" aria-label="Navegação principal">
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#vantagens">Vantagens</a>
+          <a href="#sobre">Sobre</a>
+        </nav>
+        <button class="button button-small js-open-signup" type="button">Cadastrar meu perfil</button>
+      </div>
     </header>
 
-    <div class="corpo">
-      <nav class="menu-lateral" id="menu-lateral" aria-label="Navegação principal">
-        <a class="menu-item" href="#/hoje" data-rota="hoje">
-          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-hoje"></use></svg>
-          <span>Hoje</span>
-        </a>
-        <a class="menu-item" href="#/historico" data-rota="historico">
-          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-historico"></use></svg>
-          <span>Histórico</span>
-        </a>
-        <a class="menu-item" href="#/mercado" data-rota="mercado">
-          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mercado"></use></svg>
-          <span>Mercado</span>
-        </a>
-        <a class="menu-item" href="#/perfil" data-rota="perfil">
-          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-perfil"></use></svg>
-          <span>Perfil</span>
-        </a>
-        <a class="menu-item" href="#/configuracoes" data-rota="configuracoes">
-          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-config"></use></svg>
-          <span>Configurações</span>
-        </a>
-      </nav>
+    <main id="conteudo">
+      <section class="hero">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="container hero-layout">
+          <div class="hero-copy">
+            <p class="eyebrow"><span></span> Seu radar diário de oportunidades</p>
+            <h1>Pare de procurar estágio. <em>Deixe as vagas certas encontrarem você.</em></h1>
+            <p class="hero-lead">Cadastre seu perfil uma vez. O Radar monitora novas vagas, compara cada oportunidade com você e envia as melhores no Telegram — já ranqueadas e explicadas.</p>
+            <div class="hero-actions">
+              <button class="button button-primary button-large js-open-signup" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button>
+              <p>Leva cerca de 2 minutos · gratuito nesta fase</p>
+            </div>
+            <ul class="trust-list" aria-label="Diferenciais do Radar">
+              <li><span aria-hidden="true">✓</span> Sem candidatura automática</li>
+              <li><span aria-hidden="true">✓</span> Você entende cada recomendação</li>
+            </ul>
+          </div>
 
-      <main class="conteudo" id="conteudo" tabindex="-1">
-        <nav class="trilha" id="trilha" aria-label="Você está aqui"></nav>
-        <div id="tela"></div>
-      </main>
-    </div>
+          <div class="hero-demo" aria-label="Exemplo de recomendação enviada pelo Radar">
+            <div class="orbit orbit-one" aria-hidden="true"></div>
+            <div class="orbit orbit-two" aria-hidden="true"></div>
+            <article class="telegram-card">
+              <header class="telegram-header">
+                <div class="bot-avatar"><span class="radar-mark radar-mark-small" aria-hidden="true"><i></i></span></div>
+                <div><strong>Radar de Estágio</strong><span>bot</span></div>
+                <time>08:00</time>
+              </header>
+              <div class="message-bubble">
+                <div class="message-kicker">MELHOR OPORTUNIDADE DE HOJE</div>
+                <div class="match-row">
+                  <div><h2>Estágio em Desenvolvimento</h2><p>Empresa de tecnologia · Remoto</p></div>
+                  <div class="score"><strong>92</strong><span>match</span></div>
+                </div>
+                <div class="match-reason"><span aria-hidden="true">✦</span><p><strong>Por que combina:</strong> Python, SQL e Git estão no seu perfil. A vaga aceita estudantes a partir do 3º período.</p></div>
+                <div class="message-tags"><span>Python</span><span>SQL</span><span>Remoto</span></div>
+                <div class="fake-link">Ver vaga e se candidatar <span aria-hidden="true">↗</span></div>
+              </div>
+              <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+            </article>
+            <div class="floating-note note-top"><strong>2 fontes</strong><span>em um só lugar</span></div>
+            <div class="floating-note note-bottom"><strong>0–100</strong><span>nota explicada</span></div>
+          </div>
+        </div>
+      </section>
 
-    <div class="avisos" id="avisos" aria-live="polite" aria-atomic="false"></div>
+      <section class="proof-strip" aria-label="Tecnologias e fontes">
+        <div class="container proof-inner">
+          <p>Feito para quem busca o <strong>primeiro estágio em tecnologia</strong></p>
+          <div class="proof-items"><span>ADZUNA</span><span>GUPY</span><span>GEMINI</span><span>TELEGRAM</span></div>
+        </div>
+      </section>
 
-    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
-      <defs>
-        <g id="i-radar" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19.07 4.93A10 10 0 0 0 6.99 3.34" /><path d="M4 6h.01" />
-          <path d="M2.29 9.62A10 10 0 1 0 21.31 8.35" /><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67" />
-          <path d="M12 18h.01" /><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67" />
-          <circle cx="12" cy="12" r="2" /><path d="m13.41 10.59 5.66-5.66" />
-        </g>
-        <g id="i-busca" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-        </g>
-        <g id="i-hoje" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22V12h6v10" />
-        </g>
-        <g id="i-historico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" />
-        </g>
-        <g id="i-mercado" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
-        </g>
-        <g id="i-perfil" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-        </g>
-        <g id="i-config" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-          <circle cx="12" cy="12" r="3" />
-        </g>
-        <g id="i-tema" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" />
-          <path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
-        </g>
-        <g id="i-menu" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 12h16" /><path d="M4 6h16" /><path d="M4 18h16" />
-        </g>
-        <g id="i-link-externo" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-        </g>
-        <g id="i-curtir" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
-        </g>
-        <g id="i-descartar" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
-        </g>
-        <g id="i-alerta" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" />
-        </g>
-        <g id="i-check" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6 9 17l-5-5" />
-        </g>
-        <g id="i-x" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-        </g>
-        <g id="i-seta" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m9 18 6-6-6-6" />
-        </g>
-        <g id="i-local" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" />
-        </g>
-        <g id="i-enviar" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" /><path d="m21.854 2.147-10.94 10.939" />
-        </g>
-      </defs>
-    </svg>
+      <section class="problem section" id="vantagens">
+        <div class="container">
+          <div class="section-heading split-heading">
+            <p class="eyebrow"><span></span> Menos busca. Mais candidaturas certas.</p>
+            <h2>Procurar estágio não deveria ser um segundo emprego.</h2>
+            <p>Vagas espalhadas, filtros genéricos e descrições confusas fazem você perder horas com oportunidades que nem combinam com seu momento.</p>
+          </div>
+          <div class="benefit-grid">
+            <article class="benefit-card card-dark"><span class="card-index">01</span><div class="card-icon" aria-hidden="true">⌁</div><h3>Um lugar, várias fontes</h3><p>O Radar reúne novas vagas de diferentes portais e remove anúncios repetidos antes de avaliar.</p></article>
+            <article class="benefit-card card-lime"><span class="card-index">02</span><div class="card-icon" aria-hidden="true">✦</div><h3>Compatibilidade explicada</h3><p>A IA compara curso, período, habilidades, cidade e modalidade — e mostra por que a vaga faz sentido.</p></article>
+            <article class="benefit-card card-paper"><span class="card-index">03</span><div class="card-icon" aria-hidden="true">↗</div><h3>Chegue antes</h3><p>As oportunidades mais relevantes chegam direto no Telegram, prontas para você decidir e se candidatar.</p></article>
+          </div>
+        </div>
+      </section>
 
-    <script src="assets/data.js"></script>
-    <script src="assets/app.js"></script>
+      <section class="how section" id="como-funciona">
+        <div class="container how-layout">
+          <div class="how-copy">
+            <p class="eyebrow eyebrow-light"><span></span> Como funciona</p>
+            <h2>Você conta quem é. O Radar faz o trabalho repetitivo.</h2>
+            <p>Do perfil à recomendação em três passos simples — sem precisar abrir dezenas de abas todo dia.</p>
+            <button class="text-link js-open-signup" type="button">Ativar meu Radar <span aria-hidden="true">→</span></button>
+          </div>
+          <ol class="steps">
+            <li><span class="step-number">01</span><div><h3>Cadastre seu perfil</h3><p>Informe curso, período, habilidades, cidade e preferência de modalidade.</p></div></li>
+            <li><span class="step-number">02</span><div><h3>O Radar monitora</h3><p>Novas vagas são coletadas, deduplicadas e comparadas ao seu perfil.</p></div></li>
+            <li><span class="step-number">03</span><div><h3>Você recebe as melhores</h3><p>Até cinco oportunidades chegam no Telegram com nota, pontos positivos e alertas.</p></div></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="transparency section">
+        <div class="container transparency-layout">
+          <div class="signal-panel" aria-hidden="true">
+            <div class="signal-rings"><span></span><span></span><span></span><i></i></div>
+            <div class="signal-label label-one">Habilidade compatível</div>
+            <div class="signal-label label-two">Localização verificada</div>
+            <div class="signal-label label-three">Modalidade não informada</div>
+          </div>
+          <div class="transparency-copy">
+            <p class="eyebrow"><span></span> IA que não inventa certezas</p>
+            <h2>Recomendação boa também sabe dizer “não informado”.</h2>
+            <p>Quando uma fonte não informa se a vaga é remota, híbrida ou presencial, o Radar deixa isso claro. A cidade do anúncio nunca vira uma suposição sobre modalidade.</p>
+            <ul>
+              <li><span>✓</span> Pontos a favor e contra em linguagem direta</li>
+              <li><span>✓</span> Alertas para exigências incompatíveis</li>
+              <li><span>✓</span> Link original para você conferir e decidir</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="final-cta section" id="sobre">
+        <div class="container final-card">
+          <div><p class="eyebrow eyebrow-light"><span></span> Seu próximo estágio pode abrir amanhã</p><h2>Deixe o Radar procurar enquanto você se prepara.</h2></div>
+          <div class="final-action"><button class="button button-primary button-large js-open-signup" type="button">Cadastrar meu perfil <span aria-hidden="true">→</span></button><p>Cadastro gratuito · você poderá editar depois</p></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <a class="brand brand-footer" href="#inicio"><span class="radar-mark" aria-hidden="true"><i></i></span><span>Radar<span>Estágio</span></span></a>
+        <p>Um projeto acadêmico de Igor Costa, Ian Dias e Miguel Esteves.</p>
+        <p>© 2026 Radar de Estágio</p>
+      </div>
+    </footer>
+
+    <dialog class="signup-dialog" id="signup-dialog" aria-labelledby="signup-title">
+      <div class="dialog-shell">
+        <button class="dialog-close" id="close-dialog" type="button" aria-label="Fechar cadastro">×</button>
+        <div class="dialog-intro">
+          <span class="radar-mark radar-mark-dialog" aria-hidden="true"><i></i></span>
+          <p class="eyebrow eyebrow-light"><span></span> Ative seu radar</p>
+          <h2 id="signup-title">Seu perfil deixa cada busca mais certeira.</h2>
+          <p>Preencha uma vez. O sistema usa essas informações para comparar as vagas com o que você procura.</p>
+          <div class="privacy-note"><span aria-hidden="true">●</span> Seus dados ficam salvos apenas neste navegador nesta demonstração.</div>
+        </div>
+        <div class="dialog-form-area">
+          <div class="progress-wrap" aria-label="Progresso do cadastro">
+            <div class="progress-meta"><span id="progress-label">Etapa 1 de 2</span><strong id="progress-percent">50%</strong></div>
+            <div class="progress-track"><span id="progress-bar"></span></div>
+          </div>
+          <form id="signup-form" novalidate>
+            <fieldset class="form-step is-active" data-step="1">
+              <legend>Primeiro, conte sobre você</legend>
+              <p class="step-help">Esses dados identificam seu momento acadêmico.</p>
+              <div class="field-grid">
+                <label class="field field-full"><span>Nome completo</span><input name="nome" autocomplete="name" required placeholder="Como podemos chamar você?" /></label>
+                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
+                <label class="field"><span>Curso</span><input name="curso" required placeholder="Ex.: Sistemas de Informação" /></label>
+                <label class="field"><span>Período atual</span><input name="periodo" type="number" min="1" max="20" required placeholder="Ex.: 4" /></label>
+              </div>
+              <div class="form-actions form-actions-end"><button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button></div>
+            </fieldset>
+            <fieldset class="form-step" data-step="2">
+              <legend>Agora, diga o que você procura</legend>
+              <p class="step-help">Você poderá atualizar essas preferências depois.</p>
+              <div class="field-grid">
+                <label class="field field-full"><span>Habilidades</span><input name="habilidades" required placeholder="Ex.: Python, React, SQL, Git" /><small>Separe por vírgulas.</small></label>
+                <label class="field field-full"><span>Cidade</span><input name="cidade" required placeholder="Ex.: Rio de Janeiro, RJ" /></label>
+                <div class="field field-full"><span>Modalidade preferida</span><div class="option-grid">
+                  <label><input type="radio" name="modalidade" value="remoto" required /><span>Remoto</span></label>
+                  <label><input type="radio" name="modalidade" value="hibrido" /><span>Híbrido</span></label>
+                  <label><input type="radio" name="modalidade" value="presencial" /><span>Presencial</span></label>
+                  <label><input type="radio" name="modalidade" value="indiferente" /><span>Indiferente</span></label>
+                </div></div>
+              </div>
+              <div class="form-actions"><button class="button button-ghost" type="button" id="previous-step">← Voltar</button><button class="button button-primary" type="submit">Salvar meu perfil <span aria-hidden="true">→</span></button></div>
+            </fieldset>
+          </form>
+          <section class="success-state" id="success-state" aria-live="polite" hidden>
+            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> Perfil salvo</p><h2>Seu Radar está pronto para a próxima etapa.</h2><p>Os dados foram salvos neste navegador. Na versão integrada, o próximo passo abrirá o bot com um vínculo seguro e temporário.</p><button class="button button-primary" type="button" id="finish-signup">Concluir demonstração</button>
+          </section>
+        </div>
+      </div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden>Perfil salvo neste navegador.</div>
   </body>
 </html>
