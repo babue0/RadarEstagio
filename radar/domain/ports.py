@@ -33,3 +33,6 @@ class RepositorioDeAvaliacoes(Protocol):
         enviadas: list[ResultadoMatch],
         modelo: str,
     ) -> None: ...
+
+
+class Repositorio(RepositorioDeUsuarios, RepositorioDeAvaliacoes, Protocol): ...

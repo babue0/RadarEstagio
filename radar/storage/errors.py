@@ -1,0 +1,2 @@
+class ErroDeArmazenamento(Exception):
+    pass
