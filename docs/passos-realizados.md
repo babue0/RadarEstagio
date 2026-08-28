@@ -49,7 +49,7 @@ faltantes.
 O domínio é o centro do sistema e não depende de nada externo — nem de Adzuna, nem de Gemini,
 nem de Telegram. Isso permite trocar qualquer fonte, IA ou canal sem tocar aqui.
 
-Perfil fixo porque a Fase 1 tem um único usuário. Cadastro pelo bot é Fase 2.
+Perfil fixo porque a Fase 1 tem um único usuário. Cadastro pelo site é Fase 2.
 
 **Como foi testado**
 

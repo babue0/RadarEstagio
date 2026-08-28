@@ -71,9 +71,11 @@ Todo dia às 8h, sem ninguém pedir, o sistema executa cinco etapas:
 5. **Entrega** — as melhores viram uma mensagem ranqueada no Telegram, com links
    diretos.
 
-O cadastro dispensa formulário: o usuário dá `/start` no bot e conta seu perfil
-conversando; a IA extrai os dados sozinha. Cada membro do grupo cadastra o próprio
-perfil — o projeto já nasce multiusuário, com usuários reais para apresentar.
+O cadastro é feito no site: o usuário cria uma conta, preenche o perfil (curso,
+período, habilidades, cidade, modalidade — editável a qualquer momento) e clica em um
+botão que abre o bot no Telegram já vinculado à sua conta. O bot só entrega mensagens;
+toda a edição de dados fica no site. Cada membro do grupo cadastra o próprio perfil — o
+projeto já nasce multiusuário, com usuários reais para apresentar.
 
 ## 6. Tecnologias, APIs e Custos
 
@@ -139,7 +141,7 @@ Supabase (banco na nuvem) tem plano gratuito suficiente.
 | Inteligência artificial  | Gemini Flash (ou Claude Haiku 4.5)         | R$ 0 (ou ~R$ 25/mês)                 |
 | Notificação              | Bot API do Telegram                        | R$ 0                                 |
 | Agendamento              | GitHub Actions (cron diário)               | R$ 0                                 |
-| Banco de dados           | SQLite (Supabase na fase 3)                | R$ 0                                 |
+| Banco e contas           | Supabase (PostgreSQL + Auth, plano gratuito) | R$ 0                               |
 | **TOTAL**                |                                             | **R$ 0,00/mês (premium: ~R$ 25)**    |
 
 A única cobrança possível do sistema inteiro é a IA — e mesmo ela tem alternativa
@@ -150,7 +152,7 @@ gratuita que atende o projeto.
 - **Fase 1 — MVP (1 fim de semana):** uma fonte de vagas, perfil fixo, matching com
   IA, mensagem no Telegram e agendamento diário. O sistema funcionando de ponta a
   ponta.
-- **Fase 2 — Produto:** mais fontes, banco com histórico e dedupe, cadastro
-  conversacional no bot e suporte a vários usuários.
+- **Fase 2 — Produto:** mais fontes, banco com histórico e dedupe, site com conta e
+  cadastro do perfil, vínculo com o Telegram por botão e suporte a vários usuários.
 - **Fase 3 — Polimento:** comando `/hoje` para resumo sob demanda, feedback
   curtir/descartar que refina o matching e painel web com estatísticas do mercado.

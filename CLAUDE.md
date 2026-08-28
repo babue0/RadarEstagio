@@ -11,7 +11,7 @@ Escopo da Fase 1, conforme roadmap:
 
 - Duas fontes de vagas somadas: Adzuna (API oficial gratuita) e Gupy (API interna do
   portal, sem chave, com modalidade estruturada)
-- Perfil de usuário fixo (sem cadastro conversacional ainda)
+- Perfil de usuário fixo (sem cadastro ainda)
 - Matching de compatibilidade via IA (Gemini API ou Antigravity CLI/AGY)
 - Entrega da mensagem ranqueada no Telegram
 - Agendamento diário via GitHub Actions
@@ -20,8 +20,8 @@ Escopo da Fase 1, conforme roadmap:
   (`DIAS_RECENTES`) evita reenviar vagas antigas
 
 Fora do escopo da Fase 1 (fica para Fase 2/3): Vagas.com/InfoJobs, banco com
-histórico/dedupe entre dias, cadastro conversacional, múltiplos usuários, feedback curtir/descartar,
-painel web.
+histórico/dedupe entre dias, site com conta e cadastro do perfil, múltiplos usuários,
+feedback curtir/descartar, painel web.
 
 ## Stack
 
@@ -98,8 +98,26 @@ Sem framework web: a aplicação é um script disparado por cron, não um servi�
 - `pydantic-settings` para configuração via variáveis de ambiente
 - `ruff` para lint e formatação, `pytest` para testes
 
-`python-telegram-bot` só entra na Fase 2, junto do cadastro conversacional — a Fase 1
-apenas envia mensagens, o que é uma requisição HTTP simples.
+`python-telegram-bot` não entra em fase alguma: o bot só envia mensagens (uma requisição
+HTTP simples). O único evento recebido, o `/start` do vínculo, chega por webhook a uma Edge
+Function do Supabase, fora do `radar/`.
+
+### Cadastro no site, não no bot (Fase 2)
+
+O cadastro conversacional pelo bot foi substituído por um site com conta. Motivos: dados
+de perfil são estruturados (lista de habilidades, período, modalidade) e um formulário é
+mais claro que uma conversa; editar depois é abrir a página; o bot continua sem estado e
+sem máquina de conversa; o Supabase já resolve conta (Auth) e banco de uma vez.
+
+Fluxo: o usuário cria a conta no site → preenche o perfil (editável) → clica no botão do
+Telegram, que abre `t.me/RadarEstagioBot?start=<token>` com um token único da conta →
+o Telegram chama o webhook (Edge Function do Supabase) com `/start <token>` → a função
+grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os perfis com
+`chat_id` do banco no lugar do `perfil_fixo` e envia uma mensagem por usuário.
+
+O front é responsabilidade de outra pessoa e a stack dele é livre. O contrato entre o
+site e o `radar/` é o schema do banco no Supabase: o site escreve `perfis`, o `radar/` lê
+`perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro.
 
 ### Seleção do avaliador de IA
 
