@@ -6,6 +6,8 @@ from radar.settings import Settings
 
 URL_BUSCA = "https://api.adzuna.com/v1/api/jobs/br/search/1"
 FONTE = "adzuna"
+EMPRESA_NAO_INFORMADA = "Empresa não informada"
+LOCALIZACAO_PADRAO = "Brasil"
 TERMO_DE_BUSCA = "estágio"
 CATEGORIA_TECNOLOGIA = "it-jobs"
 RESULTADOS_POR_PAGINA = 50
@@ -41,13 +43,18 @@ class ColetorAdzuna:
         }
 
 
+def nome_exibido(campo: dict | None, padrao: str) -> str:
+    nome = (campo or {}).get("display_name")
+    return nome.strip() if nome and nome.strip() else padrao
+
+
 def converter_em_vaga(item: dict) -> Vaga:
     return Vaga(
         id_externo=str(item["id"]),
         fonte=FONTE,
         titulo=item["title"],
-        empresa=item["company"]["display_name"],
-        localizacao=item["location"]["display_name"],
+        empresa=nome_exibido(item.get("company"), EMPRESA_NAO_INFORMADA),
+        localizacao=nome_exibido(item.get("location"), LOCALIZACAO_PADRAO),
         descricao=item["description"],
         url=item["redirect_url"],
         publicada_em=item["created"],

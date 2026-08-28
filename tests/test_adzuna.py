@@ -55,6 +55,20 @@ def test_converte_resposta_da_adzuna_em_vagas(httpx_mock: HTTPXMock, coletor: Co
     assert primeira.publicada_em == datetime(2026, 8, 25, 18, 49, 50, tzinfo=UTC)
 
 
+def test_vaga_sem_empresa_ou_localizacao_recebe_valores_padrao(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    item = resposta_gravada()["results"][0]
+    item["company"] = {"__CLASS__": "Adzuna::API::Response::Company"}
+    del item["location"]
+    httpx_mock.add_response(json={"results": [item]})
+
+    vaga = coletor.coletar()[0]
+
+    assert vaga.empresa == "Empresa não informada"
+    assert vaga.localizacao == "Brasil"
+
+
 def test_envia_credenciais_e_filtros_na_busca(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
     httpx_mock.add_response(json={"results": []})
 
