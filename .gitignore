@@ -35,3 +35,7 @@ htmlcov/
 
 # Ferramentas
 .ruff_cache/
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
