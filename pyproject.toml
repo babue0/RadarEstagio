@@ -8,6 +8,7 @@ dependencies = [
     "pydantic>=2.11",
     "pydantic-settings>=2.8",
     "google-genai>=1.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [dependency-groups]

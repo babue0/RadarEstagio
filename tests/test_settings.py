@@ -44,3 +44,26 @@ def test_fontes_aceitam_espacos_e_maiusculas():
 def test_fontes_desconhecidas_ou_vazias_sao_rejeitadas(fontes: str):
     with pytest.raises(ValidationError):
         Settings(_env_file=None, **configuracao_base(avaliador="agy", fontes=fontes))
+
+
+def test_sem_banco_exige_chat_id_do_telegram():
+    with pytest.raises(ValidationError, match="TELEGRAM_CHAT_ID"):
+        Settings(_env_file=None, **configuracao_base(avaliador="agy", telegram_chat_id=""))
+
+
+def test_com_banco_o_chat_id_e_opcional():
+    settings = Settings(
+        _env_file=None,
+        **configuracao_base(
+            avaliador="agy", telegram_chat_id="", database_url="postgresql://radar@localhost/radar"
+        ),
+    )
+
+    assert settings.usa_banco()
+    assert settings.telegram_chat_id == ""
+
+
+def test_sem_database_url_nao_usa_banco():
+    settings = Settings(_env_file=None, **configuracao_base(avaliador="agy"))
+
+    assert not settings.usa_banco()

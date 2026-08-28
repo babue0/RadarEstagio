@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     agy_modelo: str = "gemini-3.6-flash-low"
     agy_timeout_segundos: int = Field(default=300, ge=1)
     telegram_bot_token: str = Field(min_length=1)
-    telegram_chat_id: str = Field(min_length=1)
+    telegram_chat_id: str = ""
+    database_url: str = ""
     fontes: str = SEPARADOR_DE_FONTES.join(FONTES_DISPONIVEIS)
     dias_recentes: int = Field(default=2, ge=1)
     quantidade_vagas_enviadas: int = 5
@@ -42,10 +43,19 @@ class Settings(BaseSettings):
     def fontes_selecionadas(self) -> list[str]:
         return separar_fontes(self.fontes)
 
+    def usa_banco(self) -> bool:
+        return bool(self.database_url.strip())
+
     @model_validator(mode="after")
     def exigir_chave_no_modo_gemini_api(self) -> Self:
         if self.avaliador == "gemini_api" and not self.gemini_api_key.strip():
             raise ValueError("GEMINI_API_KEY é obrigatória quando AVALIADOR=gemini_api")
+        return self
+
+    @model_validator(mode="after")
+    def exigir_chat_id_sem_banco(self) -> Self:
+        if not self.usa_banco() and not self.telegram_chat_id.strip():
+            raise ValueError("TELEGRAM_CHAT_ID é obrigatório quando DATABASE_URL está vazio")
         return self
 
 
