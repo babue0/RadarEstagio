@@ -75,7 +75,10 @@ class ColetorGupy:
         return resposta.json()["data"]
 
     def _e_recente(self, item: dict) -> bool:
-        return interpretar_data_de_publicacao(item["publishedDate"]) >= self._publicadas_desde
+        data = item.get("publishedDate")
+        if not data:
+            return False
+        return interpretar_data_de_publicacao(data) >= self._publicadas_desde
 
 
 def converter_em_vaga(item: dict) -> Vaga:

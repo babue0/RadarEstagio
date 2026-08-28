@@ -136,6 +136,15 @@ def test_vaga_antiga_com_data_sem_fuso_e_descartada(httpx_mock: HTTPXMock, colet
     assert coletor.coletar() == []
 
 
+def test_vaga_sem_data_de_publicacao_e_ignorada(httpx_mock: HTTPXMock, coletor: ColetorGupy):
+    sem_data = item(2)
+    del sem_data["publishedDate"]
+    httpx_mock.add_response(json={"data": [item(1), sem_data, item(3, publicada_em=None)]})
+    responder_vazio_aos_demais_termos(httpx_mock, 1)
+
+    assert [vaga.id_externo for vaga in coletor.coletar()] == ["1"]
+
+
 def test_pagina_cheia_e_recente_busca_a_proxima_pagina(httpx_mock: HTTPXMock, coletor: ColetorGupy):
     pagina_cheia = [item(numero) for numero in range(1, RESULTADOS_POR_PAGINA + 1)]
     httpx_mock.add_response(json={"data": pagina_cheia})
