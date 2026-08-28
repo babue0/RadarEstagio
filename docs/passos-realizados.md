@@ -89,7 +89,10 @@ data faz o papel de "dedupe" na Fase 1: só chegam vagas novas.
 - não menciona estágio no título;
 - título pede pleno/sênior/especialista/coordenador;
 - descrição exige 2 a 9 anos de experiência;
-- (só se o perfil for presencial) vaga em outra cidade sem menção a remoto.
+- (só se o perfil for presencial) vaga fora da cidade do perfil. Antes havia uma exceção para
+  texto com "remoto"/"home office", mas ela deixava passar vagas de SP cuja descrição dizia
+  "suporte técnico presencial e remoto"; perfil presencial agora só recebe vagas da sua cidade.
+  A comparação usa só a cidade (antes da vírgula): "Campinas, São Paulo" não é São Paulo.
 
 Texto é normalizado (sem acento, minúsculas) antes de comparar.
 

@@ -132,18 +132,37 @@ def test_presencial_mantem_vaga_na_mesma_cidade():
     assert not localizacao_incompativel(vaga_no_rio, presencial)
 
 
-def test_presencial_descarta_vaga_em_outra_cidade():
+@pytest.mark.parametrize(
+    "localizacao",
+    ["Salvador, Bahia", "Niterói, Rio de Janeiro", "Campinas, Estado de São Paulo", "Brasil"],
+)
+def test_presencial_descarta_vaga_em_outra_cidade(localizacao: str):
     presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
-    assert localizacao_incompativel(vaga(localizacao="Salvador, Bahia"), presencial)
+    assert localizacao_incompativel(vaga(localizacao=localizacao), presencial)
 
 
 @pytest.mark.parametrize(
-    "descricao", ["Trabalho 100% remoto.", "Regime de home office.", "Fully remote position."]
+    "localizacao",
+    ["Rio de Janeiro, Estado do Rio de Janeiro", "rio de janeiro", "RIO DE JANEIRO, RJ"],
 )
-def test_presencial_mantem_vaga_remota_de_outra_cidade(descricao: str):
+def test_presencial_compara_apenas_a_cidade_ignorando_acentos_e_caixa(localizacao: str):
     presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
-    vaga_remota = vaga(localizacao="Salvador, Bahia", descricao=descricao)
-    assert not localizacao_incompativel(vaga_remota, presencial)
+    assert not localizacao_incompativel(vaga(localizacao=localizacao), presencial)
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Trabalho 100% remoto.",
+        "Regime de home office.",
+        "Fully remote position.",
+        "Prestar suporte técnico presencial e remoto aos usuários.",
+    ],
+)
+def test_presencial_descarta_vaga_de_outra_cidade_mesmo_com_texto_remoto(descricao: str):
+    presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
+    vaga_fora = vaga(localizacao="São Paulo, Estado de São Paulo", descricao=descricao)
+    assert localizacao_incompativel(vaga_fora, presencial)
 
 
 @pytest.mark.parametrize(
@@ -188,10 +207,10 @@ def test_remoto_mantem_vaga_marcada_como_remota_pela_fonte_mesmo_com_texto_prese
     assert not modalidade_incompativel(vaga_remota, perfil(modalidade=Modalidade.REMOTO))
 
 
-def test_presencial_mantem_vaga_marcada_como_remota_pela_fonte_em_outra_cidade():
+def test_presencial_descarta_vaga_marcada_como_remota_pela_fonte_em_outra_cidade():
     presencial = perfil(modalidade=Modalidade.PRESENCIAL, cidade="Rio de Janeiro, RJ")
     vaga_remota = vaga(localizacao="Salvador, Bahia", modalidade=Modalidade.REMOTO)
-    assert not localizacao_incompativel(vaga_remota, presencial)
+    assert localizacao_incompativel(vaga_remota, presencial)
 
 
 def test_remoto_mantem_vaga_sem_modalidade_informada():
