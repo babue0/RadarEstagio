@@ -169,10 +169,11 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   divide acima de 4096 caracteres; `notification/telegram.py` envia; verificado com
   `python -m radar testar-telegram`) e pipeline (`pipeline.py`, comando padrão
   `python -m radar`, verificado com envio real de 5 vagas avaliadas pelo Gemini) e
-  agendamento (`.github/workflows/radar-diario.yml`: cron `23 10 * * *` = 07:23 em
-  Brasília + `workflow_dispatch`; os 5 secrets do repositório têm os mesmos nomes das
-  variáveis do `.env`) e README com instalação, chaves, `.env`, comandos e disparo
-  manual do workflow.
+  agendamento (`.github/workflows/radar-diario.yml` só com `workflow_dispatch`; quem
+  dispara às 07:23 em Brasília é um job no cron-job.org chamando a API `dispatches` do
+  GitHub com fine-grained token — o `schedule` nativo ficou 2 dias sem disparar e foi
+  removido; os 5 secrets do repositório têm os mesmos nomes das variáveis do `.env`) e
+  README com instalação, chaves, `.env`, comandos e disparo manual do workflow.
 - Modelo Gemini padrão: `gemini-3.6-flash` (configurável por `GEMINI_MODELO`). O
   `gemini-2.5-flash` foi recusado pela API como indisponível para contas novas.
 - Cota do Gemini: os limites variam por modelo, projeto e janela. Uma execução real recebeu

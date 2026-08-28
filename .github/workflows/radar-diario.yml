@@ -1,8 +1,6 @@
 name: Radar diário
 
 on:
-  schedule:
-    - cron: "23 10 * * *"
   workflow_dispatch:
 
 jobs:

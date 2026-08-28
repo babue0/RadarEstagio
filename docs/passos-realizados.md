@@ -265,8 +265,8 @@ causas: o pré-filtro só avaliava localização para perfil **presencial**, e a
 
 **O que foi feito**
 
-`.github/workflows/radar-diario.yml`: todo dia às 10:23 UTC (07:23 Brasília) e sob demanda
-(botão *Run workflow*), o GitHub liga uma máquina, baixa o código, instala o `uv` e as
+`.github/workflows/radar-diario.yml`: quando disparado (cron externo às 07:23 Brasília ou
+botão *Run workflow*), o GitHub liga uma máquina, baixa o código, instala o `uv` e as
 dependências travadas no `uv.lock`, e roda `uv run python -m radar`. As chaves vêm dos
 secrets do repositório, com os mesmos nomes do `.env`.
 
@@ -286,8 +286,16 @@ No primeiro dia agendado (`0 11 * * *`, 08:00) o GitHub simplesmente não dispar
 a API do repositório mostrava apenas o disparo manual. Não foi erro de código nem de chave —
 o `schedule` do GitHub Actions é "melhor esforço", e o minuto `:00` de hora cheia é o horário
 mais congestionado. Por isso o cron passou para `23 10 * * *` (07:23 em Brasília), fora do
-topo da hora. Quando o horário exato virar requisito (Fase 2), um relógio externo pode disparar
-o workflow pela API do GitHub.
+topo da hora. No segundo dia, às 07:23, também não disparou: 0 runs com evento `schedule`
+em dois dias, sem incidente aberto no GitHub. Solução adotada: o `schedule` saiu do workflow
+e um job no cron-job.org (fuso America/Sao_Paulo, `23 7 * * *`) faz `POST` em
+`/repos/babue0/RadarEstagio/actions/workflows/radar-diario.yml/dispatches` com body
+`{"ref":"main"}` e um fine-grained token (Actions: Read and write). O `workflow_dispatch`
+disparou na hora em todos os testes.
+
+O primeiro disparo externo revelou outro bug: a Gupy devolve alguns itens com `publishedDate`
+só com a data (`"2026-08-27"`), sem fuso, e a comparação com a data-limite em UTC levantava
+`TypeError`. Corrigido em `collectors/gupy.py` tratando data sem fuso como UTC.
 
 ---
 

@@ -176,8 +176,11 @@ uv run ruff check . && uv run ruff format --check .
 ## 5. Execução automática no GitHub
 
 O arquivo [`.github/workflows/radar-diario.yml`](.github/workflows/radar-diario.yml)
-roda o fluxo completo todo dia às 10:23 UTC (07:23 em Brasília). O minuto 23 evita o topo da hora, quando o GitHub costuma pular ou atrasar agendamentos. Mesmo assim o horário pode atrasar
-alguns minutos — é normal no GitHub Actions.
+roda o fluxo completo. Quem dispara todo dia às 07:23 (Brasília) é um cron externo no
+[cron-job.org](https://cron-job.org), que chama a API do GitHub
+(`POST /repos/babue0/RadarEstagio/actions/workflows/radar-diario.yml/dispatches`, body
+`{"ref":"main"}`) com um *fine-grained token* de permissão **Actions: Read and write**.
+O `schedule` nativo do GitHub Actions foi removido: ficou dois dias sem disparar nenhuma vez.
 
 As chaves vêm dos **secrets do repositório** (Settings → Secrets and variables →
 Actions), com exatamente os mesmos nomes do `.env`: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`,
