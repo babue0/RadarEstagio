@@ -13,7 +13,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 ## Como funciona
 
 ```
-Adzuna + Gupy (vagas dos últimos 2 dias)
+Adzuna + Gupy (vagas dos últimos 5 dias)
   → remove duplicatas entre as fontes (título + empresa)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
   → Gemini avalia em lotes: nota 0–100, pontos a favor e contra, alerta de pegadinha
@@ -168,7 +168,7 @@ Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatóri
 | `AGY_MODELO` | `gemini-3.6-flash-low` | modelo usado pelo Antigravity CLI |
 | `AGY_TIMEOUT_SEGUNDOS` | `300` | tempo máximo de uma execução do AGY |
 | `FONTES` | `adzuna,gupy` | fontes consultadas, separadas por vírgula |
-| `DIAS_RECENTES` | `2` | busca vagas publicadas nos últimos N dias |
+| `DIAS_RECENTES` | `5` | busca vagas publicadas nos últimos N dias |
 | `QUANTIDADE_VAGAS_ENVIADAS` | `5` | quantas vagas vão na mensagem |
 | `DATABASE_URL` | vazio | string do Supabase; vazio = perfil fixo, sem histórico (seção 6) |
 

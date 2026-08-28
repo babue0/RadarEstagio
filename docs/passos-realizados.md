@@ -63,7 +63,7 @@ habilidade é rejeitado etc.).
 **O que foi feito**
 
 `radar/collectors/adzuna.py`: `ColetorAdzuna` chama a API oficial buscando `estágio` na
-categoria `it-jobs` do Brasil, publicadas nos últimos `DIAS_RECENTES` dias (padrão 2),
+categoria `it-jobs` do Brasil, publicadas nos últimos `DIAS_RECENTES` dias (padrão 5 desde o banco; era 2),
 50 por página. Converte cada item da resposta em `Vaga`. Erros HTTP e de rede viram
 `ErroDeColeta` com mensagem limpa — sem vazar a chave da API no traceback.
 

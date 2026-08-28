@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     database_url: str = ""
     fontes: str = SEPARADOR_DE_FONTES.join(FONTES_DISPONIVEIS)
-    dias_recentes: int = Field(default=2, ge=1)
+    dias_recentes: int = Field(default=5, ge=1)
     quantidade_vagas_enviadas: int = 5
 
     @field_validator("fontes")
