@@ -13,11 +13,13 @@ from radar.domain.ports import ColetorDeVagas
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.errors import ErroDeAvaliacao
-from radar.matching.factory import criar_avaliador
+from radar.matching.factory import criar_avaliador, nome_do_modelo
 from radar.matching.lotes import AvaliadorEmLotes
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import executar
 from radar.settings import Settings
+from radar.storage.errors import ErroDeArmazenamento
+from radar.storage.factory import abrir_repositorio
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 TIMEOUT_HTTP_EM_SEGUNDOS = 30
@@ -49,6 +51,12 @@ def verificar_configuracao(settings: Settings) -> None:
     print(f"Fontes: {', '.join(settings.fontes_selecionadas())}")
     print(f"Dias recentes: {settings.dias_recentes}")
     print(f"Vagas enviadas por execução: {settings.quantidade_vagas_enviadas}")
+    if not settings.usa_banco():
+        print("Banco: nenhum (perfil fixo)")
+        return
+    with abrir_repositorio(settings) as repositorio:
+        usuarios = repositorio.listar_ativos()
+    print(f"Banco: conectado, {len(usuarios)} usuários ativos com Telegram vinculado")
 
 
 def coletar(settings: Settings) -> None:
@@ -85,7 +93,9 @@ def avaliar(settings: Settings) -> None:
 
 def testar_telegram(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
-        NotificadorTelegram(settings, cliente_http).enviar("Radar OK")
+        NotificadorTelegram(settings.telegram_bot_token, cliente_http).enviar(
+            settings.telegram_chat_id, "Radar OK"
+        )
     print(f"Mensagem enviada para o chat {settings.telegram_chat_id}")
 
 
@@ -98,16 +108,21 @@ def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
 
 
 def rodar(settings: Settings) -> None:
-    with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
-        selecionadas = executar(
+    with (
+        httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http,
+        abrir_repositorio(settings) as repositorio,
+    ):
+        enviadas = executar(
             montar_coletor(settings, cliente_http),
             montar_avaliador(settings),
-            NotificadorTelegram(settings, cliente_http),
-            perfil_do_mvp(),
+            NotificadorTelegram(settings.telegram_bot_token, cliente_http),
+            repositorio,
+            nome_do_modelo(settings),
             settings.quantidade_vagas_enviadas,
             date.today(),
         )
-    print(f"{len(selecionadas)} vagas enviadas para o chat {settings.telegram_chat_id}")
+    total = sum(len(selecionadas) for selecionadas in enviadas.values())
+    print(f"{total} vagas enviadas para {len(enviadas)} usuários")
 
 
 COMANDOS = {
@@ -149,7 +164,7 @@ def main() -> None:
     comando = COMANDOS[argumentos.comando or COMANDO_PADRAO]
     try:
         comando(settings)
-    except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao) as erro:
+    except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         print(erro, file=sys.stderr)
         sys.exit(1)
 

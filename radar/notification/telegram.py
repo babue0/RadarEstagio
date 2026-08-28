@@ -1,7 +1,6 @@
 import httpx
 
 from radar.notification.formatador import dividir_em_mensagens
-from radar.settings import Settings
 
 URL_BASE_DA_API = "https://api.telegram.org"
 
@@ -11,21 +10,20 @@ class ErroDeNotificacao(Exception):
 
 
 class NotificadorTelegram:
-    def __init__(self, settings: Settings, cliente_http: httpx.Client) -> None:
-        self._url_envio = f"{URL_BASE_DA_API}/bot{settings.telegram_bot_token}/sendMessage"
-        self._chat_id = settings.telegram_chat_id
+    def __init__(self, token_do_bot: str, cliente_http: httpx.Client) -> None:
+        self._url_envio = f"{URL_BASE_DA_API}/bot{token_do_bot}/sendMessage"
         self._cliente_http = cliente_http
 
-    def enviar(self, texto: str) -> None:
+    def enviar(self, chat_id: str, texto: str) -> None:
         for mensagem in dividir_em_mensagens(texto):
-            self._enviar_mensagem(mensagem)
+            self._enviar_mensagem(chat_id, mensagem)
 
-    def _enviar_mensagem(self, mensagem: str) -> None:
+    def _enviar_mensagem(self, chat_id: str, mensagem: str) -> None:
         try:
             resposta = self._cliente_http.post(
                 self._url_envio,
                 json={
-                    "chat_id": self._chat_id,
+                    "chat_id": chat_id,
                     "text": mensagem,
                     "parse_mode": "HTML",
                     "disable_web_page_preview": True,
