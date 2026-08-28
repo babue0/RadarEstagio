@@ -1,9 +1,10 @@
 from datetime import datetime
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
 
-from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Vaga
+from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
 from radar.domain.perfil_fixo import perfil_do_mvp
 
 
@@ -72,3 +73,8 @@ def test_perfil_do_mvp_e_valido():
     perfil = perfil_do_mvp()
     assert perfil.modalidade is Modalidade.REMOTO
     assert "Python" in perfil.habilidades
+
+
+def test_usuario_exige_chat_id_preenchido():
+    with pytest.raises(ValidationError):
+        Usuario(id=uuid4(), perfil=perfil_do_mvp(), chat_id="")

@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -29,6 +30,12 @@ class Perfil(BaseModel):
     habilidades: list[str] = Field(min_length=1)
     cidade: str
     modalidade: Modalidade
+
+
+class Usuario(BaseModel):
+    id: UUID
+    perfil: Perfil
+    chat_id: str = Field(min_length=1)
 
 
 class ResultadoMatch(BaseModel):
