@@ -375,6 +375,12 @@ falha ao gravar), memória e factory; `tests/test_storage_postgres.py` roda cont
 real quando `DATABASE_URL_TESTE` está definido e é pulado no CI. Sem `DATABASE_URL`, `verificar`
 mostra "Banco: nenhum (perfil fixo)" e o comportamento é o mesmo do MVP.
 
+Real, em 28/08/2026, com o projeto criado no Supabase e o perfil do usuário nº 1 inserido pelo
+painel: `supabase db push --db-url` criou as 4 tabelas; primeira execução 51 coletadas → 48
+únicas → 25 candidatas → 25 avaliadas → 5 enviadas, e o banco ficou com 25 vagas, 25
+avaliações e 5 envios. Segunda execução logo depois: 20 candidatas (as 5 enviadas saíram),
+20 com nota guardada, **0 chamadas à IA**, 5 enviadas.
+
 ---
 
 ## Números finais do MVP
