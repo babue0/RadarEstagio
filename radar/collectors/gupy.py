@@ -1,6 +1,6 @@
 import html
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 
 import httpx
 
@@ -75,7 +75,7 @@ class ColetorGupy:
         return resposta.json()["data"]
 
     def _e_recente(self, item: dict) -> bool:
-        return datetime.fromisoformat(item["publishedDate"]) >= self._publicadas_desde
+        return interpretar_data_de_publicacao(item["publishedDate"]) >= self._publicadas_desde
 
 
 def converter_em_vaga(item: dict) -> Vaga:
@@ -87,9 +87,16 @@ def converter_em_vaga(item: dict) -> Vaga:
         localizacao=formatar_localizacao(item),
         descricao=limpar_html(item["description"]),
         url=item["jobUrl"],
-        publicada_em=item["publishedDate"],
+        publicada_em=interpretar_data_de_publicacao(item["publishedDate"]),
         modalidade=MODALIDADE_POR_WORKPLACE_TYPE.get(item.get("workplaceType")),
     )
+
+
+def interpretar_data_de_publicacao(texto: str) -> datetime:
+    data = datetime.fromisoformat(texto)
+    if data.tzinfo is None:
+        return data.replace(tzinfo=UTC)
+    return data
 
 
 def formatar_localizacao(item: dict) -> str:

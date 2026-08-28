@@ -118,6 +118,24 @@ def test_descarta_vagas_anteriores_a_data_limite(httpx_mock: HTTPXMock, coletor:
     assert [vaga.id_externo for vaga in coletor.coletar()] == ["1"]
 
 
+def test_data_de_publicacao_sem_fuso_e_tratada_como_utc(
+    httpx_mock: HTTPXMock, coletor: ColetorGupy
+):
+    httpx_mock.add_response(json={"data": [item(1, publicada_em="2026-08-27")]})
+    responder_vazio_aos_demais_termos(httpx_mock, 1)
+
+    vagas = coletor.coletar()
+
+    assert vagas[0].publicada_em == datetime(2026, 8, 27, tzinfo=UTC)
+
+
+def test_vaga_antiga_com_data_sem_fuso_e_descartada(httpx_mock: HTTPXMock, coletor: ColetorGupy):
+    httpx_mock.add_response(json={"data": [item(1, publicada_em="2026-08-19")]})
+    responder_vazio_aos_demais_termos(httpx_mock, 1)
+
+    assert coletor.coletar() == []
+
+
 def test_pagina_cheia_e_recente_busca_a_proxima_pagina(httpx_mock: HTTPXMock, coletor: ColetorGupy):
     pagina_cheia = [item(numero) for numero in range(1, RESULTADOS_POR_PAGINA + 1)]
     httpx_mock.add_response(json={"data": pagina_cheia})
