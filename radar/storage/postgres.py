@@ -65,6 +65,13 @@ SQL_GUARDAR_ENVIO = """
     on conflict (perfil_id, vaga_id) do nothing
 """
 
+SQL_REGISTRAR_ATIVACAO = """
+    update perfis
+    set ativado_em = now()
+    where id = %(perfil_id)s and ativado_em is null
+    returning ativado_em
+"""
+
 
 class RepositorioPostgres:
     def __init__(self, conexao: psycopg.Connection) -> None:
@@ -121,6 +128,7 @@ class RepositorioPostgres:
         enviadas: list[ResultadoMatch],
         modelo: str,
     ) -> None:
+        ativado_agora = False
         try:
             with self._conexao.transaction(), self._conexao.cursor() as cursor:
                 ids_das_vagas = {
@@ -133,10 +141,14 @@ class RepositorioPostgres:
                     )
                 for resultado in enviadas:
                     guardar_envio(cursor, usuario.id, ids_das_vagas[chave(resultado.vaga)])
+                if enviadas:
+                    ativado_agora = registrar_ativacao(cursor, usuario.id)
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao gravar avaliações e envios: {descrever(erro)}"
             ) from erro
+        if ativado_agora:
+            logger.info("Perfil %s ativado pela primeira entrega relevante", usuario.id)
 
 
 def chave(vaga: Vaga) -> tuple[str, str]:
@@ -169,6 +181,10 @@ def guardar_avaliacao(
 
 def guardar_envio(cursor: psycopg.Cursor, perfil_id: UUID, vaga_id: int) -> None:
     cursor.execute(SQL_GUARDAR_ENVIO, {"perfil_id": perfil_id, "vaga_id": vaga_id})
+
+
+def registrar_ativacao(cursor: psycopg.Cursor, perfil_id: UUID) -> bool:
+    return cursor.execute(SQL_REGISTRAR_ATIVACAO, {"perfil_id": perfil_id}).fetchone() is not None
 
 
 def converter_em_usuario(linha: dict) -> Usuario:
