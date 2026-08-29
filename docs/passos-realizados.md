@@ -450,10 +450,32 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ---
 
+## Passo 12 — Evento de ativação e métricas (Fase 2)
+
+**O que foi feito**
+
+- Ativação definida como a primeira entrega aceita pelo Telegram contendo ao menos uma vaga
+  recomendada. Cadastro, confirmação de e-mail, vínculo do Telegram e mensagem sem vagas não
+  contam como ativação.
+- `perfis.ativado_em` registra o evento uma única vez. O pipeline atualiza o campo na mesma
+  transação dos registros em `envios`, somente depois do envio bem-sucedido.
+- A migration `0003_evento_ativacao.sql` cria o campo, retropreenche perfis com histórico e
+  adiciona um índice parcial para consultas dos ativados.
+- `docs/metricas.md` documenta a taxa de ativação em 7 dias, o tempo mediano até o valor e uma
+  consulta de referência para a coorte madura dos últimos 30 dias.
+
+**Como foi testado**
+
+- O teste de integração verifica que uma entrega com vaga ativa o perfil, uma execução sem
+  vaga não ativa e reprocessar a mesma entrega preserva o primeiro timestamp.
+- A suíte local mantém os testes de PostgreSQL condicionados a `DATABASE_URL_TESTE`.
+
+---
+
 ## Números finais do MVP
 
-- 11 passos, ~40 commits atômicos em Conventional Commits.
-- 192 testes automatizados; os testes locais não dependem de serviços externos.
+- 12 passos, ~40 commits atômicos em Conventional Commits.
+- 196 testes coletados: 192 passam localmente e 4 integrações exigem um PostgreSQL de teste.
 - 1 execução diária automática; 2 requisições ao Gemini por execução.
 
 ## Pendências para o grupo decidir
