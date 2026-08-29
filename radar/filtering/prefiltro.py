@@ -9,6 +9,13 @@ PADRAO_ANOS_DE_EXPERIENCIA = re.compile(
     r"(\d+)\s*\+?\s*anos?\s+(?:de\s+)?experiencia"
     r"|experiencia\s+(?:minima\s+)?(?:de\s+)?(\d+)\s*\+?\s*anos?"
 )
+PADRAO_OUTRA_AREA = re.compile(
+    r"\b(?:eletronic[ao]|eletrotecnic[ao]|mecanic[ao]|civil|quimic[ao]|ambiental"
+    r"|fisioterapia|enfermagem|nutricao|psicologia|pedagogia|juridic[ao]|direito"
+    r"|financeir[ao]|contabil|contabilidade|recursos humanos|rh|manufatura|producao"
+    r"|marketing|comercial|vendas|pre-?vendas?|logistica|arquitetura"
+    r"|design de interiores|comercio exterior)\b"
+)
 PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
 ANOS_DE_EXPERIENCIA_QUE_DESCARTAM = range(2, 10)
@@ -25,6 +32,10 @@ def nao_e_estagio(vaga: Vaga) -> bool:
 
 def exige_senioridade(vaga: Vaga) -> bool:
     return PADRAO_SENIORIDADE.search(normalizar(vaga.titulo)) is not None
+
+
+def fora_da_area_de_tecnologia(vaga: Vaga) -> bool:
+    return PADRAO_OUTRA_AREA.search(normalizar(vaga.titulo)) is not None
 
 
 def exige_anos_de_experiencia(vaga: Vaga) -> bool:
@@ -63,6 +74,7 @@ def deve_descartar(vaga: Vaga, perfil: Perfil) -> bool:
     return (
         nao_e_estagio(vaga)
         or exige_senioridade(vaga)
+        or fora_da_area_de_tecnologia(vaga)
         or exige_anos_de_experiencia(vaga)
         or localizacao_incompativel(vaga, perfil)
         or modalidade_incompativel(vaga, perfil)

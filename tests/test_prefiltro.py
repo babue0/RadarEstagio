@@ -7,6 +7,7 @@ from radar.filtering.prefiltro import (
     exige_anos_de_experiencia,
     exige_senioridade,
     filtrar,
+    fora_da_area_de_tecnologia,
     localizacao_incompativel,
     modalidade_incompativel,
     nao_e_estagio,
@@ -116,6 +117,37 @@ def test_descarta_exigencia_de_dois_ou_mais_anos_de_experiencia(descricao: str):
 )
 def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
     assert not exige_anos_de_experiencia(vaga(descricao=descricao))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Técnico em Eletrônica",
+        "Estagiário de Engenharia Mecânica",
+        "Estágio Financeiro - Novo Hamburgo/RS",
+        "Estagio Jurídico",
+        "Estágio RH - Dados",
+        "ESTÁGIO SUPERIOR - ENGENHARIA DE MANUFATURA",
+        "Estágio em Comércio Exterior, Processos e Tecnologia",
+        "Estagiário(a) em Pré-Venda de Soluções de TI",
+    ],
+)
+def test_descarta_titulo_de_outra_area(titulo: str):
+    assert fora_da_area_de_tecnologia(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estágio em Desenvolvimento de Software",
+        "Estágio em Ciência de Dados",
+        "Estagiário de TI - Suporte e Redes",
+        "Estágio - Engenharia de Software",
+        "Estágio em Engenharia da Computação",
+    ],
+)
+def test_mantem_titulo_de_computacao(titulo: str):
+    assert not fora_da_area_de_tecnologia(vaga(titulo=titulo))
 
 
 @pytest.mark.parametrize(
