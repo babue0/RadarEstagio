@@ -1,11 +1,32 @@
 const dialog = document.querySelector("#signup-dialog");
 const form = document.querySelector("#signup-form");
 const successState = document.querySelector("#success-state");
+const progressWrap = document.querySelector(".progress-wrap");
 const progressLabel = document.querySelector("#progress-label");
 const progressPercent = document.querySelector("#progress-percent");
 const progressBar = document.querySelector("#progress-bar");
-const toast = document.querySelector("#toast");
+const formMessage = document.querySelector("#form-message");
+const submitProfile = document.querySelector("#submit-profile");
+const toggleAuthMode = document.querySelector("#toggle-auth-mode");
+const telegramLink = document.querySelector("#telegram-link");
+const pendingProfileKey = "radar-perfil-pendente";
 let currentStep = 1;
+let authMode = "signup";
+let radarClient = null;
+
+function getClient() {
+  if (radarClient) return radarClient;
+  const config = window.RADAR_CONFIG;
+  if (!window.supabase?.createClient || !config?.supabaseUrl || !config?.supabasePublishableKey) {
+    throw new Error(
+      "O cadastro ainda não foi configurado. Informe a chave pública do Supabase em web/config.js.",
+    );
+  }
+  radarClient = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  });
+  return radarClient;
+}
 
 function showStep(step) {
   currentStep = step;
@@ -30,15 +51,45 @@ function validateStep(step) {
   return true;
 }
 
+function setFormMessage(message = "") {
+  formMessage.textContent = message;
+  formMessage.hidden = !message;
+}
+
+function setSubmitting(submitting) {
+  submitProfile.disabled = submitting;
+  if (submitting) {
+    submitProfile.textContent = "Salvando…";
+    return;
+  }
+  submitProfile.textContent = authMode === "signup"
+    ? "Criar conta e continuar →"
+    : "Entrar e continuar →";
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const password = form.elements.senha;
+  password.autocomplete = mode === "signup" ? "new-password" : "current-password";
+  toggleAuthMode.textContent = mode === "signup" ? "Entrar" : "Criar conta";
+  toggleAuthMode.parentElement.firstChild.textContent = mode === "signup"
+    ? "Já possui uma conta? "
+    : "Ainda não possui uma conta? ";
+  setSubmitting(false);
+  setFormMessage();
+}
+
 function resetDialogView() {
   form.hidden = false;
   successState.hidden = true;
-  document.querySelector(".progress-wrap").hidden = false;
+  progressWrap.hidden = false;
+  telegramLink.hidden = true;
+  setFormMessage();
+  setSubmitting(false);
   showStep(1);
 }
 
-function openSignup() {
-  resetDialogView();
+function openDialog() {
   if (typeof dialog.showModal === "function") dialog.showModal();
   else dialog.setAttribute("open", "");
   document.body.style.overflow = "hidden";
@@ -50,42 +101,226 @@ function closeSignup() {
   document.body.style.overflow = "";
 }
 
-function saveProfile(data) {
-  const profile = Object.fromEntries(data.entries());
-  profile.habilidades = profile.habilidades.split(",").map((item) => item.trim()).filter(Boolean);
-  profile.periodo = Number(profile.periodo);
-  profile.salvoEm = new Date().toISOString();
+function profileFromForm() {
+  const data = new FormData(form);
+  return {
+    curso: data.get("curso").trim(),
+    periodo: Number(data.get("periodo")),
+    habilidades: data
+      .get("habilidades")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    cidade: data.get("cidade").trim(),
+    modalidade: data.get("modalidade"),
+  };
+}
+
+function savePendingProfile(profile) {
+  localStorage.setItem(pendingProfileKey, JSON.stringify(profile));
+}
+
+function readPendingProfile() {
   try {
-    localStorage.setItem("radar-perfil", JSON.stringify(profile));
-    return true;
+    return JSON.parse(localStorage.getItem(pendingProfileKey));
   } catch {
-    return false;
+    return null;
   }
 }
 
-document.querySelectorAll(".js-open-signup").forEach((button) => button.addEventListener("click", openSignup));
+function clearPendingProfile() {
+  localStorage.removeItem(pendingProfileKey);
+}
+
+function showSuccess({ kicker, title, copy, token, linked = false }) {
+  form.hidden = true;
+  progressWrap.hidden = true;
+  successState.hidden = false;
+  document.querySelector("#success-kicker").textContent = kicker;
+  document.querySelector("#success-title").textContent = title;
+  document.querySelector("#success-copy").textContent = copy;
+  telegramLink.hidden = !token || linked;
+  if (token && !linked) {
+    const bot = window.RADAR_CONFIG.telegramBot;
+    telegramLink.href = `https://t.me/${bot}?start=${token}`;
+  }
+  const target = telegramLink.hidden
+    ? document.querySelector("#finish-signup")
+    : telegramLink;
+  target.focus();
+}
+
+function showConfirmation(email) {
+  showSuccess({
+    kicker: "Confirme seu e-mail",
+    title: "Falta só confirmar sua conta.",
+    copy: `Enviamos um link para ${email}. Abra-o neste navegador para salvar o perfil e ativar o Telegram.`,
+  });
+}
+
+function showActivation(profile) {
+  if (profile.telegram_chat_id) {
+    showSuccess({
+      kicker: "Radar ativado",
+      title: "As vagas certas já podem chegar até você.",
+      copy: "Seu Telegram está vinculado. O Radar enviará as oportunidades compatíveis nas próximas execuções.",
+      linked: true,
+    });
+    return;
+  }
+  showSuccess({
+    kicker: "Perfil salvo",
+    title: "Agora, ative as entregas.",
+    copy: "Vincule seu Telegram para receber as vagas selecionadas pelo Radar.",
+    token: profile.token_vinculo,
+  });
+}
+
+async function currentSession() {
+  const { data, error } = await getClient().auth.getSession();
+  if (error) throw error;
+  return data.session;
+}
+
+async function loadProfile(userId) {
+  const { data, error } = await getClient()
+    .from("perfis")
+    .select("curso,periodo,habilidades,cidade,modalidade,telegram_chat_id,token_vinculo,ativo")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function persistProfile(userId, profile) {
+  const existing = await loadProfile(userId);
+  const fields = { ...profile, atualizado_em: new Date().toISOString() };
+  const query = existing
+    ? getClient().from("perfis").update(fields).eq("user_id", userId)
+    : getClient().from("perfis").insert({ user_id: userId, ...profile });
+  const { data, error } = await query
+    .select("curso,periodo,habilidades,cidade,modalidade,telegram_chat_id,token_vinculo,ativo")
+    .single();
+  if (error) throw error;
+  clearPendingProfile();
+  return data;
+}
+
+async function authenticate(email, password) {
+  if (authMode === "login") {
+    const { data, error } = await getClient().auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data.session;
+  }
+  const emailRedirectTo = window.location.href.split("#")[0].split("?")[0];
+  const { data, error } = await getClient().auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo },
+  });
+  if (error) throw error;
+  if (data.user?.identities?.length === 0) {
+    const login = await getClient().auth.signInWithPassword({ email, password });
+    if (login.error) throw login.error;
+    return login.data.session;
+  }
+  return data.session;
+}
+
+async function refreshActivationStatus() {
+  try {
+    const session = await currentSession();
+    if (!session) return;
+    const profile = await loadProfile(session.user.id);
+    if (profile?.telegram_chat_id) showActivation(profile);
+  } catch {
+    document.querySelector("#success-copy").textContent =
+      "O Telegram foi aberto, mas ainda não conseguimos confirmar o vínculo. Tente voltar a esta janela novamente.";
+  }
+}
+
+async function openSignup() {
+  resetDialogView();
+  openDialog();
+  try {
+    const session = await currentSession();
+    if (!session) return;
+    form.elements.email.value = session.user.email ?? "";
+    const profile = await loadProfile(session.user.id);
+    if (profile) showActivation(profile);
+  } catch (error) {
+    setFormMessage(error.message);
+  }
+}
+
+async function resumeConfirmedSignup() {
+  const pending = readPendingProfile();
+  if (!pending) return;
+  try {
+    const session = await currentSession();
+    if (!session) return;
+    openDialog();
+    const profile = await persistProfile(session.user.id, pending);
+    showActivation(profile);
+  } catch (error) {
+    resetDialogView();
+    openDialog();
+    setFormMessage(error.message);
+  }
+}
+
+document.querySelectorAll(".js-open-signup").forEach((button) => {
+  button.addEventListener("click", openSignup);
+});
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
+document.querySelector("#finish-signup").addEventListener("click", closeSignup);
 document.querySelector("#previous-step").addEventListener("click", () => showStep(1));
 document.querySelector("#next-step").addEventListener("click", () => {
   if (validateStep(1)) showStep(2);
 });
-document.querySelector("#finish-signup").addEventListener("click", () => {
-  closeSignup();
-  toast.hidden = false;
-  window.setTimeout(() => { toast.hidden = true; }, 3600);
+toggleAuthMode.addEventListener("click", () => {
+  setAuthMode(authMode === "signup" ? "login" : "signup");
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!validateStep(2)) return;
-  const saved = saveProfile(new FormData(form));
-  form.hidden = true;
-  document.querySelector(".progress-wrap").hidden = true;
-  successState.hidden = false;
-  successState.querySelector("p:last-of-type").textContent = saved
-    ? "Os dados foram salvos neste navegador. Na versão integrada, o próximo passo abrirá o bot com um vínculo seguro e temporário."
-    : "O navegador bloqueou o armazenamento local, mas o fluxo de cadastro foi concluído. Nenhuma informação foi enviada.";
-  successState.querySelector("#finish-signup").focus();
+  const email = form.elements.email.value.trim();
+  const password = form.elements.senha.value;
+  const profile = profileFromForm();
+  setFormMessage();
+  setSubmitting(true);
+  try {
+    savePendingProfile(profile);
+    const existingSession = await currentSession();
+    if (existingSession && existingSession.user.email !== email) {
+      const { error } = await getClient().auth.signOut();
+      if (error) throw error;
+    }
+    const session = existingSession?.user.email === email
+      ? existingSession
+      : await authenticate(email, password);
+    form.elements.senha.value = "";
+    if (!session) {
+      showConfirmation(email);
+      return;
+    }
+    const savedProfile = await persistProfile(session.user.id, profile);
+    showActivation(savedProfile);
+  } catch (error) {
+    setFormMessage(error.message);
+  } finally {
+    setSubmitting(false);
+  }
+});
+
+telegramLink.addEventListener("click", () => {
+  window.setTimeout(refreshActivationStatus, 1500);
+});
+
+window.addEventListener("focus", () => {
+  if (!dialog.open || telegramLink.hidden) return;
+  refreshActivationStatus();
 });
 
 dialog.addEventListener("click", (event) => {
@@ -100,3 +335,5 @@ document.addEventListener("keydown", (event) => {
     if (validateStep(1)) showStep(2);
   }
 });
+
+resumeConfirmedSignup();
