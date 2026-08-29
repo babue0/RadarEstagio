@@ -215,8 +215,12 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 - Melhoria pós-MVP: `Vaga.modalidade` (opcional) preenchida pela Gupy; o pré-filtro decide
   por ela quando existe e só usa regex no texto quando a fonte não informa. Duplicata entre
   fontes: fica a versão que informa modalidade e, em empate, a de descrição mais longa.
-- MVP completo. Pendências: nota mínima para entrar na mensagem; cota do Gemini para
+- MVP completo. Pendências: cota do Gemini para
   vários usuários (billing ou Claude); decisão do grupo sobre `.agents/skills`.
+- Qualidade da mensagem (29/08/2026): `NOTA_MINIMA` (padrão 60) corta vagas fracas da
+  mensagem — sem aprovadas, vai "Nenhuma vaga compatível"; o pré-filtro descarta título de
+  área claramente fora de computação (`fora_da_area_de_tecnologia`); o prompt define
+  "área de tecnologia" como computação e exclui engenharias tradicionais explicitamente.
 - Passo 9 (Fase 2) no código: banco Supabase opcional (`DATABASE_URL`), pipeline por
   usuário, `Usuario` no domínio, `storage/`.
 - Passo 10 (Fase 2): webhook do `/start` em `supabase/functions/telegram-webhook/` (Edge
