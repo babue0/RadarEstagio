@@ -1,5 +1,5 @@
 window.RADAR_CONFIG = {
-  supabaseUrl: "https://bnzogphdvpubtkcflcue.supabase.co",
-  supabasePublishableKey: "sb_publishable_o_m3Zq1R8HdPMRqIbmxGWw_XqWCdSHj",
+  supabaseUrl: "https://xrhvjwemmylwbqgluebc.supabase.co",
+  supabasePublishableKey: "sb_publishable_iLQRMJXuxPImT8t2SCfdrQ__CEqqjV5",
   telegramBot: "RadarEstagio_bot",
 };

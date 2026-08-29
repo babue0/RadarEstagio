@@ -229,12 +229,14 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   login por e-mail/senha, retomada depois da confirmação de e-mail, deep link do Telegram e
   detecção do vínculo ao voltar para a página. A migration `0002_permissoes_frontend.sql`
   restringe a escrita dos campos de vínculo ao webhook. Projeto atual:
-  `bnzogphdvpubtkcflcue`. Pendências externas: configurar redirect do Auth para
-  `http://localhost:8000` e alinhar a `DATABASE_URL` do job.
+  `xrhvjwemmylwbqgluebc` (`sa-east-1`). A `DATABASE_URL` do Actions já usa esse banco;
+  pendência externa: configurar o redirect do Auth para `http://localhost:8000`.
 - Passo 12 (Fase 2): ativação definida como a primeira entrega bem-sucedida com ao menos uma
   vaga recomendada. `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`;
   `docs/metricas.md` define taxa de ativação em 7 dias e tempo mediano até o valor. A migration
-  `0003_evento_ativacao.sql` foi aplicada ao projeto Supabase atual em 28/08/2026.
+  `0003_evento_ativacao.sql` foi aplicada ao projeto Supabase atual em 29/08/2026.
+- O projeto `bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano e não deve ser usado.
+  Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.
 - Contas criadas e credenciais configuradas no `.env` local (Adzuna e Telegram; Gemini
   somente quando `AVALIADOR=gemini_api`). O `.env` nunca é commitado; o GitHub Actions usa
   os secrets do repositório e o adapter padrão `gemini_api`.

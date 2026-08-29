@@ -433,7 +433,8 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 **Como foi testado**
 
 - A API de Auth do projeto atual respondeu com sucesso usando a chave publicável.
-- As migrations `0001` e `0002` foram executadas pelo SQL Editor; a tabela `perfis` existe e
+- As migrations `0001`, `0002` e `0003` foram aplicadas no projeto de produção
+  `xrhvjwemmylwbqgluebc` (`sa-east-1`); a tabela `perfis` existe e
   uma consulta anônima é rejeitada.
 - `tests/test_frontend_activation.py` verifica a ordem de carregamento, a presença do fluxo de
   Auth, a persistência em `perfis`, o deep link e a proteção dos campos de vínculo.
@@ -445,10 +446,12 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 - Trocar o Site URL do Supabase Auth de `http://localhost:3000` para
   `http://localhost:8000` e incluir essa URL na lista de redirects.
 - ~~Publicar novamente a Edge Function e registrar o webhook do Telegram no projeto atual.~~
-  Concluído em 29/08/2026; a função ficou `ACTIVE` e o Telegram confirmou o novo destino sem
-  erro recente. O vínculo real foi retestado e gravou o `telegram_chat_id` do perfil atual.
-- Atualizar a `DATABASE_URL` do job para o mesmo projeto antes do teste ponta a ponta. O banco,
-  o webhook e o pipeline precisam compartilhar a mesma tabela `perfis`.
+  Concluído em 29/08/2026 no projeto `xrhvjwemmylwbqgluebc`; a função ficou `ACTIVE` e o
+  Telegram confirmou o destino sem erro recente.
+- ~~Alinhar a `DATABASE_URL` do job com o banco do site e do webhook.~~ O secret já apontava
+  para o projeto correto e o workflow manual de 29/08/2026 terminou com sucesso.
+- O projeto `bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano, não é usado pela
+  aplicação e deve ser removido apenas depois de uma confirmação separada.
 
 ---
 
@@ -471,9 +474,8 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 - O teste de integração verifica que uma entrega com vaga ativa o perfil, uma execução sem
   vaga não ativa e reprocessar a mesma entrega preserva o primeiro timestamp.
 - A suíte local mantém os testes de PostgreSQL condicionados a `DATABASE_URL_TESTE`.
-- A migration foi aplicada no projeto Supabase de produção em 28/08/2026. Uma consulta no SQL
-  Editor confirmou a coluna `ativado_em` e o índice `perfis_ativado_em_idx`; o banco ainda não
-  tinha perfis para retropreencher.
+- A migration foi aplicada no projeto Supabase de produção `xrhvjwemmylwbqgluebc` em
+  29/08/2026 e retropreencheu qualquer perfil que já tivesse histórico de envio.
 
 ---
 
