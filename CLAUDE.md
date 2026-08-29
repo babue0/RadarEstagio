@@ -223,8 +223,8 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   Function em Deno/TypeScript, fora do `radar/`), publicada com `supabase functions deploy`
   e registrada no Telegram por `setWebhook` com `secret_token`; segredos
   `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` em `supabase secrets`. Testada de ponta a
-  ponta em 28/08/2026 e republicada no projeto atual em 29/08/2026. Com o webhook ativo,
-  `getUpdates` deixa de funcionar nesse bot.
+  ponta em 28/08/2026, republicada no projeto atual e retestada com um vínculo real em
+  29/08/2026. Com o webhook ativo, `getUpdates` deixa de funcionar nesse bot.
 - Passo 11 (Fase 2): landing integrada ao Supabase Auth e à tabela `perfis`, com criação e
   login por e-mail/senha, retomada depois da confirmação de e-mail, deep link do Telegram e
   detecção do vínculo ao voltar para a página. A migration `0002_permissoes_frontend.sql`

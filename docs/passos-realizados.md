@@ -446,7 +446,7 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
   `http://localhost:8000` e incluir essa URL na lista de redirects.
 - ~~Publicar novamente a Edge Function e registrar o webhook do Telegram no projeto atual.~~
   Concluído em 29/08/2026; a função ficou `ACTIVE` e o Telegram confirmou o novo destino sem
-  erro recente.
+  erro recente. O vínculo real foi retestado e gravou o `telegram_chat_id` do perfil atual.
 - Atualizar a `DATABASE_URL` do job para o mesmo projeto antes do teste ponta a ponta. O banco,
   o webhook e o pipeline precisam compartilhar a mesma tabela `perfis`.
 
