@@ -217,7 +217,7 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   fontes: fica a versão que informa modalidade e, em empate, a de descrição mais longa.
 - MVP completo. Pendências: cota do Gemini para
   vários usuários (billing ou Claude); decisão do grupo sobre `.agents/skills`.
-- Qualidade da mensagem (29/08/2026): `NOTA_MINIMA` (padrão 60) corta vagas fracas da
+- Qualidade da mensagem (29/08/2026): `NOTA_MINIMA` (padrão 40) corta vagas fracas da
   mensagem — sem aprovadas, vai "Nenhuma vaga compatível"; o pré-filtro descarta título de
   área claramente fora de computação (`fora_da_area_de_tecnologia`); o prompt define
   "área de tecnologia" como computação e exclui engenharias tradicionais explicitamente.

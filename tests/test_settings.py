@@ -69,8 +69,8 @@ def test_sem_database_url_nao_usa_banco():
     assert not settings.usa_banco()
 
 
-def test_nota_minima_padrao_e_60():
-    assert Settings(_env_file=None, **configuracao_base(avaliador="agy")).nota_minima == 60
+def test_nota_minima_padrao_e_40():
+    assert Settings(_env_file=None, **configuracao_base(avaliador="agy")).nota_minima == 40
 
 
 @pytest.mark.parametrize("nota", ["-1", "101"])
