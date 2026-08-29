@@ -9,10 +9,25 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - explica coleta, matching e entrega em três passos;
 - explicita que modalidade ausente não é inferida pela localização;
 - oferece um único CTA para cadastro;
-- coleta nome, e-mail, curso, período, habilidades, cidade e modalidade em duas etapas.
+- cria ou acessa uma conta por e-mail e senha;
+- coleta curso, período, habilidades, cidade e modalidade em duas etapas;
+- persiste o perfil no Supabase e abre o vínculo seguro com o Telegram;
+- reconhece quando o webhook concluiu o vínculo.
 
-Enquanto a API de perfis não existe, o cadastro é salvo apenas no `localStorage` do navegador,
-na chave `radar-perfil`. Nenhum dado é enviado pela rede.
+Quando a confirmação de e-mail está ativa no Supabase, os campos do perfil ficam temporariamente
+no `localStorage`, na chave `radar-perfil-pendente`, até o usuário voltar pelo link de confirmação.
+A senha nunca é armazenada pelo site.
+
+## Configuração
+
+Preencha `supabasePublishableKey` em `web/config.js` com a chave publicável ou `anon` do projeto.
+Essa chave é própria para uso no navegador; o acesso aos dados continua limitado pelas policies
+RLS e pelas permissões de coluna das migrations. Nunca use a chave `service_role` no frontend.
+
+No Supabase Auth, adicione a URL publicada do site e `http://localhost:8000` à lista de Redirect
+URLs. A confirmação de e-mail retorna ao site, que conclui a criação do perfil automaticamente.
+
+Antes de publicar, aplique também `supabase/migrations/0002_permissoes_frontend.sql` no projeto.
 
 ## Como abrir
 
@@ -20,7 +35,8 @@ na chave `radar-perfil`. Nenhum dado é enviado pela rede.
 uv run python -m http.server 8000 -d web
 ```
 
-Acesse <http://localhost:8000>. Também é possível abrir `index.html` diretamente no navegador.
+Acesse <http://localhost:8000>. O fluxo autenticado deve ser servido por HTTP e não abrindo o
+`index.html` diretamente.
 
 O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a stack do produto final.
 
@@ -28,9 +44,10 @@ O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a sta
 
 - O escopo atual é uma landing page com cadastro, não um dashboard.
 - A implementação usa HTML, CSS e JavaScript, sem framework, build ou dependências.
-- O formulário será conectado ao backend Python por HTTP quando existir persistência de perfis.
+- O site usa Supabase Auth e escreve diretamente na tabela `perfis`; não existe API Python entre
+  os dois componentes.
 - O front não pedirá `@username` nem `chat_id` do Telegram.
-- Após salvar o perfil, o backend deverá devolver um link do bot com token temporário. Ao abrir
-  esse link, o comando `/start` vinculará o usuário real do Telegram ao perfil cadastrado.
+- Após salvar o perfil, o site lê `token_vinculo` e abre o bot. O comando `/start` vincula o
+  usuário real do Telegram ao perfil cadastrado.
 - React, Next.js, Astro, roteador e biblioteca de estado só serão reconsiderados se o escopo do
   frontend crescer de forma concreta.

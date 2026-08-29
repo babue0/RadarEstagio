@@ -224,7 +224,13 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   e registrada no Telegram por `setWebhook` com `secret_token`; segredos
   `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` em `supabase secrets`. Testada de ponta a
   ponta em 28/08/2026. Com o webhook ativo, `getUpdates` deixa de funcionar nesse bot.
-  Próximo: o site (outra pessoa faz o front).
+  A função precisa ser publicada novamente no projeto Supabase atual.
+- Passo 11 (Fase 2): landing integrada ao Supabase Auth e à tabela `perfis`, com criação e
+  login por e-mail/senha, retomada depois da confirmação de e-mail, deep link do Telegram e
+  detecção do vínculo ao voltar para a página. A migration `0002_permissoes_frontend.sql`
+  restringe a escrita dos campos de vínculo ao webhook. Projeto atual:
+  `bnzogphdvpubtkcflcue`. Pendências externas: configurar redirect do Auth para
+  `http://localhost:8000`, republicar o webhook e alinhar a `DATABASE_URL` do job.
 - Contas criadas e credenciais configuradas no `.env` local (Adzuna e Telegram; Gemini
   somente quando `AVALIADOR=gemini_api`). O `.env` nunca é commitado; o GitHub Actions usa
   os secrets do repositório e o adapter padrão `gemini_api`.

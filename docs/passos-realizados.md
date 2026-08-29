@@ -412,10 +412,48 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ---
 
+## Passo 11 — Cadastro web e ativação no Telegram (Fase 2)
+
+**O que foi feito**
+
+- `web/`: o formulário deixou de ser uma demonstração em `localStorage` e passou a criar ou
+  acessar uma conta pelo Supabase Auth, gravar o perfil diretamente na tabela `perfis` e abrir
+  o deep link do bot com `token_vinculo`.
+- Confirmação de e-mail suportada: os campos do perfil ficam temporariamente no navegador e o
+  cadastro é retomado quando a sessão volta pelo link do Supabase. A senha nunca é armazenada
+  pelo site.
+- O estado final distingue perfil salvo, Telegram pendente e Radar ativado; ao voltar para a
+  janela, o site consulta o perfil novamente para reconhecer o vínculo feito pelo webhook.
+- `supabase/migrations/0002_permissoes_frontend.sql`: o usuário autenticado pode ler a própria
+  linha e editar somente os campos do perfil. `token_vinculo` e `telegram_chat_id` continuam
+  reservados ao banco e ao webhook.
+- O frontend usa a chave publicável do projeto, apropriada para código cliente, e o projeto
+  atual ficou registrado em `supabase/config.toml` e `web/config.js`.
+
+**Como foi testado**
+
+- A API de Auth do projeto atual respondeu com sucesso usando a chave publicável.
+- As migrations `0001` e `0002` foram executadas pelo SQL Editor; a tabela `perfis` existe e
+  uma consulta anônima é rejeitada.
+- `tests/test_frontend_activation.py` verifica a ordem de carregamento, a presença do fluxo de
+  Auth, a persistência em `perfis`, o deep link e a proteção dos campos de vínculo.
+- Suíte completa: 192 testes passaram e 3 testes de integração foram ignorados sem banco de
+  teste configurado. JavaScript, Ruff e formatação também passaram.
+
+**Pendências operacionais**
+
+- Trocar o Site URL do Supabase Auth de `http://localhost:3000` para
+  `http://localhost:8000` e incluir essa URL na lista de redirects.
+- Publicar novamente a Edge Function e registrar o webhook do Telegram no projeto atual.
+- Atualizar a `DATABASE_URL` do job para o mesmo projeto antes do teste ponta a ponta. O banco,
+  o webhook e o pipeline precisam compartilhar a mesma tabela `perfis`.
+
+---
+
 ## Números finais do MVP
 
-- 9 passos, ~40 commits atômicos em Conventional Commits.
-- 165 testes automatizados, nenhum precisa de chave ou internet.
+- 11 passos, ~40 commits atômicos em Conventional Commits.
+- 192 testes automatizados; os testes locais não dependem de serviços externos.
 - 1 execução diária automática; 2 requisições ao Gemini por execução.
 
 ## Pendências para o grupo decidir

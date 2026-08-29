@@ -41,15 +41,17 @@ no Telegram.
 Decisões atuais:
 
 - HTML, CSS e JavaScript, sem framework ou etapa de build;
-- formulário com nome, e-mail, curso, período, habilidades, cidade e modalidade preferida;
-- integração futura com o backend Python por HTTP;
+- conta por e-mail e senha com Supabase Auth;
+- formulário com curso, período, habilidades, cidade e modalidade preferida, salvo diretamente
+  na tabela `perfis` sob RLS;
 - vínculo com o Telegram por link do bot contendo token temporário, sem pedir `@username` ou
   `chat_id` no formulário;
 - React, Next.js ou outro framework só serão avaliados novamente se surgir uma necessidade real
   de interface mais complexa.
 
-Enquanto a integração não existe, o protótipo salva o perfil apenas no `localStorage` do
-navegador e não envia dados pela rede. Veja instruções e detalhes em [`web/README.md`](web/README.md).
+O perfil é persistido no Supabase depois da autenticação. Quando a confirmação de e-mail está
+ativada, o navegador guarda temporariamente apenas os campos do perfil até o usuário voltar pelo
+link de confirmação. Veja a configuração em [`web/README.md`](web/README.md).
 
 ## 1. Instalar (na ordem)
 

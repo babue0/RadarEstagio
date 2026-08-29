@@ -228,9 +228,10 @@ Regras para não afetar quem já usa:
 Tudo abaixo entra **sem reescrever** o que existe — só adicionando na borda:
 
 - ~~**Banco (Supabase/PostgreSQL)** e **vários usuários**~~ — feito (Passo 9, decisão 10).
-- **Cadastro no site**: o usuário cria conta (Supabase Auth) e preenche/edita o perfil em
-  um formulário, gravado direto no banco. O front é feito por outra pessoa, em stack
-  própria; o contrato entre as partes é o schema do banco, não uma API do `radar/`.
+- ~~**Cadastro no site**~~ — feito (Passo 11). A landing estática usa Supabase Auth,
+  grava o perfil diretamente sob RLS, retoma o cadastro após a confirmação de e-mail e
+  termina no deep link do Telegram. O contrato entre as partes continua sendo o schema do
+  banco, não uma API do `radar/`.
 - ~~**Vínculo com o Telegram**~~ — feito (Passo 10). O site abre
   `t.me/RadarEstagio_bot?start=<token>` com o `token_vinculo` do usuário; o Telegram chama a
   Edge Function `supabase/functions/telegram-webhook/`, que confere o segredo do webhook,
