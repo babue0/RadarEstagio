@@ -469,6 +469,9 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 - O teste de integração verifica que uma entrega com vaga ativa o perfil, uma execução sem
   vaga não ativa e reprocessar a mesma entrega preserva o primeiro timestamp.
 - A suíte local mantém os testes de PostgreSQL condicionados a `DATABASE_URL_TESTE`.
+- A migration foi aplicada no projeto Supabase de produção em 28/08/2026. Uma consulta no SQL
+  Editor confirmou a coluna `ativado_em` e o índice `perfis_ativado_em_idx`; o banco ainda não
+  tinha perfis para retropreencher.
 
 ---
 

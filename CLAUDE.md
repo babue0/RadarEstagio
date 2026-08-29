@@ -234,7 +234,7 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 - Passo 12 (Fase 2): ativação definida como a primeira entrega bem-sucedida com ao menos uma
   vaga recomendada. `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`;
   `docs/metricas.md` define taxa de ativação em 7 dias e tempo mediano até o valor. A migration
-  `0003_evento_ativacao.sql` ainda precisa ser aplicada ao projeto Supabase atual.
+  `0003_evento_ativacao.sql` foi aplicada ao projeto Supabase atual em 28/08/2026.
 - Contas criadas e credenciais configuradas no `.env` local (Adzuna e Telegram; Gemini
   somente quando `AVALIADOR=gemini_api`). O `.env` nunca é commitado; o GitHub Actions usa
   os secrets do repositório e o adapter padrão `gemini_api`.
