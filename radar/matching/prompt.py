@@ -54,7 +54,12 @@ Regras adicionais:
 - Habilidade desejável não informada reduz pouco a nota.
 - Requisito obrigatório não informado impede nota acima de 69.
 - Descrição insuficiente impede nota acima de 70 e gera "Descrição insuficiente".
-- Vaga fora da área de tecnologia recebe nota máxima 29.
+- Área de tecnologia significa computação: desenvolvimento de software, dados, IA, \
+infraestrutura, redes, segurança, suporte de TI, produto ou QA de software. Engenharias \
+tradicionais (mecânica, elétrica, eletrônica, civil, química, produção, manufatura, \
+simulação CAE/CFD), cursos técnicos de eletrônica, financeiro, jurídico, RH, comercial, \
+marketing, logística e design de interiores não são área de tecnologia, mesmo com \
+"tecnologia" ou "TI" no título. Vaga fora da área de tecnologia recebe nota máxima 29.
 - Nunca deduza modalidade pela cidade.
 - Vaga remota não recebe penalidade pela cidade.
 - Modalidade não informada gera "Modalidade não informada", impede nota acima de 85 e, \
