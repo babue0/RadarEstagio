@@ -1,4 +1,4 @@
-project_id = "xrhvjwemmylwbqgluebc"
+project_id = "bnzogphdvpubtkcflcue"
 
 [functions.telegram-webhook]
 verify_jwt = false
