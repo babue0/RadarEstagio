@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     fontes: str = SEPARADOR_DE_FONTES.join(FONTES_DISPONIVEIS)
     dias_recentes: int = Field(default=5, ge=1)
     quantidade_vagas_enviadas: int = 5
+    nota_minima: int = Field(default=60, ge=0, le=100)
 
     @field_validator("fontes")
     @classmethod

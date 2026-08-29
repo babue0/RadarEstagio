@@ -116,6 +116,7 @@ def rodar(
     vagas: list[Vaga],
     notas: dict[str, int],
     quantidade: int = 5,
+    nota_minima: int = 0,
     repositorio: RepositorioFalso | None = None,
     notificador: NotificadorFalso | None = None,
 ):
@@ -129,6 +130,7 @@ def rodar(
         repositorio,
         "modelo-teste",
         quantidade,
+        nota_minima,
         DATA_DE_TESTE,
     )
     return enviadas.get(ID_USUARIO, []), notificador, avaliador
@@ -149,6 +151,22 @@ def test_corta_na_quantidade_configurada():
 
     assert [resultado.nota for resultado in selecionadas] == [90, 70]
     assert "Empresa 1" not in notificador.textos[0]
+
+
+def test_vaga_abaixo_da_nota_minima_fica_fora_da_mensagem():
+    selecionadas, notificador, _ = rodar(
+        [vaga(1), vaga(2), vaga(3)], {"1": 35, "2": 90, "3": 60}, nota_minima=60
+    )
+
+    assert [resultado.nota for resultado in selecionadas] == [90, 60]
+    assert "Empresa 1" not in notificador.textos[0]
+
+
+def test_todas_abaixo_da_nota_minima_envia_mensagem_de_nenhuma_vaga():
+    selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {"1": 35, "2": 20}, nota_minima=60)
+
+    assert selecionadas == []
+    assert "Nenhuma vaga compatível" in notificador.textos[0]
 
 
 def test_vaga_sem_resultado_do_avaliador_fica_fora_da_mensagem():
@@ -201,6 +219,7 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
         repositorio,
         "modelo-teste",
         5,
+        0,
         DATA_DE_TESTE,
     )
 
@@ -220,6 +239,7 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
         repositorio,
         "modelo-teste",
         5,
+        0,
         DATA_DE_TESTE,
     )
 

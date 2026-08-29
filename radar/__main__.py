@@ -51,6 +51,7 @@ def verificar_configuracao(settings: Settings) -> None:
     print(f"Fontes: {', '.join(settings.fontes_selecionadas())}")
     print(f"Dias recentes: {settings.dias_recentes}")
     print(f"Vagas enviadas por execução: {settings.quantidade_vagas_enviadas}")
+    print(f"Nota mínima para entrar na mensagem: {settings.nota_minima}")
     if not settings.usa_banco():
         print("Banco: nenhum (perfil fixo)")
         return
@@ -119,6 +120,7 @@ def rodar(settings: Settings) -> None:
             repositorio,
             nome_do_modelo(settings),
             settings.quantidade_vagas_enviadas,
+            settings.nota_minima,
             date.today(),
         )
     total = sum(len(selecionadas) for selecionadas in enviadas.values())
