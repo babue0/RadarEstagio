@@ -71,6 +71,9 @@ def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, us
     assert [resultado.nota for resultado in existentes] == [80]
     assert existentes[0].pontos_a_favor == ["Python"]
     assert repositorio.ids_ja_enviadas(usuario) == {("adzuna", "teste-1")}
+    assert conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[
+        0
+    ]
 
 
 def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: Usuario):
@@ -78,10 +81,28 @@ def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: 
     resultado = ResultadoMatch(vaga=vaga(1), nota=80)
 
     repositorio.registrar(usuario, [resultado], [resultado], "modelo")
+    primeira_ativacao = conexao.execute(
+        "select ativado_em from perfis where id = %s", (usuario.id,)
+    ).fetchone()[0]
     repositorio.registrar(usuario, [resultado], [resultado], "modelo")
 
     assert len(repositorio.avaliacoes_existentes(usuario, [vaga(1)])) == 1
     assert (
         conexao.execute("select count(*) from vagas where id_externo = 'teste-1'").fetchone()[0]
         == 1
+    )
+    assert (
+        conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[0]
+        == primeira_ativacao
+    )
+
+
+def test_nao_ativa_sem_vaga_enviada(conexao: psycopg.Connection, usuario: Usuario):
+    resultado = ResultadoMatch(vaga=vaga(1), nota=40)
+
+    RepositorioPostgres(conexao).registrar(usuario, [resultado], [], "modelo")
+
+    assert (
+        conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[0]
+        is None
     )
