@@ -437,14 +437,16 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
   uma consulta anônima é rejeitada.
 - `tests/test_frontend_activation.py` verifica a ordem de carregamento, a presença do fluxo de
   Auth, a persistência em `perfis`, o deep link e a proteção dos campos de vínculo.
-- Suíte completa: 192 testes passaram e 3 testes de integração foram ignorados sem banco de
+- Suíte completa: 192 testes passaram e 4 testes de integração foram ignorados sem banco de
   teste configurado. JavaScript, Ruff e formatação também passaram.
 
 **Pendências operacionais**
 
 - Trocar o Site URL do Supabase Auth de `http://localhost:3000` para
   `http://localhost:8000` e incluir essa URL na lista de redirects.
-- Publicar novamente a Edge Function e registrar o webhook do Telegram no projeto atual.
+- ~~Publicar novamente a Edge Function e registrar o webhook do Telegram no projeto atual.~~
+  Concluído em 29/08/2026; a função ficou `ACTIVE` e o Telegram confirmou o novo destino sem
+  erro recente.
 - Atualizar a `DATABASE_URL` do job para o mesmo projeto antes do teste ponta a ponta. O banco,
   o webhook e o pipeline precisam compartilhar a mesma tabela `perfis`.
 

@@ -223,14 +223,14 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   Function em Deno/TypeScript, fora do `radar/`), publicada com `supabase functions deploy`
   e registrada no Telegram por `setWebhook` com `secret_token`; segredos
   `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET` em `supabase secrets`. Testada de ponta a
-  ponta em 28/08/2026. Com o webhook ativo, `getUpdates` deixa de funcionar nesse bot.
-  A função precisa ser publicada novamente no projeto Supabase atual.
+  ponta em 28/08/2026 e republicada no projeto atual em 29/08/2026. Com o webhook ativo,
+  `getUpdates` deixa de funcionar nesse bot.
 - Passo 11 (Fase 2): landing integrada ao Supabase Auth e à tabela `perfis`, com criação e
   login por e-mail/senha, retomada depois da confirmação de e-mail, deep link do Telegram e
   detecção do vínculo ao voltar para a página. A migration `0002_permissoes_frontend.sql`
   restringe a escrita dos campos de vínculo ao webhook. Projeto atual:
   `bnzogphdvpubtkcflcue`. Pendências externas: configurar redirect do Auth para
-  `http://localhost:8000`, republicar o webhook e alinhar a `DATABASE_URL` do job.
+  `http://localhost:8000` e alinhar a `DATABASE_URL` do job.
 - Passo 12 (Fase 2): ativação definida como a primeira entrega bem-sucedida com ao menos uma
   vaga recomendada. `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`;
   `docs/metricas.md` define taxa de ativação em 7 dias e tempo mediano até o valor. A migration
