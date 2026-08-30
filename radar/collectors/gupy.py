@@ -1,5 +1,6 @@
 import html
 import re
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
 import httpx
@@ -10,18 +11,8 @@ from radar.domain.models import Modalidade, Vaga
 URL_BUSCA = "https://employability-portal.gupy.io/api/v1/jobs"
 FONTE = "gupy"
 TIPO_ESTAGIO = "vacancy_type_internship"
-TERMOS_DE_BUSCA = (
-    "desenvolvimento",
-    "software",
-    "tecnologia",
-    "TI",
-    "dados",
-    "sistemas",
-    "computação",
-    "desenvolvedor",
-)
 RESULTADOS_POR_PAGINA = 100
-LIMITE_DE_PAGINAS_POR_TERMO = 5
+LIMITE_DE_PAGINAS_POR_REGIAO = 10
 LOCALIZACAO_PADRAO = "Brasil"
 MODALIDADE_POR_WORKPLACE_TYPE = {
     "remote": Modalidade.REMOTO,
@@ -33,35 +24,40 @@ PADRAO_ESPACOS = re.compile(r"\s+")
 
 
 class ColetorGupy:
-    def __init__(self, cliente_http: httpx.Client, publicadas_desde: datetime) -> None:
+    def __init__(
+        self, cliente_http: httpx.Client, publicadas_desde: datetime, cidades: Iterable[str] = ()
+    ) -> None:
         self._cliente_http = cliente_http
         self._publicadas_desde = publicadas_desde
+        self._cidades = tuple(cidades)
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
-        for termo in TERMOS_DE_BUSCA:
-            for item in self._buscar_recentes(termo):
+        for cidade in (None, *self._cidades):
+            for item in self._buscar_recentes(cidade):
                 vaga = converter_em_vaga(item)
                 vagas_por_id.setdefault(vaga.id_externo, vaga)
         return list(vagas_por_id.values())
 
-    def _buscar_recentes(self, termo: str) -> list[dict]:
+    def _buscar_recentes(self, cidade: str | None) -> list[dict]:
         recentes: list[dict] = []
-        for pagina in range(LIMITE_DE_PAGINAS_POR_TERMO):
-            itens = self._buscar_pagina(termo, pagina * RESULTADOS_POR_PAGINA)
+        for pagina in range(LIMITE_DE_PAGINAS_POR_REGIAO):
+            itens = self._buscar_pagina(cidade, pagina * RESULTADOS_POR_PAGINA)
             recentes.extend(item for item in itens if self._e_recente(item))
             pagina_incompleta = len(itens) < RESULTADOS_POR_PAGINA
             if pagina_incompleta or not self._e_recente(itens[-1]):
                 break
         return recentes
 
-    def _buscar_pagina(self, termo: str, offset: int) -> list[dict]:
-        parametros = {
-            "jobName": termo,
+    def _buscar_pagina(self, cidade: str | None, offset: int) -> list[dict]:
+        parametros: dict[str, str | int] = {
+            "jobName": "",
             "type": TIPO_ESTAGIO,
             "limit": RESULTADOS_POR_PAGINA,
             "offset": offset,
         }
+        if cidade:
+            parametros["city"] = cidade
         try:
             resposta = self._cliente_http.get(URL_BUSCA, params=parametros)
             resposta.raise_for_status()
