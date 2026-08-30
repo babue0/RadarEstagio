@@ -15,6 +15,7 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - pede e-mail e senha somente depois que o usuário configura o radar;
 - persiste o perfil no Supabase e abre o vínculo seguro com o Telegram;
 - reconhece quando o webhook concluiu o vínculo.
+- ainda não oferece edição, pausa ou retomada do perfil; essas ações ficam para a Fase 3.
 
 Quando a confirmação de e-mail está ativa no Supabase, os campos do perfil ficam temporariamente
 no `localStorage`, na chave `radar-perfil-pendente`, até o usuário voltar pelo link de confirmação.

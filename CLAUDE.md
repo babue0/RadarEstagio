@@ -5,23 +5,22 @@ apenas as oportunidades compatíveis com o perfil do usuário — ranqueadas e e
 
 Resumo do produto e da proposta completa em `docs/proposta.md`.
 
-## Fase atual: MVP (Fase 1)
+## Fase atual: MVP de validação com usuários (Fase 2, em andamento)
 
-Escopo da Fase 1, conforme roadmap:
+Estado atual:
 
 - Duas fontes de vagas somadas: Adzuna (API oficial gratuita) e Gupy (API interna do
   portal, sem chave, com modalidade estruturada)
-- Perfil de usuário fixo (sem cadastro ainda)
+- Banco Supabase com perfis, vagas, avaliações e envios por usuário
+- Cadastro web com conta, perfil estruturado e vínculo com o Telegram
 - Matching de compatibilidade via IA (Gemini API ou Antigravity CLI/AGY)
 - Entrega da mensagem ranqueada no Telegram
 - Agendamento diário via GitHub Actions
-- Sem banco de dados: a execução é sem estado. O dedupe é feito dentro da execução
-  (`filtering/duplicatas.py`, por título + empresa normalizados); o filtro de data
-  (`DIAS_RECENTES`) evita reenviar vagas antigas
+- Deduplicação e histórico entre execuções quando o banco está configurado
+- Evento de ativação registrado na primeira entrega relevante
 
-Fora do escopo da Fase 1 (fica para Fase 2/3): Vagas.com/InfoJobs, banco com
-histórico/dedupe entre dias, site com conta e cadastro do perfil, múltiplos usuários,
-feedback curtir/descartar, painel web.
+Ainda não disponível: edição, pausa e retomada do perfil, feedback para ranking, painel web e
+novas fontes além de Adzuna e Gupy.
 
 ## Stack
 
@@ -109,21 +108,21 @@ Sem framework web: a aplicação é um script disparado por cron, não um servi�
 HTTP simples). O único evento recebido, o `/start` do vínculo, chega por webhook a uma Edge
 Function do Supabase, fora do `radar/`.
 
-### Cadastro no site, não no bot (Fase 2)
+### Cadastro no site, não no bot
 
 O cadastro conversacional pelo bot foi substituído por um site com conta. Motivos: dados
 de perfil são estruturados (lista de habilidades, período, modalidade) e um formulário é
-mais claro que uma conversa; editar depois é abrir a página; o bot continua sem estado e
-sem máquina de conversa; o Supabase já resolve conta (Auth) e banco de uma vez.
+mais claro que uma conversa; o bot continua sem estado e sem máquina de conversa; o Supabase já
+resolve conta (Auth) e banco de uma vez.
 
-Fluxo: o usuário cria a conta no site → preenche o perfil (editável) → clica no botão do
+Fluxo: o usuário cria a conta no site → preenche o perfil → clica no botão do
 Telegram, que abre `t.me/RadarEstagio_bot?start=<token>` com um token único da conta →
 o Telegram chama o webhook (Edge Function do Supabase) com `/start <token>` → a função
 grava o `chat_id` no perfil daquela conta. A partir daí o job diário lê os perfis com
 `chat_id` do banco no lugar do `perfil_fixo` e envia uma mensagem por usuário.
 
-O front é responsabilidade de outra pessoa e a stack dele é livre. O contrato entre o
-site e o `radar/` é o schema do banco no Supabase: o site escreve `perfis`, o `radar/` lê
+O frontend é uma landing estática integrada ao Supabase. O contrato entre o site e o `radar/` é
+o schema do banco: o site escreve `perfis`, o `radar/` lê
 `perfis` e escreve `vagas` e `avaliacoes`. Nenhum dos dois expõe API para o outro. O
 contrato completo para o front está em `docs/contrato-front.md`.
 
@@ -183,7 +182,7 @@ O GitHub Actions não define `AVALIADOR`, portanto continua no padrão `gemini_a
 
 ## Estado do projeto
 
-Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
+Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
 
 - Passos 0 a 8 concluídos: fundação (`uv`, `ruff`, `pytest`, `Settings`), domínio
   (`Vaga`, `Perfil`, `ResultadoMatch`, ports, perfil fixo), coletor da Adzuna com
@@ -218,8 +217,8 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
 - Melhoria pós-MVP: `Vaga.modalidade` (opcional) preenchida pela Gupy; o pré-filtro decide
   por ela quando existe e só usa regex no texto quando a fonte não informa. Duplicata entre
   fontes: fica a versão que informa modalidade e, em empate, a de descrição mais longa.
-- MVP completo. Pendências: cota do Gemini para
-  vários usuários (billing ou Claude); decisão do grupo sobre `.agents/skills`.
+- Pendências da Fase 2: validar o produto com estudantes e decidir como tratar a cota do Gemini
+  para vários usuários (billing ou Claude).
 - Qualidade da mensagem (29/08/2026): `NOTA_MINIMA` (padrão 40) corta vagas fracas da
   mensagem — sem aprovadas, vai "Nenhuma vaga compatível"; o pré-filtro descarta título de
   área claramente fora de computação (`fora_da_area_de_tecnologia`); o prompt define

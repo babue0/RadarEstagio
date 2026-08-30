@@ -8,6 +8,12 @@
 
 **Framework:** Revenue-Centric Design (RCD)
 
+**Fase atual do produto:** Fase 2 — MVP de validação com usuários, parcialmente implementada
+
+**Estado atual:** banco, cadastro web, múltiplos usuários, vínculo com o Telegram e evento de
+ativação já estão implementados; a validação com usuários e os recursos de retenção continuam
+pendentes.
+
 ## 1. Objetivo
 
 Transformar o Radar de uma demonstração técnica funcional em um produto capaz de comprovar que:
@@ -53,6 +59,8 @@ encurtar o caminho até o valor; depois ativar, converter, expandir e sistematiz
 
 ### 3.1 Corrigir o cadastro
 
+**Status:** concluída em 30/08/2026.
+
 - Validar a etapa 3 antes do envio.
 - Impedir cidade, modalidade, e-mail ou senha inválidos.
 - Tratar o caso de conta criada sem perfil salvo.
@@ -63,6 +71,8 @@ encurtar o caminho até o valor; depois ativar, converter, expandir e sistematiz
 usuário pode continuar.
 
 ### 3.2 Alinhar promessa e produto
+
+**Status:** concluída em 30/08/2026.
 
 - Remover dos documentos a afirmação de que o Radar aprende com feedback enquanto isso não existir.
 - Não prometer edição do perfil sem oferecer a interface correspondente.

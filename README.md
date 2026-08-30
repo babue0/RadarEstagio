@@ -227,10 +227,11 @@ Para disparar na hora (teste ou demo):
 4. Em ~1 minuto o job fica verde e a mensagem chega no Telegram. Se ficar vermelho, abra
    o passo **Executar o radar** para ver o erro.
 
-## 6. Banco de dados (opcional, Fase 2)
+## 6. Banco de dados e contas (Supabase)
 
-O banco guarda os perfis dos usuários (com o `chat_id` de cada um), as vagas, as notas e o
-que já foi enviado. É o que permite vários usuários e evita repetir vaga entre dias.
+O Supabase já está integrado ao site e ao job. Ele guarda os perfis dos usuários (com o
+`chat_id` de cada um), as vagas, as notas e o que já foi enviado. É o que permite vários
+usuários e evita repetir vaga entre dias.
 
 1. Crie um projeto em <https://supabase.com> (região São Paulo) e guarde a senha do banco.
 2. Instale a CLI e ligue-a ao projeto:
@@ -247,21 +248,21 @@ que já foi enviado. É o que permite vários usuários e evita repetir vaga ent
    a migration é o contrato entre o site e o radar.
 3. Em **Project Settings → Database**, copie a string **Session pooler** (o GitHub Actions só
    tem IPv4) e coloque em `DATABASE_URL` no `.env`.
-4. Enquanto o site não existe, cadastre um usuário na mão: **Authentication → Add user** e,
-   no **Table Editor**, uma linha em `perfis` com `user_id` desse usuário, o perfil e
-   `telegram_chat_id`. Perfil sem `telegram_chat_id` ou com `ativo = false` é ignorado.
+4. Abra o site em `http://localhost:8000`, crie a conta, preencha o perfil e vincule o
+   Telegram. O webhook grava o `chat_id`; perfil sem vínculo ou com `ativo = false` é ignorado.
 5. `uv run python -m radar verificar` deve mostrar `Banco: conectado, N usuários ativos`.
-6. Para o Actions usar o banco, crie o secret `DATABASE_URL`.
+6. Para o Actions usar o banco, mantenha o secret `DATABASE_URL` configurado.
 
-## 7. Webhook do vínculo com o Telegram (opcional, Fase 2)
+## 7. Webhook do vínculo com o Telegram
 
-Quem faz o site deve ler [`docs/contrato-front.md`](docs/contrato-front.md): o que gravar
-em `perfis`, permissões e o botão do Telegram.
+O site já abre o link do bot, e o webhook grava o vínculo no perfil correto. O contrato entre
+as partes está em [`docs/contrato-front.md`](docs/contrato-front.md).
 
 Com o banco, o `chat_id` de cada usuário passa a ser gravado pelo próprio Telegram: o site
 abre `t.me/RadarEstagio_bot?start=<token_vinculo>` e o bot chama a Edge Function
 [`supabase/functions/telegram-webhook/`](supabase/functions/telegram-webhook/), que grava o
-`chat_id` no perfil daquele token. Só quem administra o bot precisa fazer isto, uma vez:
+`chat_id` no perfil daquele token. A função já está publicada no projeto Supabase atual; estes
+passos servem para configurar outro ambiente:
 
 1. Invente um segredo (`openssl rand -hex 24`) e coloque em `TELEGRAM_WEBHOOK_SECRET` no
    `.env`. O Telegram manda esse valor em toda chamada e a função rejeita quem não o tem.
@@ -279,8 +280,7 @@ abre `t.me/RadarEstagio_bot?start=<token_vinculo>` e o bot chama a Edge Function
    ```
 
    `getWebhookInfo` no lugar de `setWebhook` mostra se ficou registrado.
-4. Para testar sem o site: no Table Editor, copie o `token_vinculo` do seu perfil, apague o
-   `telegram_chat_id`, abra `https://t.me/RadarEstagio_bot?start=<token>` e aperte Start.
+4. Para testar, crie o perfil pelo site, abra o botão de vínculo e aperte Start no Telegram.
    O bot responde "Telegram vinculado!" e a coluna volta preenchida.
 
 Os testes da função rodam com `deno test` dentro da pasta (`brew install deno`).
@@ -299,5 +299,5 @@ radar/
   __main__.py    comandos de linha de comando
 supabase/        migrations do banco (schema versionado) e a Edge Function do webhook
 tests/           testes automatizados (pytest)
-web/             landing page e cadastro demonstrativo (HTML/CSS/JS estático, sem back-end)
+web/             landing page e cadastro integrado ao Supabase (HTML/CSS/JS estático)
 ```

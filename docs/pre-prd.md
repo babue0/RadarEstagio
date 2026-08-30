@@ -1,7 +1,7 @@
 # Radar de Estágio — Documento de Definição (Pré-PRD)
 
-**Status:** Fase 1 implementada; validação técnica e de produto em andamento<br>
-**Atualizado em:** 27/08/2026<br>
+**Status:** Fase 2 parcialmente implementada; validação técnica e de produto em andamento<br>
+**Atualizado em:** 30/08/2026<br>
 **Entrega prevista:** 02/09/2026<br>
 **Disciplina:** Métodos e Aplicações de IA (IBM3116), turma 8001<br>
 **Professor:** Alvaro Riz<br>
@@ -25,7 +25,12 @@ Este Pré-PRD organiza o que já sabemos sobre o Radar de Estágio e o que ainda
 
 O Radar de Estágio reduz o esforço diário de estudantes que procuram o primeiro estágio. O sistema coleta vagas da Adzuna e da Gupy, remove duplicatas, elimina anúncios claramente incompatíveis, compara as oportunidades com o perfil do estudante e entrega pelo Telegram uma lista curta, ranqueada e explicada.
 
-A prova técnica principal já existe: o projeto coletou vagas reais, aplicou pré-filtro, avaliou as oportunidades com Gemini e enviou cinco recomendações pelo Telegram. O fluxo também pode usar o AGY localmente para testes sem consumir a cota da API direta. O GitHub Actions foi executado manualmente com sucesso duas vezes, embora essas execuções sejam anteriores à inclusão da Gupy. A base atual possui 165 testes automatizados passando.
+A prova técnica principal já existe: o projeto coleta vagas da Adzuna e da Gupy, aplica pré-filtro,
+avalia as oportunidades com Gemini e envia recomendações pelo Telegram. Em 30/08/2026, uma coleta
+real com dois perfis presenciais no Rio produziu 703 vagas únicas e 55 candidatas após o
+pré-filtro. O fluxo também pode usar o AGY localmente para testes sem consumir a cota da API
+direta. A suíte atual possui 259 testes passando e 4 integrações condicionadas a um PostgreSQL
+de teste.
 
 As principais incertezas agora são de produto e operação:
 
@@ -108,17 +113,17 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 - Sem múltiplos usuários.
 - Sem aprendizado por feedback.
 
-#### Fase 2 — MVP de validação com usuários
+#### Fase 2 — MVP de validação com usuários (em andamento)
 
-- Cadastro estruturado do perfil.
-- Persistência de perfis, vagas e avaliações em PostgreSQL/Supabase.
+- Cadastro estruturado do perfil (implementado no site).
+- Persistência de perfis, vagas e avaliações em PostgreSQL/Supabase (implementada).
 - Reutilização da avaliação quando a mesma vaga reaparecer.
 - Explicação mais detalhada da nota sem aumentar a mensagem principal no Telegram.
-- Vínculo seguro entre cadastro e Telegram.
-- Suporte a vários usuários.
-- Pausar, retomar e editar o perfil.
-- Feedback simples sobre as recomendações.
-- Métricas do funil e da qualidade das vagas.
+- Vínculo seguro entre cadastro e Telegram (implementado).
+- Suporte a vários usuários (implementado).
+- Métricas do funil e da qualidade das vagas (estrutura implementada).
+- Pausar, retomar e editar o perfil (ainda não disponível).
+- Feedback simples sobre as recomendações (ainda não disponível).
 
 #### Evoluções posteriores
 
@@ -144,7 +149,7 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 | Telegram Bot API | Entrega das recomendações | Envia mensagens e links sem exigir o desenvolvimento de um aplicativo próprio. |
 | GitHub Actions | Agendamento diário | Executa o pipeline sem servidor dedicado e também permite disparo manual. |
 | pytest e Ruff | Testes e qualidade de código | Detectam regressões e verificam o padrão do código sem acessar serviços reais. |
-| PostgreSQL/Supabase | Persistência planejada para a Fase 2 | Permitirá guardar perfis, vagas e avaliações fora da máquina temporária do Actions. |
+| PostgreSQL/Supabase | Persistência da Fase 2 | Guarda perfis, vagas, avaliações e envios fora da máquina temporária do Actions. |
 
 ### 5.4 Alternativas consideradas
 
@@ -174,7 +179,7 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 - O pipeline completo já enviou uma lista real com cinco vagas avaliadas.
 - O GitHub Actions teve execuções manuais bem-sucedidas em 26 e 27/08/2026 na versão anterior à Gupy.
 - O README documenta instalação, configuração, comandos locais e execução pelo Actions.
-- Em 27/08/2026, os 165 testes automatizados passam sem chamadas reais de rede.
+- Em 30/08/2026, 259 testes automatizados passam e 4 integrações são ignoradas sem PostgreSQL de teste.
 
 ### 6.2 Limitações já observadas
 
@@ -183,16 +188,17 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 - Ao atingir a cota diária, novas tentativas imediatas não resolvem o problema.
 - O AGY aumenta a capacidade de testes locais, mas não está disponível no GitHub Actions e não substitui a API no agendamento.
 - A Gupy é acessada por um endpoint não oficial, que pode mudar sem aviso.
-- A deduplicação atual ocorre apenas entre vagas da mesma execução; sem banco, uma vaga pode reaparecer em dias diferentes.
+- No modo sem banco, a deduplicação ocorre apenas entre vagas da mesma execução e uma vaga pode
+  reaparecer em dias diferentes; com Supabase, o histórico de envios é persistido.
 - A cobertura conjunta de Adzuna e Gupy para estágios de tecnologia no Brasil ainda precisa ser medida durante vários dias.
 
-### 6.3 Trabalho técnico restante na Fase 1
+### 6.3 Trabalho técnico e validação restantes
 
-- Disparar a versão atual manualmente no GitHub Actions após a inclusão da Gupy.
-- Observar o cron da versão atual por vários dias.
+- Confirmar a execução da versão atual no GitHub Actions após a inclusão da Gupy.
+- Observar a execução automática atual por vários dias.
 - Registrar volume coletado, volume filtrado, avaliações realizadas e falhas.
 - Comparar uma amostra de resultados com avaliações humanas.
-- Consolidar as evidências para a entrega de 02/09/2026.
+- Validar o cadastro, o vínculo com o Telegram e o primeiro valor com usuários externos.
 
 ## 7. Hipóteses e testes de baixo custo
 
@@ -222,11 +228,11 @@ Esta lista serve para priorização. Uma característica só deve entrar no prod
 | Alerta de inconsistência | Sinaliza exigências incompatíveis com estágio | Importante | 1 | Confirmada |
 | Entrega automática no Telegram | Evita que o usuário precise lembrar de consultar o sistema | Essencial | 1 | Confirmada |
 | Link direto para a vaga | Encurta o caminho até a candidatura | Essencial | 1 | Confirmada |
-| Cadastro curto do perfil | Permite validar o produto com usuários diferentes | Essencial | 2 | A discutir |
-| Vínculo seguro cadastro → Telegram | Associa o perfil ao chat correto | Essencial | 2 | A discutir |
-| Pausar e retomar entregas | Dá controle ao usuário | Importante | 2 | A discutir |
-| Editar perfil | Evita recomendações baseadas em dados antigos | Importante | 2 | A discutir |
-| Feedback Gostei / Não gostei / Candidatei-me | Mede utilidade e pode orientar melhorias | Importante | 2 | A discutir |
+| Cadastro curto do perfil | Permite validar o produto com usuários diferentes | Essencial | 2 | Implementada |
+| Vínculo seguro cadastro → Telegram | Associa o perfil ao chat correto | Essencial | 2 | Implementada |
+| Pausar e retomar entregas | Dá controle ao usuário | Importante | 3 | Pendente |
+| Editar perfil | Evita recomendações baseadas em dados antigos | Importante | 3 | Pendente |
+| Feedback Gostei / Não gostei / Candidatei-me | Mede utilidade e pode orientar melhorias | Importante | 3 | Pendente |
 | Adzuna e Gupy | Aumentam cobertura e reduzem dependência de uma única fonte | Importante | 1 | Confirmada |
 | Fontes além de Adzuna e Gupy | Podem ampliar a cobertura se as fontes atuais forem insuficientes | Importante | Posterior | A discutir |
 | Alerta instantâneo | Reduz o tempo até vagas muito relevantes | Desejável | Posterior | Não priorizada |
@@ -257,9 +263,9 @@ Para cada item marcado como “A discutir”, o grupo deve responder:
 | Falha silenciosa de coleta | Alto | Média | Parcialmente tratada | Logs, falha visível no GitHub Actions e alerta operacional ao grupo. |
 | Dependência de poucos provedores de vagas | Médio | Média | Parcialmente reduzida | Medir cobertura conjunta e adicionar outra fonte somente se H3 falhar. |
 | Dependência do Telegram | Médio | Média | Aceita inicialmente | Validar aceitação e manter a camada de notificação isolada. |
-| Perda de usuários entre site e Telegram | Médio | Alta | Fase 2 | Deep link com token seguro, poucas etapas e medição do funil. |
-| Exposição de perfil e identificador do Telegram | Alto | Baixa/média | Fase 2 | Coleta mínima, controle de acesso, exclusão de dados e política clara de finalidade. |
-| Token previsível ou reutilizável no deep link | Alto | Baixa/média | Fase 2 | Token aleatório, expirável, de uso único e invalidado após o vínculo. |
+| Perda de usuários entre site e Telegram | Médio | Alta | Parcialmente tratada | Deep link com token seguro, poucas etapas e medição do funil. |
+| Exposição de perfil e identificador do Telegram | Alto | Baixa/média | Mitigada na implementação | Coleta mínima, RLS, permissões de coluna e política clara de finalidade. |
+| Token previsível ou reutilizável no deep link | Alto | Baixa/média | Parcialmente tratada | Token aleatório e único já implementado; expiração e uso único continuam pendentes. |
 | Aumento de escopo durante o semestre | Alto | Alta | Risco atual | Separar fases e impedir que oportunidades futuras entrem automaticamente no MVP. |
 | Limites gratuitos ou preços mudarem | Médio | Média | Permanente | Registrar data e premissas de custo; recalcular antes do PRD e da apresentação. |
 | GitHub Actions atrasar ou falhar | Médio | Baixa/média | Disparo manual comprovado; cron pendente | Logs, alerta de job vermelho e observação do agendamento por vários dias. |
@@ -293,11 +299,13 @@ Oportunidades são caminhos de expansão, não compromissos do MVP.
 
 ### 11.1 Viabilidade técnica
 
-**Avaliação: favorável, com a Fase 1 implementada.**
+**Avaliação: favorável, com a base da Fase 1 e parte da Fase 2 implementadas.**
 
 As integrações centrais já funcionaram juntas em execuções reais. O projeto possui coletores independentes, deduplicação, pré-filtro, dois adapters de IA, avaliação em lotes, saída estruturada, formatação e envio pelo Telegram. Nenhuma parte da Fase 1 exige tecnologia experimental. Os principais riscos técnicos conhecidos são a cota diária da IA e a dependência do endpoint não oficial da Gupy.
 
-O Actions já funcionou sob disparo manual na versão anterior. Para concluir a demonstração da versão atual, ainda é necessário executar o pipeline com Adzuna e Gupy no Actions e observar o cron durante vários dias.
+O Actions já funcionou sob disparo manual na versão anterior. Para concluir a demonstração da
+versão atual, ainda é necessário confirmar a execução com Adzuna e Gupy no Actions e observar o
+cron durante vários dias.
 
 ### 11.2 Viabilidade financeira
 
@@ -325,13 +333,17 @@ A execução já está automatizada, mas “rodar sozinho” não significa aus�
 - qualidade das recomendações;
 - rotação e proteção de credenciais.
 
-A operação da Fase 1 continua simples porque usa duas fontes, um perfil e uma entrega diária. A complexidade cresce de forma relevante quando entram banco, múltiplos usuários, feedback e novas fontes.
+A operação atual usa duas fontes, banco, múltiplos usuários e uma entrega diária. A complexidade
+cresce de forma relevante quando entrarem feedback, edição de perfil e novas fontes.
 
 ### 11.4 Viabilidade de prazo
 
-**Avaliação: favorável para entregar a Fase 1 em 02/09/2026; indefinida para a visão completa.**
+**Avaliação: favorável para concluir a entrega técnica; indefinida para a visão completa.**
 
-O núcleo da Fase 1, a automação e a documentação operacional estão implementados. Até a entrega, o foco deve ser validar a versão atual no Actions, coletar evidências e corrigir apenas falhas que impeçam a demonstração. Cadastro web, Supabase, vínculo com Telegram e multiusuário devem receber uma estimativa separada antes de serem tratados como compromisso.
+O núcleo da Fase 1, a automação, o Supabase, o cadastro web, o vínculo com Telegram e o suporte
+a múltiplos usuários estão implementados. O foco imediato é confirmar a operação atual no Actions,
+coletar evidências e validar o produto com estudantes; edição, pausa, retomada e feedback ficam
+para a próxima etapa.
 
 ### 11.5 Viabilidade de produto
 
@@ -345,8 +357,8 @@ Ainda não foi comprovado que estudantes usarão o Radar de forma recorrente, co
 | --- | --- | --- |
 | Técnica | Favorável | Execução da versão atual no Actions e observação do cron |
 | Financeira | Favorável em baixo volume | Memória de cálculo e cenário pago |
-| Operacional | Favorável para a Fase 1 | Monitoramento de execuções reais |
-| Prazo | Favorável para a Fase 1 | Estimativa separada da Fase 2 |
+| Operacional | Favorável para a base atual | Monitoramento de execuções reais com vários usuários |
+| Prazo | Favorável para a entrega técnica | Validação do escopo restante da Fase 2 |
 | Produto | Incerta | Entrevistas, aceitação das recomendações e uso recorrente |
 
 ## 12. Dúvidas que precisam ser respondidas
@@ -428,4 +440,6 @@ O grupo deve avançar ao PRD quando:
 
 ---
 
-**Status do documento:** FASE 1 IMPLEMENTADA E EM VALIDAÇÃO — a prova técnica é favorável; antes da entrega, falta validar a versão atual no Actions e reunir evidências operacionais. Cobertura, confiança e uso recorrente continuam pendentes para comprovar a viabilidade do produto.
+**Status do documento:** FASE 1 IMPLEMENTADA; FASE 2 EM ANDAMENTO — a base técnica é favorável,
+mas cobertura, confiança, uso recorrente e validação com usuários continuam pendentes para
+comprovar a viabilidade do produto.

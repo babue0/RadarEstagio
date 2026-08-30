@@ -7,7 +7,7 @@ caminho. O histórico passo a passo está em [`passos-realizados.md`](passos-rea
 
 Um script Python, disparado uma vez por dia pelo GitHub Actions, que coleta vagas, filtra,
 avalia com IA e envia uma mensagem no Telegram para cada usuário — **sem servidor**; o banco
-(Supabase) é opcional e fica atrás de uma interface.
+Supabase é acessado pelo job e pelo cadastro web.
 
 ## O fluxo
 
@@ -16,7 +16,7 @@ avalia com IA e envia uma mensagem no Telegram para cada usuário — **sem serv
 │  coletar   │ → │  dedupe    │ → │ pré-filtrar│ → │  avaliar   │ → │  ranquear  │ → │   enviar   │
 │Adzuna+Gupy │   │título+emp. │   │  (regras)  │   │  (Gemini)  │   │  (top N)   │   │ (Telegram) │
 └────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘
-   ~35 vagas        ~33 vagas       ~20 vagas       2 requisições      5 vagas        1 mensagem
+   volume variável   volume variável  volume variável  lotes configuráveis  até N vagas   1+ mensagem
 ```
 
 Cada caixa é uma camada independente. O `pipeline.py` só liga uma na outra. Com banco, as
@@ -223,9 +223,10 @@ Regras para não afetar quem já usa:
 - `.env` e segredos nunca commitados.
 - Toda funcionalidade com teste; a suíte roda sem chave e sem internet.
 
-## O que vem na Fase 2
+## Estado da Fase 2
 
-Tudo abaixo entra **sem reescrever** o que existe — só adicionando na borda:
+A base da Fase 2 já está integrada ao sistema. O que ainda não foi implementado permanece como
+trabalho futuro:
 
 - ~~**Banco (Supabase/PostgreSQL)** e **vários usuários**~~ — feito (Passo 9, decisão 10).
 - ~~**Cadastro no site**~~ — feito (Passo 11). A landing estática usa Supabase Auth,

@@ -18,11 +18,11 @@ acompanhar, e a vaga perfeita passa sem que ele saiba que ela existiu.
 
 ## 2. A Solução
 
-O Radar de Estágio é um assistente que trabalha sozinho. O usuário conversa uma única
-vez com ele, no Telegram, contando quem é: curso, período, habilidades, cidade e
-preferência por remoto ou presencial. A partir daí, não faz mais nada.
+O Radar de Estágio é um assistente que trabalha sozinho. O usuário cria uma conta no site,
+preenche uma vez seu perfil — curso, período, habilidades, cidade e preferência de modalidade —
+e vincula o Telegram. A partir daí, recebe as recomendações no Telegram.
 
-Todo dia de manhã chega uma mensagem curta com as 3 a 5 vagas novas que realmente valem
+Em cada execução diária chega uma mensagem curta com as 3 a 5 vagas novas que realmente valem
 o tempo dele, em ordem de prioridade. Cada vaga vem com:
 
 - Nota de compatibilidade (0–100) calculada pela IA a partir do perfil;
@@ -32,8 +32,8 @@ o tempo dele, em ordem de prioridade. Cada vaga vem com:
   pleno;
 - Link direto para aplicar.
 
-Trinta segundos de leitura no café da manhã. E o sistema aprende: a cada sugestão o
-usuário pode curtir ou descartar, e o Radar fica mais certeiro semana após semana.
+Trinta segundos de leitura no café da manhã. O Radar ainda não aprende com feedback: curtir,
+descartar e personalizar automaticamente as recomendações permanecem como evoluções futuras.
 
 Em uma frase: é um amigo recrutador que vasculha os sites o dia inteiro por você e só
 chama quando encontra algo que combina com o seu perfil — explicando o porquê.
@@ -53,14 +53,15 @@ testamos no nosso dia a dia). A mesma máquina depois se expande para qualquer c
   o raciocínio.
 - **Cada site só avisa das próprias vagas.** O Radar cobre várias fontes de uma vez,
   num canal só.
-- **Tem memória:** nunca repete vaga, aprende com o feedback e enxerga tendências do
-  mercado ("essa semana abriram muitas vagas pedindo análise de dados").
+- **Evita repetição:** com o banco configurado, não envia novamente vagas já entregues ao
+  mesmo perfil; personalização por feedback e tendências de mercado ainda não fazem parte da
+  versão atual.
 - **Não é um "wrapper de chat":** o valor está na coleta contínua, na execução
   automática e na entrega proativa — coisas que nenhuma conversa avulsa com IA faz.
 
 ## 5. Como Vamos Fazer
 
-Todo dia às 8h, sem ninguém pedir, o sistema executa cinco etapas:
+Em cada execução diária, sem ninguém pedir, o sistema executa cinco etapas:
 
 1. **Coleta** — busca vagas novas de estágio em tecnologia nas fontes configuradas;
 2. **Dedupe** — descarta o que já foi visto, comparando com o histórico no banco;
@@ -71,11 +72,10 @@ Todo dia às 8h, sem ninguém pedir, o sistema executa cinco etapas:
 5. **Entrega** — as melhores viram uma mensagem ranqueada no Telegram, com links
    diretos.
 
-O cadastro é feito no site: o usuário cria uma conta, preenche o perfil (curso,
-período, habilidades, cidade, modalidade — editável a qualquer momento) e clica em um
-botão que abre o bot no Telegram já vinculado à sua conta. O bot só entrega mensagens;
-toda a edição de dados fica no site. Cada membro do grupo cadastra o próprio perfil — o
-projeto já nasce multiusuário, com usuários reais para apresentar.
+O cadastro é feito no site: o usuário cria uma conta, preenche o perfil (curso, período,
+habilidades, cidade e modalidade) e clica em um botão que abre o bot no Telegram já vinculado à
+sua conta. O bot só entrega mensagens; edição, pausa e retomada do perfil ainda estão previstas
+para uma fase posterior. O projeto já suporta um perfil por conta.
 
 ## 6. Tecnologias, APIs e Custos
 
@@ -128,10 +128,9 @@ frente da banca.
 
 ### 6.5 Memória do sistema — o banco de dados
 
-SQLite: um banco de dados em arquivo, dentro do próprio projeto — grátis e com zero
-configuração. Guarda as vagas já vistas (dedupe), os perfis dos usuários, as notas
-atribuídas e o feedback (curtir/descartar). Na fase multiusuário com painel web, o
-Supabase (banco na nuvem) tem plano gratuito suficiente.
+PostgreSQL no Supabase guarda as vagas já vistas, os perfis dos usuários, as notas atribuídas
+e os envios. O banco já está integrado ao job e ao cadastro web. Feedback, histórico de
+preferências e tendências continuam fora do escopo atual.
 
 ### 6.6 A conta final
 
@@ -149,10 +148,10 @@ gratuita que atende o projeto.
 
 ## 7. Roadmap em 3 Fases
 
-- **Fase 1 — MVP (1 fim de semana):** uma fonte de vagas, perfil fixo, matching com
-  IA, mensagem no Telegram e agendamento diário. O sistema funcionando de ponta a
-  ponta.
-- **Fase 2 — Produto:** mais fontes, banco com histórico e dedupe, site com conta e
-  cadastro do perfil, vínculo com o Telegram por botão e suporte a vários usuários.
-- **Fase 3 — Polimento:** comando `/hoje` para resumo sob demanda, feedback
-  curtir/descartar que refina o matching e painel web com estatísticas do mercado.
+- **Fase 1 — Prova técnica:** coleta, matching com IA, mensagem no Telegram e agendamento
+  diário. Concluída.
+- **Fase 2 — MVP de validação com usuários:** mais fontes, banco com histórico e dedupe, site
+  com conta e cadastro do perfil, vínculo com o Telegram por botão, suporte a vários usuários e
+  métricas de ativação. Parcialmente implementada; falta validar o uso com estudantes.
+- **Fase 3 — Retenção e controle:** editar, pausar e retomar o perfil, feedback simples e
+  personalização baseada em volume suficiente de interações.

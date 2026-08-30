@@ -7,11 +7,13 @@ que o site precisa é o projeto do Supabase (Auth + tabela `perfis`) e um link d
 ## O que o site faz
 
 1. Cria a conta do usuário com **Supabase Auth** (e-mail e senha, ou provedor social).
-2. Deixa o usuário **preencher e editar o perfil**, gravado na tabela `perfis`.
+2. Deixa o usuário **preencher o perfil**, gravado na tabela `perfis`.
 3. Mostra um botão **"Vincular Telegram"** que abre
    `https://t.me/RadarEstagio_bot?start=<token_vinculo>` com o `token_vinculo` lido do perfil.
-4. Mostra se o Telegram já está vinculado (`telegram_chat_id` preenchido) e deixa
-   pausar/retomar o envio (`ativo`).
+4. Mostra se o Telegram já está vinculado (`telegram_chat_id` preenchido).
+
+Edição, pausa e retomada do perfil estão previstas para a Fase 3 e não fazem parte da interface
+atual.
 
 Tudo o resto — coletar vagas, avaliar, mandar a mensagem, gravar o `chat_id` — é do radar e
 do webhook, e já está pronto. O site não precisa saber como funciona.
@@ -40,9 +42,9 @@ Uma linha por usuário. `user_id` é o `id` do usuário no Auth (`auth.users.id`
 | `modalidade`       | text     | site           | um de `remoto`, `presencial`, `hibrido`, `indiferente`     |
 | `telegram_chat_id` | text     | **webhook**    | só leitura no site; `null` = ainda não vinculou            |
 | `token_vinculo`    | uuid     | banco          | gerado; só leitura, usado no link do Telegram              |
-| `ativo`            | boolean  | site           | `true` recebe mensagens, `false` pausa. Padrão `true`      |
+| `ativo`            | boolean  | sistema        | `true` recebe mensagens, `false` pausa; controle do site previsto para a Fase 3 |
 | `criado_em`        | timestamptz | banco       | gerado                                                     |
-| `atualizado_em`    | timestamptz | site        | mandar `now()` ao editar                                   |
+| `atualizado_em`    | timestamptz | site        | usado quando a edição do perfil estiver disponível         |
 
 O que o radar usa para escolher vagas: `curso`, `periodo`, `habilidades`, `cidade`,
 `modalidade`. Quanto mais específicas as habilidades, melhor o ranqueamento.
@@ -71,7 +73,9 @@ Ler o perfil (vem só a linha do usuário logado):
 const { data: perfil } = await supabase.from("perfis").select("*").single();
 ```
 
-Editar:
+### Edição futura (Fase 3)
+
+Quando a interface de edição for disponibilizada:
 
 ```js
 await supabase.from("perfis")
