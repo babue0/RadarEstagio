@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -6,7 +7,12 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from radar.collectors.adzuna import URL_BUSCA, ColetorAdzuna
+from radar.collectors.adzuna import (
+    LIMITE_DE_PAGINAS_POR_REGIAO,
+    RESULTADOS_POR_PAGINA,
+    URL_BUSCA,
+    ColetorAdzuna,
+)
 from radar.collectors.errors import ErroDeColeta
 from radar.settings import Settings
 
@@ -28,6 +34,22 @@ def settings_de_teste() -> Settings:
 
 def resposta_gravada() -> dict:
     return json.loads(CAMINHO_DO_FIXTURE.read_text(encoding="utf-8"))
+
+
+def item(numero: int, area: list[str] | None = None) -> dict:
+    modelo = resposta_gravada()["results"][0]
+    modelo["id"] = numero
+    if area is not None:
+        modelo["location"] = {"display_name": ", ".join(reversed(area[-2:])), "area": area}
+    return modelo
+
+
+def url_da_pagina(pagina: int) -> re.Pattern[str]:
+    return re.compile(re.escape(f"{URL_BUSCA}/{pagina}?"))
+
+
+def pagina_cheia(inicio: int) -> dict:
+    return {"results": [item(numero) for numero in range(inicio, inicio + RESULTADOS_POR_PAGINA)]}
 
 
 @pytest.fixture
@@ -80,10 +102,63 @@ def test_envia_credenciais_e_filtros_na_busca(httpx_mock: HTTPXMock, coletor: Co
     parametros = requisicao.url.params
     assert parametros["app_id"] == "app-id-de-teste"
     assert parametros["app_key"] == APP_KEY_DE_TESTE
-    assert parametros["what"] == "estágio"
-    assert parametros["category"] == "it-jobs"
+    assert parametros["what_and"] == "estágio"
+    assert "tecnologia" in parametros["what_or"]
+    assert "category" not in parametros
+    assert "where" not in parametros
     assert parametros["max_days_old"] == "3"
     assert parametros["results_per_page"] == "50"
+
+
+def test_busca_tambem_por_cidade_dos_usuarios_presenciais(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json={"results": []}, is_reusable=True)
+    with httpx.Client() as cliente_http:
+        ColetorAdzuna(settings_de_teste(), cliente_http, ["Rio de Janeiro", "Niterói"]).coletar()
+
+    locais = [requisicao.url.params.get("where") for requisicao in httpx_mock.get_requests()]
+
+    assert locais == [None, "Rio de Janeiro", "Niterói"]
+
+
+def test_pagina_cheia_busca_a_proxima_pagina(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
+    httpx_mock.add_response(url=url_da_pagina(1), json=pagina_cheia(1))
+    httpx_mock.add_response(url=url_da_pagina(2), json={"results": [item(999)]})
+
+    vagas = coletor.coletar()
+
+    assert len(vagas) == RESULTADOS_POR_PAGINA + 1
+    assert len(httpx_mock.get_requests()) == 2
+
+
+def test_respeita_o_limite_de_paginas(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
+    for pagina in range(1, LIMITE_DE_PAGINAS_POR_REGIAO + 1):
+        inicio = pagina * RESULTADOS_POR_PAGINA
+        httpx_mock.add_response(url=url_da_pagina(pagina), json=pagina_cheia(inicio))
+
+    vagas = coletor.coletar()
+
+    assert len(vagas) == LIMITE_DE_PAGINAS_POR_REGIAO * RESULTADOS_POR_PAGINA
+    assert len(httpx_mock.get_requests()) == LIMITE_DE_PAGINAS_POR_REGIAO
+
+
+def test_mesma_vaga_no_pais_e_na_cidade_aparece_uma_vez(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(json={"results": [item(1), item(2)]})
+    httpx_mock.add_response(json={"results": [item(2), item(3)]})
+    with httpx.Client() as cliente_http:
+        vagas = ColetorAdzuna(settings_de_teste(), cliente_http, ["Rio de Janeiro"]).coletar()
+
+    assert [vaga.id_externo for vaga in vagas] == ["1", "2", "3"]
+
+
+def test_localizacao_usa_cidade_e_estado_mesmo_quando_ha_bairro(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    com_bairro = item(
+        1, area=["Brasil", "Sudeste", "Estado do Rio de Janeiro", "Rio de Janeiro", "Copacabana"]
+    )
+    httpx_mock.add_response(json={"results": [com_bairro]})
+
+    assert coletor.coletar()[0].localizacao == "Rio de Janeiro, Estado do Rio de Janeiro"
 
 
 def test_resposta_sem_resultados_retorna_lista_vazia(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
