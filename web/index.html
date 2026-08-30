@@ -163,36 +163,66 @@
         </div>
         <div class="dialog-form-area">
           <div class="progress-wrap" aria-label="Progresso do cadastro">
-            <div class="progress-meta"><span id="progress-label">Etapa 1 de 2</span><strong id="progress-percent">50%</strong></div>
+            <div class="progress-meta"><span id="progress-label">Etapa 1 de 3</span><strong id="progress-percent">33%</strong></div>
             <div class="progress-track"><span id="progress-bar"></span></div>
           </div>
           <p class="form-message" id="form-message" role="alert" hidden></p>
           <form id="signup-form" novalidate>
             <fieldset class="form-step is-active" data-step="1">
-              <legend>Primeiro, conte sobre você</legend>
-              <p class="step-help">Esses dados identificam seu momento acadêmico.</p>
+              <legend>Em que momento você está?</legend>
+              <p class="step-help">Isso evita recomendar vagas incompatíveis com seu curso ou período.</p>
               <div class="field-grid">
-                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
-                <label class="field field-full"><span>Senha</span><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /></label>
-                <label class="field"><span>Curso</span><input name="curso" required placeholder="Ex.: Sistemas de Informação" /></label>
-                <label class="field"><span>Período atual</span><input name="periodo" type="number" min="1" max="20" required placeholder="Ex.: 4" /></label>
+                <label class="field field-full"><span>Seu curso</span><input name="curso" list="cursos-sugeridos" autocomplete="off" required placeholder="Digite ou escolha seu curso" /><small>Use o nome que aparece na sua faculdade.</small></label>
+                <datalist id="cursos-sugeridos">
+                  <option value="Análise e Desenvolvimento de Sistemas"></option>
+                  <option value="Ciência da Computação"></option>
+                  <option value="Engenharia da Computação"></option>
+                  <option value="Engenharia de Software"></option>
+                  <option value="Gestão da Tecnologia da Informação"></option>
+                  <option value="Redes de Computadores"></option>
+                  <option value="Sistemas de Informação"></option>
+                </datalist>
+                <label class="field field-full"><span>Período atual</span><select name="periodo" required><option value="">Selecione</option><option value="1">1º período</option><option value="2">2º período</option><option value="3">3º período</option><option value="4">4º período</option><option value="5">5º período</option><option value="6">6º período</option><option value="7">7º período</option><option value="8">8º período</option><option value="9">9º período</option><option value="10">10º período ou mais</option></select></label>
               </div>
-              <p class="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
               <div class="form-actions form-actions-end"><button class="button button-primary" type="button" id="next-step">Continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
             <fieldset class="form-step" data-step="2">
-              <legend>Agora, diga o que você procura</legend>
+              <legend>O que você já sabe usar?</legend>
+              <p class="step-help">Escolha pelo menos uma habilidade. Isso melhora a nota das vagas que combinam com você.</p>
+              <input name="habilidades" type="hidden" />
+              <div class="skill-picker" id="skill-picker" aria-label="Habilidades sugeridas">
+                <button type="button" data-skill="Python" aria-pressed="false">Python</button>
+                <button type="button" data-skill="JavaScript" aria-pressed="false">JavaScript</button>
+                <button type="button" data-skill="Java" aria-pressed="false">Java</button>
+                <button type="button" data-skill="React" aria-pressed="false">React</button>
+                <button type="button" data-skill="SQL" aria-pressed="false">SQL</button>
+                <button type="button" data-skill="Git" aria-pressed="false">Git</button>
+                <button type="button" data-skill="Excel" aria-pressed="false">Excel</button>
+                <button type="button" data-skill="Power BI" aria-pressed="false">Power BI</button>
+                <button type="button" data-skill="Linux" aria-pressed="false">Linux</button>
+                <button type="button" data-skill="Redes" aria-pressed="false">Redes</button>
+              </div>
+              <div class="field-grid">
+                <label class="field field-full"><span>Não encontrou alguma?</span><input id="custom-skill" autocomplete="off" placeholder="Digite uma habilidade e pressione Enter" /><small>Ex.: C#, Figma, AWS ou suporte técnico.</small></label>
+              </div>
+              <div class="selected-skills" id="selected-skills" aria-live="polite"></div>
+              <div class="form-actions"><button class="button button-ghost" type="button" data-previous-step>← Voltar</button><button class="button button-primary" type="button" data-next-step>Definir preferências <span aria-hidden="true">→</span></button></div>
+            </fieldset>
+            <fieldset class="form-step" data-step="3">
+              <legend>Onde as vagas devem chegar?</legend>
               <p class="step-help">Você poderá atualizar essas preferências depois.</p>
               <div class="field-grid">
-                <label class="field field-full"><span>Habilidades</span><input name="habilidades" required placeholder="Ex.: Python, React, SQL, Git" /><small>Separe por vírgulas.</small></label>
-                <label class="field field-full"><span>Cidade</span><input name="cidade" required placeholder="Ex.: Rio de Janeiro, RJ" /></label>
+                <label class="field field-full"><span>Cidade principal</span><input name="cidade" required placeholder="Ex.: Rio de Janeiro, RJ" /><small>Vagas remotas continuam valendo mesmo quando são anunciadas em outra cidade.</small></label>
                 <div class="field field-full"><span>Modalidade preferida</span><div class="option-grid">
                   <label><input type="radio" name="modalidade" value="remoto" required /><span>Remoto</span></label>
                   <label><input type="radio" name="modalidade" value="hibrido" /><span>Híbrido</span></label>
                   <label><input type="radio" name="modalidade" value="presencial" /><span>Presencial</span></label>
                   <label><input type="radio" name="modalidade" value="indiferente" /><span>Indiferente</span></label>
                 </div></div>
+                <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
+                <label class="field field-full"><span>Senha</span><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /></label>
               </div>
+              <p class="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
               <div class="form-actions"><button class="button button-ghost" type="button" id="previous-step">← Voltar</button><button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
           </form>

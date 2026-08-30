@@ -10,7 +10,9 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - explicita que modalidade ausente não é inferida pela localização;
 - oferece um único CTA para cadastro;
 - cria ou acessa uma conta por e-mail e senha;
-- coleta curso, período, habilidades, cidade e modalidade em duas etapas;
+- coleta curso e período, habilidades e preferências em três etapas curtas;
+- sugere cursos e habilidades comuns, mas mantém entrada livre para outros perfis;
+- pede e-mail e senha somente depois que o usuário configura o radar;
 - persiste o perfil no Supabase e abre o vínculo seguro com o Telegram;
 - reconhece quando o webhook concluiu o vínculo.
 

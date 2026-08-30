@@ -13,6 +13,8 @@ const pendingProfileKey = "radar-perfil-pendente";
 let currentStep = 1;
 let authMode = "signup";
 let radarClient = null;
+const selectedSkills = new Set();
+const totalSteps = 3;
 
 function getClient() {
   if (radarClient) return radarClient;
@@ -33,15 +35,25 @@ function showStep(step) {
   document.querySelectorAll(".form-step").forEach((element) => {
     element.classList.toggle("is-active", Number(element.dataset.step) === step);
   });
-  const percent = step * 50;
-  progressLabel.textContent = `Etapa ${step} de 2`;
+  const percent = Math.round((step / totalSteps) * 100);
+  progressLabel.textContent = `Etapa ${step} de ${totalSteps}`;
   progressPercent.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
-  document.querySelector(`.form-step[data-step="${step}"] input`)?.focus();
+  document.querySelector(
+    `.form-step[data-step="${step}"] input:not([type="hidden"]), .form-step[data-step="${step}"] select, .form-step[data-step="${step}"] button`,
+  )?.focus();
 }
 
 function validateStep(step) {
-  const fields = [...document.querySelectorAll(`.form-step[data-step="${step}"] input`)];
+  if (step === 2 && selectedSkills.size === 0) {
+    setFormMessage("Escolha ou digite pelo menos uma habilidade.");
+    document.querySelector("#custom-skill").focus();
+    return false;
+  }
+  setFormMessage();
+  const fields = [...document.querySelectorAll(
+    `.form-step[data-step="${step}"] input:not([type="hidden"]), .form-step[data-step="${step}"] select`,
+  )];
   const invalid = fields.find((field) => !field.checkValidity());
   if (invalid) {
     invalid.reportValidity();
@@ -49,6 +61,37 @@ function validateStep(step) {
     return false;
   }
   return true;
+}
+
+function renderSkills() {
+  form.elements.habilidades.value = [...selectedSkills].join(",");
+  document.querySelectorAll("[data-skill]").forEach((button) => {
+    const active = selectedSkills.has(button.dataset.skill);
+    button.classList.toggle("is-selected", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  const container = document.querySelector("#selected-skills");
+  container.replaceChildren(...[...selectedSkills].map((skill) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.textContent = `${skill} ×`;
+    chip.setAttribute("aria-label", `Remover ${skill}`);
+    chip.addEventListener("click", () => {
+      selectedSkills.delete(skill);
+      renderSkills();
+    });
+    return chip;
+  }));
+}
+
+function addCustomSkill() {
+  const input = document.querySelector("#custom-skill");
+  const skill = input.value.trim();
+  if (!skill) return;
+  selectedSkills.add(skill);
+  input.value = "";
+  renderSkills();
+  setFormMessage();
 }
 
 function setFormMessage(message = "") {
@@ -102,6 +145,7 @@ function closeSignup() {
 }
 
 function profileFromForm() {
+  addCustomSkill();
   const data = new FormData(form);
   return {
     curso: data.get("curso").trim(),
@@ -274,9 +318,28 @@ document.querySelectorAll(".js-open-signup").forEach((button) => {
 });
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
 document.querySelector("#finish-signup").addEventListener("click", closeSignup);
-document.querySelector("#previous-step").addEventListener("click", () => showStep(1));
+document.querySelector("#previous-step").addEventListener("click", () => showStep(2));
 document.querySelector("#next-step").addEventListener("click", () => {
   if (validateStep(1)) showStep(2);
+});
+document.querySelector("[data-previous-step]").addEventListener("click", () => showStep(1));
+document.querySelector("[data-next-step]").addEventListener("click", () => {
+  addCustomSkill();
+  if (validateStep(2)) showStep(3);
+});
+document.querySelectorAll("[data-skill]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const skill = button.dataset.skill;
+    if (selectedSkills.has(skill)) selectedSkills.delete(skill);
+    else selectedSkills.add(skill);
+    renderSkills();
+    setFormMessage();
+  });
+});
+document.querySelector("#custom-skill").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  addCustomSkill();
 });
 toggleAuthMode.addEventListener("click", () => {
   setAuthMode(authMode === "signup" ? "login" : "signup");
@@ -330,7 +393,7 @@ dialog.addEventListener("close", () => { document.body.style.overflow = ""; });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && dialog.open) closeSignup();
-  if (event.key === "Enter" && dialog.open && currentStep === 1 && event.target.matches("input")) {
+  if (event.key === "Enter" && dialog.open && currentStep === 1 && event.target.matches("input, select")) {
     event.preventDefault();
     if (validateStep(1)) showStep(2);
   }

@@ -23,6 +23,25 @@ def test_cadastro_persiste_perfil_e_monta_vinculo():
     assert 'localStorage.setItem("radar-perfil"' not in javascript
 
 
+def test_funil_monta_o_perfil_antes_de_pedir_a_conta():
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert html.count('class="form-step') == 3
+    assert html.index('name="curso"') < html.index('name="email"')
+    assert html.index('name="habilidades"') < html.index('name="email"')
+    assert 'id="cursos-sugeridos"' in html
+    assert 'data-skill="Python"' in html
+
+
+def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "const selectedSkills = new Set()" in javascript
+    assert 'form.elements.habilidades.value = [...selectedSkills].join(",")' in javascript
+    assert "Escolha ou digite pelo menos uma habilidade." in javascript
+    assert "const totalSteps = 3" in javascript
+
+
 def test_migration_reserva_campos_de_vinculo_ao_webhook():
     migration = (RAIZ / "supabase/migrations/0002_permissoes_frontend.sql").read_text()
 

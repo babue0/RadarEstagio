@@ -26,7 +26,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 p, h1, h2, h3 { margin-top: 0; }
@@ -66,7 +66,7 @@ p, h1, h2, h3 { margin-top: 0; }
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 .button:hover { transform: translateY(-2px); }
-.button:focus-visible, .text-link:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.button:focus-visible, .text-link:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 .button-small { min-height: 42px; padding-inline: 18px; font-size: 13px; background: var(--ink); color: var(--white); }
 .button-primary { border-color: var(--lime); background: var(--lime); box-shadow: 0 8px 0 var(--ink); }
 .button-primary:hover { background: var(--lime-deep); box-shadow: 0 10px 0 var(--ink); }
@@ -195,14 +195,23 @@ p, h1, h2, h3 { margin-top: 0; }
 .privacy-note { margin-top: auto; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: 11px; }.privacy-note span { color: var(--lime); }
 .dialog-form-area { overflow-y: auto; padding: 46px 54px 36px; }
 .progress-wrap { margin-bottom: 39px; }.progress-meta { display: flex; justify-content: space-between; margin-bottom: 9px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: var(--paper-deep); }.progress-track span { display: block; width: 50%; height: 100%; background: var(--blue); transition: width 260ms ease; }
+.progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: var(--paper-deep); }.progress-track span { display: block; width: 33%; height: 100%; background: var(--blue); transition: width 260ms ease; }
 .form-step { display: none; padding: 0; border: 0; }.form-step.is-active { display: block; animation: step-in 220ms ease; }
 @keyframes step-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 .form-step legend { padding: 0; font-size: 28px; font-weight: 850; letter-spacing: -.04em; }.step-help { margin: 5px 0 28px; color: var(--muted); font-size: 13px; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }.field-full { grid-column: 1 / -1; }
 .field { display: flex; flex-direction: column; gap: 7px; color: var(--ink-soft); font-size: 12px; font-weight: 750; }
-.field input { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--white); }
+.field input, .field select { width: 100%; min-height: 49px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--white); }
+.field select { display: block; align-self: stretch; height: 52px; min-width: 100%; padding-right: 42px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position: calc(100% - 19px) 22px, calc(100% - 14px) 22px; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; }
 .field input::placeholder { color: #9ca39f; }.field input:user-invalid { border-color: #c94848; background: #fff9f7; }.field small { color: var(--muted); font-size: 10px; font-weight: 500; }
+.skill-picker, .selected-skills { display: flex; flex-wrap: wrap; gap: 9px; }
+.skill-picker { margin-bottom: 22px; }
+.skill-picker button, .selected-skills button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--white); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.skill-picker button:hover, .skill-picker button.is-selected { border-color: var(--blue); color: var(--blue); background: rgba(95,124,255,.08); }
+.selected-skills { min-height: 0; margin-top: 14px; }
+.selected-skills:empty { display: none; }
+.selected-skills button { border-color: var(--ink); color: var(--ink); background: var(--lime); }
+.skill-picker button:focus-visible, .selected-skills button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 .account-switch { margin: 18px 0 0; color: var(--muted); font-size: 12px; text-align: right; }
 .account-switch button { padding: 0; border: 0; color: var(--blue); background: transparent; font-weight: 800; cursor: pointer; }
 .account-switch button:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
