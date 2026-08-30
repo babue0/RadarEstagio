@@ -479,6 +479,34 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ---
 
+## Passo 13 — Cobertura das fontes por cidade
+
+**O que foi feito**
+
+- Diagnóstico: a Adzuna marca a maioria das vagas brasileiras como categoria "Unknown". Com
+  `category=it-jobs` a busca nacional devolvia 55 vagas em 5 dias; sem categoria e restrita
+  ao Rio de Janeiro, 686. Para um perfil presencial no Rio, só 2 vagas chegavam ao Gemini.
+- Adzuna: busca com `what_and=estágio` e `what_or` de termos de computação, sem categoria,
+  até 4 páginas por região; uma busca nacional e uma por cidade (`where=`) de cada perfil
+  presencial ou híbrido. A localização passou a usar `location.area` (cidade, estado), para
+  que "Copacabana, Rio de Janeiro" conte como Rio de Janeiro.
+- Gupy: em vez de oito termos no título, busca todos os estágios do país (até 10 páginas,
+  ordenados por data) e todos os da cidade de cada perfil presencial ou híbrido (`city=`).
+- `Perfil.nome_da_cidade()` extrai a cidade antes da vírgula; `cidades_de_interesse` reúne
+  as cidades dos usuários ativos e a CLI as passa ao coletor (`rodar`, `coletar`, `avaliar`).
+- Pré-filtro: `fora_da_area_de_tecnologia` agora descarta também título genérico sem sinal
+  de computação na descrição, e a lista de outras áreas ganhou farmácia, turismo,
+  treinamento e desenvolvimento, R&S, people, CRM, auditoria, comunicação e afins.
+
+**Como foi testado**
+
+- Testes unitários para paginação, `where`/`city` por cidade, deduplicação entre a busca
+  nacional e a da cidade, localização com bairro e as novas regras do pré-filtro.
+- Coleta real em 30/08/2026 com os dois perfis presenciais no Rio: 703 vagas únicas
+  (356 Adzuna, 347 Gupy), 210 no Rio, 55 candidatas após o pré-filtro (eram 2).
+
+---
+
 ## Números finais do MVP
 
 - 12 passos, ~40 commits atômicos em Conventional Commits.
@@ -487,8 +515,6 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ## Pendências para o grupo decidir
 
-- **Nota mínima** para uma vaga entrar na mensagem (hoje entram as 5 melhores mesmo com
-  nota 25).
 - **Cota do Gemini para vários usuários**: ativar billing (centavos/mês) ou migrar para
   Claude Haiku (novo `AvaliadorClaude` em `matching/`, sem tocar no resto).
 - **`.agents/skills`** no repositório público: manter ou remover.

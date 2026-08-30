@@ -221,6 +221,17 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   mensagem — sem aprovadas, vai "Nenhuma vaga compatível"; o pré-filtro descarta título de
   área claramente fora de computação (`fora_da_area_de_tecnologia`); o prompt define
   "área de tecnologia" como computação e exclui engenharias tradicionais explicitamente.
+- Cobertura das fontes (30/08/2026): a Adzuna classificava 93% das vagas brasileiras como
+  categoria "Unknown", então `category=it-jobs` escondia quase tudo (55 vagas em 5 dias no
+  país inteiro). O coletor agora usa `what_and=estágio` + `what_or=<termos de computação>`,
+  sem categoria, até 4 páginas de 50, e repete a busca com `where=<cidade>` para cada cidade
+  de perfil presencial ou híbrido (`collectors/factory.py::cidades_de_interesse`, cidades
+  vindas do repositório em `__main__.py`). A localização vem de `location.area`
+  (cidade, estado), então bairro não quebra o filtro de cidade. A Gupy deixou de buscar por
+  termos no título: busca todos os estágios do país (até 10 páginas) e todos os da cidade
+  (`city=`). Como o volume cresceu, `fora_da_area_de_tecnologia` passou a exigir sinal de
+  computação no título ou, se o título for genérico, na descrição. Efeito medido: perfil
+  Rio presencial saiu de 2 para 55 candidatas em um dia.
 - Passo 9 (Fase 2) no código: banco Supabase opcional (`DATABASE_URL`), pipeline por
   usuário, `Usuario` no domínio, `storage/`.
 - Passo 10 (Fase 2): webhook do `/start` em `supabase/functions/telegram-webhook/` (Edge
