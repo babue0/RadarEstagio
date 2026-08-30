@@ -1,7 +1,12 @@
 from datetime import UTC, datetime
 
 from radar.domain.models import Modalidade, Vaga
-from radar.filtering.duplicatas import chave_de_duplicata, mais_completa, remover_duplicatas
+from radar.filtering.duplicatas import (
+    chave_de_duplicata,
+    descricoes_semelhantes,
+    mais_completa,
+    remover_duplicatas,
+)
 
 
 def vaga(
@@ -11,13 +16,14 @@ def vaga(
     descricao: str = "descrição",
     modalidade: Modalidade | None = None,
     numero: int = 1,
+    localizacao: str = "Rio de Janeiro",
 ) -> Vaga:
     return Vaga(
         id_externo=str(numero),
         fonte=fonte,
         titulo=titulo,
         empresa=empresa,
-        localizacao="Rio de Janeiro",
+        localizacao=localizacao,
         descricao=descricao,
         url=f"https://{fonte}.com/vaga/{numero}",
         publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
@@ -73,3 +79,77 @@ def test_remover_duplicatas_preserva_lista_sem_repeticao():
 
     assert remover_duplicatas(vagas) == vagas
     assert remover_duplicatas([]) == []
+
+
+ANUNCIO = (
+    "Dar apoio e suporte nas atividades de desenvolvimento das ferramentas no site. "
+    "Requisitos: desejável conhecimento em PHP orientado a objeto, MySQL, SQL, HTML5, "
+    "JavaScript e REST API. Necessário cursando graduação em Ciência da Computação."
+)
+ANUNCIO_COM_SALARIO = ANUNCIO.replace("Requisitos:", "1000,00")
+
+
+def test_descricoes_quase_iguais_sao_semelhantes():
+    assert descricoes_semelhantes(vaga(descricao=ANUNCIO), vaga(descricao=ANUNCIO_COM_SALARIO))
+
+
+def test_descricoes_diferentes_nao_sao_semelhantes():
+    outra = "Estágio em suporte de infraestrutura, redes e atendimento a usuários internos."
+    assert not descricoes_semelhantes(vaga(descricao=ANUNCIO), vaga(descricao=outra))
+
+
+def test_descricao_curta_nunca_e_semelhante():
+    curta = "Vaga de estágio em TI. Envie seu currículo."
+    assert not descricoes_semelhantes(vaga(descricao=""), vaga(descricao=""))
+    assert not descricoes_semelhantes(vaga(descricao=curta), vaga(descricao=curta))
+
+
+def test_remover_duplicatas_une_o_mesmo_anuncio_republicado_por_agregadores():
+    original = vaga("Estágio em Programação", "BuscarVagas", descricao=ANUNCIO, numero=1)
+    republicada = vaga("Estágio em Programação", "Divulga Vagas", descricao=ANUNCIO, numero=2)
+    com_salario = vaga(
+        "Estágio em Programação",
+        "Divulga Vagas - Consultoria",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=3,
+    )
+
+    assert remover_duplicatas([original, republicada, com_salario]) == [original]
+
+
+def test_descricao_truncada_pela_fonte_com_final_diferente_ainda_e_semelhante():
+    cabecalho = (
+        ANUNCIO + " Desejável também noções de Git, Docker e metodologias ágeis no dia a dia."
+    )
+    completa = cabecalho + " Benefícios: vale transporte, refeição no local e bolsa auxílio."
+    truncada = cabecalho + " Horário: segunda a sexta, das 9h às 15h, na Barra da"
+    assert descricoes_semelhantes(vaga(descricao=completa), vaga(descricao=truncada))
+
+
+def test_remover_duplicatas_ignora_sufixo_de_agregador_no_titulo():
+    original = vaga(
+        "Estagiário de TI - São Gonçalo - RJ", "BuscarVagas", descricao=ANUNCIO, numero=1
+    )
+    com_sufixo = vaga(
+        "Estagiário de TI - São Gonçalo - RJ - Vaga", "Divulga Vagas", descricao=ANUNCIO, numero=2
+    )
+
+    assert remover_duplicatas([original, com_sufixo]) == [original]
+
+
+def test_remover_duplicatas_mantem_mesmo_titulo_em_cidades_diferentes():
+    rio = vaga("Estágio em Programação", "A", descricao=ANUNCIO, numero=1)
+    salvador = vaga(
+        "Estágio em Programação", "B", descricao=ANUNCIO, numero=2, localizacao="Salvador, Bahia"
+    )
+
+    assert remover_duplicatas([rio, salvador]) == [rio, salvador]
+
+
+def test_remover_duplicatas_mantem_mesmo_titulo_com_descricoes_diferentes():
+    primeira = vaga("Estágio em TI", "A", descricao=ANUNCIO, numero=1)
+    segunda = vaga(
+        "Estágio em TI", "B", descricao="Suporte a usuários e manutenção de redes.", numero=2
+    )
+
+    assert remover_duplicatas([primeira, segunda]) == [primeira, segunda]
