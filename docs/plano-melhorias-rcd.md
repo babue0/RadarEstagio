@@ -83,7 +83,9 @@ usuário pode continuar.
 
 ### 3.3 Tornar a mensagem real igual à demonstração
 
-Adicionar à mensagem do Telegram:
+**Status:** concluída em 30/08/2026.
+
+A mensagem do Telegram agora inclui:
 
 - localização e modalidade, quando informadas;
 - fonte da vaga;

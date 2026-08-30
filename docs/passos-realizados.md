@@ -439,7 +439,7 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 - `tests/test_frontend_activation.py` verifica a ordem de carregamento, a presença do fluxo de
   Auth, a persistência em `perfis`, o deep link e a proteção dos campos de vínculo.
 - Na verificação de 29/08/2026, 192 testes passaram e 4 testes de integração foram ignorados sem
-  banco de teste configurado. A suíte atual tem 259 testes passando e 4 integrações ignoradas.
+  banco de teste configurado. A suíte atual tem 262 testes passando e 4 integrações ignoradas.
 
 **Pendências operacionais**
 
@@ -515,7 +515,7 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 ## Números atuais do MVP
 
 - 13 passos, ~40 commits atômicos em Conventional Commits.
-- 263 testes coletados: 259 passam localmente e 4 integrações exigem um PostgreSQL de teste.
+- 266 testes coletados: 262 passam localmente e 4 integrações exigem um PostgreSQL de teste.
 - 1 execução diária automática; as requisições ao Gemini variam conforme usuários e lotes.
 
 ## Pendências para o grupo decidir

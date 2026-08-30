@@ -1,11 +1,17 @@
 from datetime import date
 from html import escape
 
-from radar.domain.models import ResultadoMatch
+from radar.domain.models import ResultadoMatch, Vaga
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
+ROTULOS_MODALIDADE = {
+    "remoto": "Remoto",
+    "presencial": "Presencial",
+    "hibrido": "Híbrido",
+    "indiferente": "Indiferente",
+}
 
 
 def formatar_mensagem(resultados: list[ResultadoMatch], data: date) -> str:
@@ -23,7 +29,9 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
     vaga = resultado.vaga
     linhas = [
         f"<b>{posicao}. {escape(vaga.titulo)}</b> — {escape(vaga.empresa)}",
-        f"Nota {resultado.nota}",
+        f"📍 {escape(vaga.localizacao)} · {escape(rotulo_modalidade(vaga))}",
+        f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))} · Publicada em {vaga.publicada_em:%d/%m/%Y}",
+        f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
     if resultado.pontos_a_favor:
         linhas.append(f"✅ {formatar_pontos(resultado.pontos_a_favor)}")
@@ -33,6 +41,16 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
         linhas.append(f"⚠️ {escape(resultado.alerta_pegadinha)}")
     linhas.append(f'🔗 <a href="{escape(vaga.url)}">Ver vaga</a>')
     return "\n".join(linhas)
+
+
+def rotulo_modalidade(vaga: Vaga) -> str:
+    if vaga.modalidade is None:
+        return "Modalidade não informada"
+    return ROTULOS_MODALIDADE[vaga.modalidade.value]
+
+
+def rotulo_fonte(fonte: str) -> str:
+    return fonte.replace("_", " ").title()
 
 
 def formatar_pontos(pontos: list[str]) -> str:

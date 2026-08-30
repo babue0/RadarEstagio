@@ -1,6 +1,6 @@
 from datetime import UTC, date, datetime
 
-from radar.domain.models import ResultadoMatch, Vaga
+from radar.domain.models import Modalidade, ResultadoMatch, Vaga
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     dividir_em_mensagens,
@@ -73,10 +73,40 @@ def test_inclui_titulo_empresa_nota_pontos_e_link():
 
     assert "Estágio Python" in texto
     assert "Empresa Exemplo" in texto
-    assert "Nota 85" in texto
+    assert "Nota 85/100" in texto
     assert "✅ Python · SQL" in texto
     assert "❌ Presencial em SP" in texto
     assert '<a href="https://exemplo.com/vaga/1">' in texto
+
+
+def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
+    oportunidade = vaga().model_copy(update={"modalidade": Modalidade.HIBRIDO})
+    texto = formatar_mensagem(
+        [resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE
+    )
+
+    assert "📍 Rio de Janeiro · Híbrido" in texto
+    assert "🏷️ Fonte: Adzuna" in texto
+    assert "Publicada em 25/08/2026" in texto
+
+
+def test_modalidade_nao_informada_aparece_explicitamente():
+    texto = formatar_mensagem([resultado(85)], DATA_DE_TESTE)
+
+    assert "📍 Rio de Janeiro · Modalidade não informada" in texto
+
+
+def test_escapa_localizacao_e_fonte_dos_metadados():
+    oportunidade = vaga().model_copy(
+        update={"localizacao": "Rio <Centro> & região", "fonte": "portal_exemplo"}
+    )
+    texto = formatar_mensagem(
+        [resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE
+    )
+
+    assert "Rio &lt;Centro&gt; &amp; região" in texto
+    assert "Fonte: Portal Exemplo" in texto
+    assert "Rio <Centro>" not in texto
 
 
 def test_linha_de_pontos_some_quando_a_lista_esta_vazia():
