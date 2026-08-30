@@ -17,6 +17,6 @@ def test_documentacao_reflete_a_fase_atual_e_as_evidencias_recentes():
     proposta = (RAIZ / "docs/proposta.md").read_text()
 
     assert "Fase 2 — MVP de validação com usuários, parcialmente implementada" in plano
-    assert "262 testes automatizados passam" in pre_prd
+    assert "268 testes automatizados passam" in pre_prd
     assert "703 vagas únicas" in pre_prd
     assert "aprende com o feedback" not in proposta

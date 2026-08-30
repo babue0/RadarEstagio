@@ -8,6 +8,7 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 - O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
 - Evento de ativação e métricas: [`docs/metricas.md`](docs/metricas.md)
+- Roteiro da apresentação: [`docs/apresentacao.md`](docs/apresentacao.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
 - Landing page e decisões de frontend: [`web/README.md`](web/README.md)
 

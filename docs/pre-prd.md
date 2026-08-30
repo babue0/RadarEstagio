@@ -29,7 +29,7 @@ A prova técnica principal já existe: o projeto coleta vagas da Adzuna e da Gup
 avalia as oportunidades com Gemini e envia recomendações pelo Telegram. Em 30/08/2026, uma coleta
 real com dois perfis presenciais no Rio produziu 703 vagas únicas e 55 candidatas após o
 pré-filtro. O fluxo também pode usar o AGY localmente para testes sem consumir a cota da API
-direta. A suíte atual possui 262 testes passando e 4 integrações condicionadas a um PostgreSQL
+direta. A suíte atual possui 268 testes passando e 4 integrações condicionadas a um PostgreSQL
 de teste.
 
 As principais incertezas agora são de produto e operação:
@@ -179,7 +179,7 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 - O pipeline completo já enviou uma lista real com cinco vagas avaliadas.
 - O GitHub Actions teve execuções manuais bem-sucedidas em 26 e 27/08/2026 na versão anterior à Gupy.
 - O README documenta instalação, configuração, comandos locais e execução pelo Actions.
-- Em 30/08/2026, 262 testes automatizados passam e 4 integrações são ignoradas sem PostgreSQL de teste.
+- Em 30/08/2026, 268 testes automatizados passam e 4 integrações são ignoradas sem PostgreSQL de teste.
 
 ### 6.2 Limitações já observadas
 
