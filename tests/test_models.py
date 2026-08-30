@@ -71,8 +71,8 @@ def test_perfil_rejeita_lista_de_habilidades_vazia():
 
 def test_perfil_do_mvp_e_valido():
     perfil = perfil_do_mvp()
-    assert perfil.modalidade is Modalidade.REMOTO
-    assert "Python" in perfil.habilidades
+    assert perfil.modalidade is Modalidade.PRESENCIAL
+    assert perfil.habilidades == ["Python", "Java"]
 
 
 def test_usuario_exige_chat_id_preenchido():
