@@ -22,6 +22,7 @@ def vaga(numero: int, titulo: str = "Estágio Python") -> Vaga:
         descricao="descrição",
         url=f"https://exemplo.com/vaga/{numero}",
         publicada_em=datetime(2026, 8, 25, tzinfo=UTC),
+        modalidade=Modalidade.REMOTO,
     )
 
 
@@ -271,6 +272,25 @@ def test_vaga_com_nota_guardada_nao_vai_ao_avaliador():
     assert avaliador.avaliadas == ["2"]
     assert [resultado.nota for resultado in selecionadas] == [95, 60]
     assert repositorio.registros == [(ID_USUARIO, ["2"], ["1", "2"], "modelo-teste")]
+
+
+def test_corrige_nota_guardada_e_exibe_limite_objetivo():
+    sem_modalidade = vaga(1).model_copy(update={"modalidade": None})
+    guardada = ResultadoMatch(
+        vaga=sem_modalidade,
+        nota=95,
+        pontos_a_favor=["Python informado"],
+        pontos_contra=["Modalidade não informada", "SQL não informado"],
+    )
+    repositorio = RepositorioFalso([usuario()], guardadas=[guardada])
+
+    selecionadas, notificador, avaliador = rodar([sem_modalidade], {}, repositorio=repositorio)
+
+    assert avaliador.avaliadas == []
+    assert selecionadas[0].nota == 85
+    assert selecionadas[0].pontos_contra == ["SQL não informado"]
+    assert "❌ SQL não informado" in notificador.textos[0]
+    assert "⚠️ Nota limitada a 85: modalidade não informada" in notificador.textos[0]
 
 
 def test_falha_ao_gravar_nao_derruba_o_envio():

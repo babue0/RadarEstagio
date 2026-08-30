@@ -37,6 +37,8 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
         linhas.append(f"✅ {formatar_pontos(resultado.pontos_a_favor)}")
     if resultado.pontos_contra:
         linhas.append(f"❌ {formatar_pontos(resultado.pontos_contra)}")
+    for aviso in resultado.avisos_objetivos:
+        linhas.append(f"⚠️ {escape(aviso)}")
     if resultado.alerta_pegadinha:
         linhas.append(f"⚠️ {escape(resultado.alerta_pegadinha)}")
     linhas.append(f'🔗 <a href="{escape(vaga.url)}">Ver vaga</a>')

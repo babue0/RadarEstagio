@@ -55,6 +55,8 @@ def test_pontos_sao_concretos_curtos_e_ordenados_por_importancia():
 
 def test_modalidade_desconhecida_nao_torna_a_localizacao_incompativel():
     assert "não use cidade ou localização como ponto contra" in INSTRUCAO_DO_RECRUTADOR
+    assert "Não inclua localização ou modalidade" in INSTRUCAO_DO_RECRUTADOR
+    assert "Não a repita em pontos_contra" in INSTRUCAO_DO_RECRUTADOR
 
 
 def test_informacao_ausente_nao_e_alerta_pegadinha():

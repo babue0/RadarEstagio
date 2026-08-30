@@ -30,12 +30,14 @@ def resultado(
     numero: int = 1,
     a_favor: list[str] | None = None,
     contra: list[str] | None = None,
+    avisos: list[str] | None = None,
 ) -> ResultadoMatch:
     return ResultadoMatch(
         vaga=vaga(titulo, numero),
         nota=nota,
         pontos_a_favor=["Python"] if a_favor is None else a_favor,
         pontos_contra=["Exige Java"] if contra is None else contra,
+        avisos_objetivos=[] if avisos is None else avisos,
         alerta_pegadinha=alerta,
     )
 
@@ -145,6 +147,23 @@ def test_alerta_aparece_somente_quando_existe():
 
     assert "⚠️ Exige pleno" in com_alerta
     assert "⚠️" not in sem_alerta
+
+
+def test_aviso_objetivo_aparece_separado_dos_pontos_contra():
+    texto = formatar_mensagem(
+        [
+            resultado(
+                85,
+                contra=["SQL não informado"],
+                avisos=["Nota limitada a 85: modalidade não informada"],
+            )
+        ],
+        DATA_DE_TESTE,
+    )
+
+    assert "❌ SQL não informado" in texto
+    assert "⚠️ Nota limitada a 85: modalidade não informada" in texto
+    assert "❌ Nota limitada" not in texto
 
 
 def test_escapa_caracteres_html_dos_dados_da_vaga_e_dos_pontos():

@@ -46,4 +46,5 @@ class ResultadoMatch(BaseModel):
     nota: int = Field(ge=0, le=100)
     pontos_a_favor: list[str] = Field(default_factory=list)
     pontos_contra: list[str] = Field(default_factory=list)
+    avisos_objetivos: list[str] = Field(default_factory=list)
     alerta_pegadinha: str | None = None

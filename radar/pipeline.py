@@ -6,6 +6,7 @@ from radar.domain.models import ResultadoMatch, Usuario, Vaga
 from radar.domain.ports import AvaliadorDeVagas, ColetorDeVagas, Notificador, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
+from radar.matching.regras import aplicar_regras_objetivas
 from radar.notification.formatador import formatar_mensagem
 from radar.notification.telegram import ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
@@ -64,10 +65,12 @@ def atender_usuario(
         for vaga in filtrar(vagas, usuario.perfil)
         if (vaga.fonte, vaga.id_externo) not in ja_enviadas
     ]
-    guardadas = repositorio.avaliacoes_existentes(usuario, candidatas)
+    guardadas = aplicar_regras_objetivas(
+        repositorio.avaliacoes_existentes(usuario, candidatas), usuario.perfil
+    )
     ids_guardados = {resultado.vaga.id_externo for resultado in guardadas}
     pendentes = [vaga for vaga in candidatas if vaga.id_externo not in ids_guardados]
-    novas = avaliador.avaliar(pendentes, usuario.perfil)
+    novas = aplicar_regras_objetivas(avaliador.avaliar(pendentes, usuario.perfil), usuario.perfil)
     selecionadas = selecionar(guardadas + novas, quantidade, nota_minima)
     logger.info(
         "usuário %s: %d candidatas, %d com nota guardada, %d avaliadas agora, %d enviadas",

@@ -19,14 +19,17 @@ um item para cada vaga recebida, com:
 para a menos importante. Cada item deve ter de 2 a 6 palavras. Exemplos: \
 "Curso compatível", "Python informado", "Vaga explicitamente remota". Use lista vazia \
 quando não houver evidência positiva.
-- pontos_contra: até 3 lacunas, incompatibilidades ou incertezas relevantes, ordenadas da \
-mais importante para a menos importante. Cada item deve ter de 2 a 6 palavras. Exemplos: \
-"Java não informado", "Período mínimo incompatível", "Modalidade não informada". Nunca \
-afirme que o candidato não possui uma habilidade; diga que ela não está informada no perfil.
+- pontos_contra: até 3 requisitos explícitos da vaga ausentes no perfil ou incompatibilidades \
+semânticas de curso, período, experiência e habilidades, ordenadas da mais importante para a \
+menos importante. Cada item deve ter de 2 a 6 palavras. Exemplos: "Java não informado", \
+"Período mínimo incompatível". Nunca afirme que o candidato não possui uma habilidade; diga \
+que ela não está informada no perfil. Não inclua localização ou modalidade: o sistema exibe e \
+valida esses dados separadamente.
 - alerta_pegadinha: no máximo 10 palavras, apenas se a vaga esconder um problema que o \
 título não revela: exige experiência de pleno/sênior, é comercial ou operacional \
 disfarçada de TI, sem remuneração, exclusiva de outro curso. Nunca repita o que já está \
-nos pontos contra. Localização e modalidade não são pegadinha: vão nos pontos contra. Se não \
+nos pontos contra. Localização e modalidade não são pegadinha e são tratadas separadamente \
+pelo sistema. Se não \
 houver pegadinha, null. Não use alerta para descrição insuficiente, título genérico ou \
 informação apenas ausente.
 
@@ -62,10 +65,10 @@ marketing, logística e design de interiores não são área de tecnologia, mesm
 "tecnologia" ou "TI" no título. Vaga fora da área de tecnologia recebe nota máxima 29.
 - Nunca deduza modalidade pela cidade.
 - Vaga remota não recebe penalidade pela cidade.
-- Modalidade não informada gera "Modalidade não informada", impede nota acima de 85 e, \
-nesse caso, não use cidade ou localização como ponto contra.
+- Modalidade não informada impede nota acima de 85. Não a repita em pontos_contra e, nesse \
+caso, não use cidade ou localização como ponto contra.
 - Vaga explicitamente presencial ou híbrida, quando o candidato prefere remoto, recebe \
-nota máxima 30.
+nota máxima 30. Não repita essa incompatibilidade em pontos_contra.
 - Avalie cada vaga isoladamente e nunca misture requisitos entre vagas.
 """
 
