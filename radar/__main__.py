@@ -7,7 +7,8 @@ import httpx
 from pydantic import ValidationError
 
 from radar.collectors.errors import ErroDeColeta
-from radar.collectors.factory import criar_coletor
+from radar.collectors.factory import cidades_de_interesse, criar_coletor
+from radar.domain.models import Usuario
 from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.domain.ports import ColetorDeVagas
 from radar.filtering.duplicatas import remover_duplicatas
@@ -61,8 +62,9 @@ def verificar_configuracao(settings: Settings) -> None:
 
 
 def coletar(settings: Settings) -> None:
+    usuarios = listar_usuarios(settings)
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
-        coletadas = montar_coletor(settings, cliente_http).coletar()
+        coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
     vagas = remover_duplicatas(coletadas)
     print(f"{len(coletadas)} vagas coletadas, {len(vagas)} após remover duplicatas")
     for vaga in vagas:
@@ -75,8 +77,9 @@ def coletar(settings: Settings) -> None:
 
 def avaliar(settings: Settings) -> None:
     perfil = perfil_do_mvp()
+    usuarios = listar_usuarios(settings)
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
-        coletadas = montar_coletor(settings, cliente_http).coletar()
+        coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
     vagas = filtrar(remover_duplicatas(coletadas), perfil)
     selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
     print(
@@ -100,8 +103,16 @@ def testar_telegram(settings: Settings) -> None:
     print(f"Mensagem enviada para o chat {settings.telegram_chat_id}")
 
 
-def montar_coletor(settings: Settings, cliente_http: httpx.Client) -> ColetorDeVagas:
-    return criar_coletor(settings, cliente_http, datetime.now(UTC))
+def listar_usuarios(settings: Settings) -> list[Usuario]:
+    with abrir_repositorio(settings) as repositorio:
+        return repositorio.listar_ativos()
+
+
+def montar_coletor(
+    settings: Settings, cliente_http: httpx.Client, usuarios: list[Usuario]
+) -> ColetorDeVagas:
+    cidades = cidades_de_interesse(usuarios)
+    return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades)
 
 
 def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
@@ -113,8 +124,9 @@ def rodar(settings: Settings) -> None:
         httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http,
         abrir_repositorio(settings) as repositorio,
     ):
+        coletor = montar_coletor(settings, cliente_http, repositorio.listar_ativos())
         enviadas = executar(
-            montar_coletor(settings, cliente_http),
+            coletor,
             montar_avaliador(settings),
             NotificadorTelegram(settings.telegram_bot_token, cliente_http),
             repositorio,

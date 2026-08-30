@@ -31,6 +31,9 @@ class Perfil(BaseModel):
     cidade: str
     modalidade: Modalidade
 
+    def nome_da_cidade(self) -> str:
+        return self.cidade.split(",")[0].strip()
+
 
 class Usuario(BaseModel):
     id: UUID
