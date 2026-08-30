@@ -13,8 +13,31 @@ PADRAO_OUTRA_AREA = re.compile(
     r"\b(?:eletronic[ao]|eletrotecnic[ao]|mecanic[ao]|civil|quimic[ao]|ambiental"
     r"|fisioterapia|enfermagem|nutricao|psicologia|pedagogia|juridic[ao]|direito"
     r"|financeir[ao]|contabil|contabilidade|recursos humanos|rh|manufatura|producao"
-    r"|marketing|comercial|vendas|pre-?vendas?|logistica|arquitetura"
-    r"|design de interiores|comercio exterior)\b"
+    r"|marketing|endomarketing|comercial|vendas|pre-?vendas?|logistica|arquitetura"
+    r"|design de interiores|comercio exterior|farmacia|turismo|hotelaria|gastronomia"
+    r"|embalagens|treinamento e desenvolvimento|recrutamento|r&s|people|compliance"
+    r"|atuari\w*|auditoria|comunicacao|imprensa|crm|laboratorio|inteligencia de mercado"
+    r"|backoffice|processos administrativos)\b"
+)
+PADRAO_AREA_NO_TITULO = re.compile(
+    r"\b(?:ti|t\.i\.?|tech|tecnologia|software|desenvolvimento|desenvolvedor[a]?|dev"
+    r"|developer|programacao|programador[a]?|dados|data|sistemas?|computacao|informatica"
+    r"|infra(?:estrutura)?|redes|seguranca da informacao|cyber\w*|cloud|devops"
+    r"|machine learning|inteligencia artificial|ia|front-?end|back-?end|full-?stack"
+    r"|qa|testes?|suporte|help-? ?desk|banco de dados|sql|python|java(?:script)?|web"
+    r"|mobile|analytics|bi|business intelligence|produto|ux|ui|automacao|rpa|digital"
+    r"|inovacao|engenharia de software|ciencia da computacao|sistemas de informacao"
+    r"|ciencia de dados|analise de sistemas)\b"
+)
+PADRAO_AREA_NA_DESCRICAO = re.compile(
+    r"\b(?:tecnologia da informacao|ciencia da computacao|engenharia de software"
+    r"|engenharia da computacao|sistemas de informacao|analise e desenvolvimento de sistemas"
+    r"|ciencia de dados|analise de dados|engenharia de dados|banco de dados"
+    r"|desenvolvimento de (?:software|sistemas|aplicacoes|aplicativos|web)|programacao"
+    r"|programador[a]?|desenvolvedor[a]?|linguagem de programacao|python|java(?:script)?"
+    r"|sql|suporte tecnico|help-? ?desk|infraestrutura de ti|redes de computadores"
+    r"|seguranca da informacao|machine learning|inteligencia artificial|power bi|devops"
+    r"|cloud|front-?end|back-?end|full-?stack)\b"
 )
 PADRAO_TRABALHO_REMOTO = re.compile(r"\b(?:remoto|remota|remote|home\s*office)\b")
 PADRAO_TRABALHO_PRESENCIAL = re.compile(r"\b(?:presencial(?:mente)?|hibrid[oa]|hybrid|on-?site)\b")
@@ -35,7 +58,12 @@ def exige_senioridade(vaga: Vaga) -> bool:
 
 
 def fora_da_area_de_tecnologia(vaga: Vaga) -> bool:
-    return PADRAO_OUTRA_AREA.search(normalizar(vaga.titulo)) is not None
+    titulo = normalizar(vaga.titulo)
+    if PADRAO_OUTRA_AREA.search(titulo):
+        return True
+    if PADRAO_AREA_NO_TITULO.search(titulo):
+        return False
+    return PADRAO_AREA_NA_DESCRICAO.search(normalizar(vaga.descricao)) is None
 
 
 def exige_anos_de_experiencia(vaga: Vaga) -> bool:

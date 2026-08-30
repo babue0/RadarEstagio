@@ -130,6 +130,12 @@ def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
         "ESTÁGIO SUPERIOR - ENGENHARIA DE MANUFATURA",
         "Estágio em Comércio Exterior, Processos e Tecnologia",
         "Estagiário(a) em Pré-Venda de Soluções de TI",
+        "Estagiário De Farmácia - Suporte E Desenvolvimento",
+        "Estagiário(a) de Treinamento e Desenvolvimento",
+        "Estagiário de R&S",
+        "Estagiário(a) de People & Culture (People Analytics)",
+        "Estágio em CRM | Digital",
+        "Estágio em Turismo - 619",
     ],
 )
 def test_descarta_titulo_de_outra_area(titulo: str):
@@ -148,6 +154,53 @@ def test_descarta_titulo_de_outra_area(titulo: str):
 )
 def test_mantem_titulo_de_computacao(titulo: str):
     assert not fora_da_area_de_tecnologia(vaga(titulo=titulo))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estagiário(a) de T.I.",
+        "Estágio em Ti - Infraestrutura",
+        "Estagiário DevOps",
+        "Estágio | Redes de Computadores, Sistemas de Informação",
+        "Estágio Python",
+    ],
+)
+def test_reconhece_area_de_tecnologia_no_titulo(titulo: str):
+    assert not fora_da_area_de_tecnologia(vaga(titulo=titulo, descricao="Sem detalhes."))
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Estagiário",
+        "Programa de Estágio 2026.2",
+        "Estágio de Hotelaria",
+        "Estagiário de Endomarketing",
+        "Estágio em Turismo",
+    ],
+)
+def test_descarta_titulo_generico_sem_tecnologia_na_descricao(titulo: str):
+    descricao = "Vaga para estudantes. Auxiliar a equipe nas rotinas do setor."
+    assert fora_da_area_de_tecnologia(vaga(titulo=titulo, descricao=descricao))
+
+
+@pytest.mark.parametrize(
+    "descricao",
+    [
+        "Buscamos estudantes de Ciência da Computação ou Sistemas de Informação.",
+        "Atuar no desenvolvimento de software em Python.",
+        "Apoiar o time de suporte técnico e help desk.",
+        "Conhecimento em banco de dados e SQL.",
+    ],
+)
+def test_mantem_titulo_generico_quando_descricao_e_de_tecnologia(descricao: str):
+    assert not fora_da_area_de_tecnologia(vaga(titulo="Programa de Estágio", descricao=descricao))
+
+
+def test_titulo_de_outra_area_e_descartado_mesmo_com_descricao_de_tecnologia():
+    descricao = "Desejável conhecimento em programação em Python."
+    assert fora_da_area_de_tecnologia(vaga(titulo="Estágio em Eletrônica", descricao=descricao))
 
 
 @pytest.mark.parametrize(
@@ -281,8 +334,8 @@ def test_filtrar_para_perfil_remoto_remove_presencial_e_mantem_sem_modalidade():
 
 
 def test_filtrar_preserva_ordem_e_aceita_lista_vazia():
-    primeira = vaga(titulo="Estágio A")
-    segunda = vaga(titulo="Estágio B")
+    primeira = vaga(titulo="Estágio em TI A")
+    segunda = vaga(titulo="Estágio em TI B")
 
     assert filtrar([], perfil()) == []
     assert filtrar([segunda, primeira], perfil()) == [segunda, primeira]
