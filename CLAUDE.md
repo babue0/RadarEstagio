@@ -231,7 +231,11 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   termos no título: busca todos os estágios do país (até 10 páginas) e todos os da cidade
   (`city=`). Como o volume cresceu, `fora_da_area_de_tecnologia` passou a exigir sinal de
   computação no título ou, se o título for genérico, na descrição. Efeito medido: perfil
-  Rio presencial saiu de 2 para 55 candidatas em um dia.
+  Rio presencial saiu de 2 para 55 candidatas em um dia. Agregadores (Divulga Vagas,
+  BuscarVagas) republicam o mesmo anúncio com "empresa" diferente; `remover_republicacoes`
+  em `filtering/duplicatas.py` une vagas com mesmo título (sem sufixo "- Vaga") e cidade
+  cujas 40 primeiras palavras da descrição coincidam em 80% (a Adzuna trunca em 500
+  caracteres, por isso só o início conta; descrições com menos de 20 palavras nunca unem).
 - Passo 9 (Fase 2) no código: banco Supabase opcional (`DATABASE_URL`), pipeline por
   usuário, `Usuario` no domínio, `storage/`.
 - Passo 10 (Fase 2): webhook do `/start` em `supabase/functions/telegram-webhook/` (Edge

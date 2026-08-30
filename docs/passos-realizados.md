@@ -498,9 +498,14 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
   de computação na descrição, e a lista de outras áreas ganhou farmácia, turismo,
   treinamento e desenvolvimento, R&S, people, CRM, auditoria, comunicação e afins.
 
+- Republicações: agregadores como Divulga Vagas e BuscarVagas publicam o mesmo anúncio com
+  "empresa" diferente, e três cópias de "Estágio em Programação" entraram na mesma mensagem.
+  `remover_republicacoes` une vagas de mesmo título (ignorando sufixo "- Vaga") e cidade cujas
+  40 primeiras palavras da descrição coincidam em 80%; descrições curtas nunca são unidas.
+
 **Como foi testado**
 
-- Testes unitários para paginação, `where`/`city` por cidade, deduplicação entre a busca
+- Testes unitários para paginação, `where`/`city` por cidade, republicações, deduplicação entre a busca
   nacional e a da cidade, localização com bairro e as novas regras do pré-filtro.
 - Coleta real em 30/08/2026 com os dois perfis presenciais no Rio: 703 vagas únicas
   (356 Adzuna, 347 Gupy), 210 no Rio, 55 candidatas após o pré-filtro (eram 2).
