@@ -173,8 +173,18 @@ def test_erro_da_api_levanta_erro_de_avaliacao_com_status():
 def test_cota_excedida_levanta_erro_especifico():
     avaliador, _ = avaliador_com(erro_da_api(429, "quota"))
 
-    with pytest.raises(CotaDeAvaliacaoExcedida):
+    with pytest.raises(CotaDeAvaliacaoExcedida) as capturado:
         avaliador.avaliar([vaga_exemplo()], perfil_exemplo())
+    assert capturado.value.aguardar_segundos is None
+
+
+def test_cota_excedida_le_o_tempo_de_espera_da_mensagem():
+    mensagem = "You exceeded your current quota.\nPlease retry in 15.319626475s."
+    avaliador, _ = avaliador_com(erro_da_api(429, mensagem))
+
+    with pytest.raises(CotaDeAvaliacaoExcedida) as capturado:
+        avaliador.avaliar([vaga_exemplo()], perfil_exemplo())
+    assert capturado.value.aguardar_segundos == pytest.approx(15.32, abs=0.01)
 
 
 def test_prompt_contem_perfil_e_todas_as_vagas_identificadas():

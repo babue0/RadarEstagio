@@ -41,8 +41,10 @@ class AvaliadorDeLoteFalso:
         ids_omitidos: set[str] | None = None,
         ids_omitidos_apenas_em_lote: set[str] | None = None,
         erros_por_vaga: dict[str, Exception] | None = None,
+        falhas_temporarias_por_lote: dict[tuple[str, ...], Exception] | None = None,
     ) -> None:
         self._falhas_por_lote = falhas_por_lote or {}
+        self._falhas_temporarias_por_lote = dict(falhas_temporarias_por_lote or {})
         self._ids_omitidos = ids_omitidos or set()
         self._ids_omitidos_apenas_em_lote = ids_omitidos_apenas_em_lote or set()
         self._erros_por_vaga = erros_por_vaga or {}
@@ -53,6 +55,8 @@ class AvaliadorDeLoteFalso:
         self.lotes_recebidos.append(list(ids))
         if ids in self._falhas_por_lote:
             raise self._falhas_por_lote[ids]
+        if ids in self._falhas_temporarias_por_lote:
+            raise self._falhas_temporarias_por_lote.pop(ids)
         for vaga in lote:
             if vaga.id_externo in self._erros_por_vaga:
                 raise self._erros_por_vaga[vaga.id_externo]
@@ -113,23 +117,70 @@ def test_vaga_omitida_mesmo_sozinha_e_ignorada():
     assert ids_de(resultados) == ["1", "3"]
 
 
-def test_cota_excedida_interrompe_os_lotes_seguintes_e_devolve_o_que_ja_tem():
+def test_cota_excedida_aguarda_o_tempo_pedido_e_tenta_o_mesmo_lote_de_novo():
     interno = AvaliadorDeLoteFalso(
-        falhas_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429")}
+        falhas_temporarias_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 15.3)}
+    )
+    esperas: list[float] = []
+
+    resultados = AvaliadorEmLotes(interno, 2, esperar=esperas.append).avaliar(
+        vagas(6), perfil_exemplo()
     )
 
-    resultados = AvaliadorEmLotes(interno, 2).avaliar(vagas(6), perfil_exemplo())
+    assert esperas == [16.3]
+    assert interno.lotes_recebidos == [["1", "2"], ["3", "4"], ["3", "4"], ["5", "6"]]
+    assert ids_de(resultados) == ["1", "2", "3", "4", "5", "6"]
 
+
+def test_cota_excedida_sem_tempo_indicado_espera_um_minuto():
+    interno = AvaliadorDeLoteFalso(
+        falhas_temporarias_por_lote={("1", "2"): CotaDeAvaliacaoExcedida("HTTP 429")}
+    )
+    esperas: list[float] = []
+
+    AvaliadorEmLotes(interno, 2, esperar=esperas.append).avaliar(vagas(2), perfil_exemplo())
+
+    assert esperas == [61]
+
+
+def test_cota_excedida_persistente_desiste_apos_as_tentativas_e_devolve_o_que_ja_tem():
+    interno = AvaliadorDeLoteFalso(
+        falhas_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 15)}
+    )
+    esperas: list[float] = []
+
+    resultados = AvaliadorEmLotes(interno, 2, esperar=esperas.append).avaliar(
+        vagas(6), perfil_exemplo()
+    )
+
+    assert esperas == [16, 16, 16]
+    assert interno.lotes_recebidos == [["1", "2"], ["3", "4"], ["3", "4"], ["3", "4"], ["3", "4"]]
+    assert ids_de(resultados) == ["1", "2"]
+
+
+def test_cota_excedida_com_espera_longa_interrompe_sem_aguardar():
+    interno = AvaliadorDeLoteFalso(
+        falhas_por_lote={("3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 3600)}
+    )
+    esperas: list[float] = []
+
+    resultados = AvaliadorEmLotes(interno, 2, esperar=esperas.append).avaliar(
+        vagas(6), perfil_exemplo()
+    )
+
+    assert esperas == []
     assert interno.lotes_recebidos == [["1", "2"], ["3", "4"]]
     assert ids_de(resultados) == ["1", "2"]
 
 
 def test_cota_excedida_nao_e_dividida_ao_meio():
     interno = AvaliadorDeLoteFalso(
-        falhas_por_lote={("1", "2", "3", "4"): CotaDeAvaliacaoExcedida("HTTP 429")}
+        falhas_por_lote={("1", "2", "3", "4"): CotaDeAvaliacaoExcedida("HTTP 429", 3600)}
     )
 
-    resultados = AvaliadorEmLotes(interno, 4).avaliar(vagas(4), perfil_exemplo())
+    resultados = AvaliadorEmLotes(interno, 4, esperar=lambda _: None).avaliar(
+        vagas(4), perfil_exemplo()
+    )
 
     assert interno.lotes_recebidos == [["1", "2", "3", "4"]]
     assert resultados == []

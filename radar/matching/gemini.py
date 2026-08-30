@@ -1,3 +1,5 @@
+import re
+
 from google import genai
 from google.genai import errors, types
 from pydantic import ValidationError
@@ -10,6 +12,7 @@ from radar.settings import Settings
 
 TEMPERATURA_DETERMINISTICA = 0
 HTTP_COTA_EXCEDIDA = 429
+PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
 
 
 class AvaliadorGemini:
@@ -37,9 +40,14 @@ class AvaliadorGemini:
         except errors.APIError as erro:
             mensagem = f"Gemini respondeu HTTP {erro.code}: {erro.message}"
             if erro.code == HTTP_COTA_EXCEDIDA:
-                raise CotaDeAvaliacaoExcedida(mensagem) from None
+                raise CotaDeAvaliacaoExcedida(mensagem, tempo_de_espera(erro.message)) from None
             raise ErroDeAvaliacao(mensagem) from None
         return interpretar_resposta(resposta.text)
+
+
+def tempo_de_espera(mensagem: str | None) -> float | None:
+    encontrado = PADRAO_TEMPO_DE_ESPERA.search(mensagem or "")
+    return float(encontrado.group(1)) if encontrado else None
 
 
 def interpretar_resposta(texto: str | None) -> AvaliacoesIA:

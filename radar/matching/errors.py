@@ -3,4 +3,6 @@ class ErroDeAvaliacao(Exception):
 
 
 class CotaDeAvaliacaoExcedida(ErroDeAvaliacao):
-    pass
+    def __init__(self, mensagem: str, aguardar_segundos: float | None = None) -> None:
+        super().__init__(mensagem)
+        self.aguardar_segundos = aguardar_segundos

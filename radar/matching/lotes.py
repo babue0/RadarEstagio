@@ -1,4 +1,6 @@
 import logging
+import time
+from collections.abc import Callable
 
 from radar.domain.models import Perfil, ResultadoMatch, Vaga
 from radar.domain.ports import AvaliadorDeVagas
@@ -6,20 +8,31 @@ from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
 
 logger = logging.getLogger(__name__)
 
+ESPERA_PADRAO_EM_SEGUNDOS = 60
+ESPERA_MAXIMA_EM_SEGUNDOS = 120
+MARGEM_DE_ESPERA_EM_SEGUNDOS = 1
+TENTATIVAS_APOS_COTA_EXCEDIDA = 3
+
 
 class AvaliadorEmLotes:
-    def __init__(self, avaliador: AvaliadorDeVagas, tamanho_do_lote: int) -> None:
+    def __init__(
+        self,
+        avaliador: AvaliadorDeVagas,
+        tamanho_do_lote: int,
+        esperar: Callable[[float], None] = time.sleep,
+    ) -> None:
         if tamanho_do_lote < 1:
             raise ValueError("tamanho_do_lote deve ser pelo menos 1")
         self._avaliador = avaliador
         self._tamanho_do_lote = tamanho_do_lote
+        self._esperar = esperar
 
     def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
         resultados: list[ResultadoMatch] = []
         for inicio in range(0, len(vagas), self._tamanho_do_lote):
             lote = vagas[inicio : inicio + self._tamanho_do_lote]
             try:
-                resultados.extend(self._avaliar_com_tolerancia(lote, perfil))
+                resultados.extend(self._avaliar_respeitando_a_cota(lote, perfil))
             except CotaDeAvaliacaoExcedida as erro:
                 logger.warning(
                     "Cota excedida; %d de %d vagas ficaram sem avaliação: %s",
@@ -29,6 +42,23 @@ class AvaliadorEmLotes:
                 )
                 break
         return resultados
+
+    def _avaliar_respeitando_a_cota(self, lote: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
+        for tentativa in range(1, TENTATIVAS_APOS_COTA_EXCEDIDA + 1):
+            try:
+                return self._avaliar_com_tolerancia(lote, perfil)
+            except CotaDeAvaliacaoExcedida as erro:
+                espera = erro.aguardar_segundos or ESPERA_PADRAO_EM_SEGUNDOS
+                if espera > ESPERA_MAXIMA_EM_SEGUNDOS:
+                    raise
+                logger.info(
+                    "Cota por minuto atingida; aguardando %.0f s (tentativa %d de %d)",
+                    espera,
+                    tentativa,
+                    TENTATIVAS_APOS_COTA_EXCEDIDA,
+                )
+                self._esperar(espera + MARGEM_DE_ESPERA_EM_SEGUNDOS)
+        return self._avaliar_com_tolerancia(lote, perfil)
 
     def _avaliar_com_tolerancia(self, lote: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
         try:
