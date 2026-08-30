@@ -209,7 +209,10 @@ Fase 1 em andamento, seguindo `docs/plano-mvp.md`:
   (`AvaliadorEmLotes`) divide
   as vagas em lotes de `GEMINI_VAGAS_POR_LOTE` (padrão 10), reparte ao meio um lote que
   falhar até isolar a vaga com problema, reavalia sozinha a vaga que o modelo omitir e,
-  em HTTP 429 (`CotaDeAvaliacaoExcedida`), para e devolve o que já tem. O contrato
+  em HTTP 429 (`CotaDeAvaliacaoExcedida`), lê o "retry in Ns" da mensagem, aguarda esse
+  tempo (60 s se não vier; desiste se passar de 120 s, que indica cota diária) e repete o
+  mesmo lote até 3 vezes antes de parar e devolver o que já tem. A cota gratuita do
+  `gemini-3.6-flash` é de 20 requisições por minuto. O contrato
   `AvaliadorDeVagas.avaliar` recebe e devolve listas. Evitar rodar `avaliar`/`rodar`
   repetidamente sem necessidade.
 - Melhoria pós-MVP: `Vaga.modalidade` (opcional) preenchida pela Gupy; o pré-filtro decide
