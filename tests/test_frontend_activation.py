@@ -42,6 +42,37 @@ def test_habilidades_sugeridas_e_livres_usam_o_mesmo_campo_do_perfil():
     assert "const totalSteps = 3" in javascript
 
 
+def test_envio_final_valida_todos_os_campos_da_etapa_3():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "if (!validateStep(3)) return;" in javascript
+    assert 'name="cidade" required minlength="2" maxlength="120"' in html
+    assert 'name="modalidade" value="remoto" required' in html
+    assert 'name="email" type="email"' in html
+    assert 'name="senha" type="password" autocomplete="new-password" minlength="8"' in html
+
+
+def test_falha_ao_salvar_perfil_mantem_recuperacao_e_mensagem_humana():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "function humanizeError(error" in javascript
+    assert "profilePending" in javascript
+    assert "Seus dados continuam salvos neste navegador" in javascript
+    assert "setFormMessage(error.message)" not in javascript
+    assert "humanizeError(error, { profilePending: true })" in javascript
+
+
+def test_validacao_do_cadastro_orienta_como_corrigir_cada_campo_invalido():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "Informe uma cidade válida para continuar." in javascript
+    assert "Escolha uma modalidade para continuar." in javascript
+    assert "Digite um e-mail válido para continuar." in javascript
+    assert "Use uma senha com pelo menos 8 caracteres para continuar." in javascript
+    assert "const modalidadesAceitas = new Set" in javascript
+
+
 def test_migration_reserva_campos_de_vinculo_ao_webhook():
     migration = (RAIZ / "supabase/migrations/0002_permissoes_frontend.sql").read_text()
 

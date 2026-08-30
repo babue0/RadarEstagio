@@ -15,6 +15,15 @@ let authMode = "signup";
 let radarClient = null;
 const selectedSkills = new Set();
 const totalSteps = 3;
+const modalidadesAceitas = new Set(["remoto", "presencial", "hibrido", "indiferente"]);
+const mensagensValidacao = {
+  curso: "Informe seu curso para continuar.",
+  periodo: "Selecione seu período atual para continuar.",
+  cidade: "Informe uma cidade válida para continuar.",
+  modalidade: "Escolha uma modalidade para continuar.",
+  email: "Digite um e-mail válido para continuar.",
+  senha: "Use uma senha com pelo menos 8 caracteres para continuar.",
+};
 
 function getClient() {
   if (radarClient) return radarClient;
@@ -54,8 +63,13 @@ function validateStep(step) {
   const fields = [...document.querySelectorAll(
     `.form-step[data-step="${step}"] input:not([type="hidden"]), .form-step[data-step="${step}"] select`,
   )];
-  const invalid = fields.find((field) => !field.checkValidity());
+  const invalid = fields.find((field) => {
+    if (field.name === "cidade" && field.value.trim().length < 2) return true;
+    if (field.name === "modalidade" && !modalidadesAceitas.has(form.elements.modalidade.value)) return true;
+    return !field.checkValidity();
+  });
   if (invalid) {
+    setFormMessage(mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     invalid.reportValidity();
     invalid.focus();
     return false;
@@ -92,6 +106,51 @@ function addCustomSkill() {
   input.value = "";
   renderSkills();
   setFormMessage();
+}
+
+function validationError(message) {
+  const error = new Error(message);
+  error.name = "RadarValidationError";
+  return error;
+}
+
+function humanizeError(error, { profilePending = false } = {}) {
+  const message = String(error?.message ?? "").toLowerCase();
+  const code = String(error?.code ?? "").toLowerCase();
+  const status = Number(error?.status);
+
+  if (message.startsWith("o cadastro ainda não foi configurado")) {
+    return error.message;
+  }
+  if (error?.name === "RadarValidationError") return error.message;
+  if (profilePending) {
+    return "Sua conta foi criada, mas o perfil ainda não foi salvo. Seus dados continuam salvos neste navegador. Tente enviar novamente.";
+  }
+  if (code === "user_already_exists" || code === "email_exists" || message.includes("user already registered")) {
+    return "Já existe uma conta com esse e-mail. Escolha “Entrar” ou use outro e-mail.";
+  }
+  if (code === "invalid_credentials" || message.includes("invalid login credentials")) {
+    return "E-mail ou senha incorretos. Confira os dados ou crie uma conta.";
+  }
+  if (code === "email_not_confirmed" || message.includes("email not confirmed")) {
+    return "Confirme seu e-mail pelo link recebido antes de entrar.";
+  }
+  if (code === "weak_password" || message.includes("password should be at least")) {
+    return "A senha precisa ter pelo menos 8 caracteres.";
+  }
+  if (code === "over_email_send_rate_limit" || status === 429) {
+    return "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.";
+  }
+  if (code === "23505" || message.includes("duplicate key")) {
+    return "Este perfil já existe. Recarregue a página e tente novamente.";
+  }
+  if (code === "42501" || message.includes("row-level security") || message.includes("permission denied")) {
+    return "Não foi possível salvar o perfil nesta conta. Entre novamente e tente outra vez.";
+  }
+  if (message.includes("failed to fetch") || message.includes("network") || message.includes("fetch")) {
+    return "Não foi possível conectar ao cadastro. Verifique a conexão e tente novamente.";
+  }
+  return "Não foi possível concluir o cadastro agora. Verifique os dados e tente novamente.";
 }
 
 function setFormMessage(message = "") {
@@ -147,7 +206,7 @@ function closeSignup() {
 function profileFromForm() {
   addCustomSkill();
   const data = new FormData(form);
-  return {
+  const profile = {
     curso: data.get("curso").trim(),
     periodo: Number(data.get("periodo")),
     habilidades: data
@@ -158,6 +217,18 @@ function profileFromForm() {
     cidade: data.get("cidade").trim(),
     modalidade: data.get("modalidade"),
   };
+  if (!profile.curso) throw validationError("Informe seu curso para continuar.");
+  if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
+    throw validationError("Selecione seu período atual para continuar.");
+  }
+  if (profile.habilidades.length === 0) {
+    throw validationError("Escolha ou digite pelo menos uma habilidade.");
+  }
+  if (profile.cidade.length < 2) throw validationError("Informe uma cidade válida para continuar.");
+  if (!modalidadesAceitas.has(profile.modalidade)) {
+    throw validationError("Escolha uma modalidade para continuar.");
+  }
+  return profile;
 }
 
 function savePendingProfile(profile) {
@@ -293,7 +364,7 @@ async function openSignup() {
     const profile = await loadProfile(session.user.id);
     if (profile) showActivation(profile);
   } catch (error) {
-    setFormMessage(error.message);
+    setFormMessage(humanizeError(error));
   }
 }
 
@@ -309,7 +380,7 @@ async function resumeConfirmedSignup() {
   } catch (error) {
     resetDialogView();
     openDialog();
-    setFormMessage(error.message);
+    setFormMessage(humanizeError(error, { profilePending: true }));
   }
 }
 
@@ -347,13 +418,14 @@ toggleAuthMode.addEventListener("click", () => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!validateStep(2)) return;
+  if (!validateStep(3)) return;
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
-  const profile = profileFromForm();
+  let profileSaveStarted = false;
   setFormMessage();
   setSubmitting(true);
   try {
+    const profile = profileFromForm();
     savePendingProfile(profile);
     const existingSession = await currentSession();
     if (existingSession && existingSession.user.email !== email) {
@@ -368,10 +440,11 @@ form.addEventListener("submit", async (event) => {
       showConfirmation(email);
       return;
     }
+    profileSaveStarted = true;
     const savedProfile = await persistProfile(session.user.id, profile);
     showActivation(savedProfile);
   } catch (error) {
-    setFormMessage(error.message);
+    setFormMessage(humanizeError(error, { profilePending: profileSaveStarted }));
   } finally {
     setSubmitting(false);
   }
