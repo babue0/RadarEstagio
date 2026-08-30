@@ -172,7 +172,8 @@ Para preservar a viabilidade, a visão completa não deve ser tratada como uma �
 - As fontes podem ser combinadas; se uma falhar, a outra ainda pode fornecer vagas.
 - Duplicatas da mesma execução são removidas por título e empresa, preservando a versão com mais informações.
 - O pré-filtro elimina casos incompatíveis antes do uso de IA.
-- Gemini API e AGY retornam a mesma avaliação estruturada com nota, pontos a favor, pontos contra e alerta.
+- Gemini API e AGY retornam os mesmos fatores estruturados, pontos a favor, pontos contra e
+  alerta; a nota é calculada deterministicamente no Python.
 - A avaliação em lotes reduz o número de requisições e isola falhas de vagas específicas.
 - O Telegram recebe mensagens formatadas e divididas quando necessário.
 - O formatador limita a exibição a três pontos a favor e três contra sem invalidar a avaliação.

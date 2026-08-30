@@ -102,9 +102,13 @@ opções gratuitas piores). Ver a decisão 10.
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA é obrigada a devolver JSON no
-  formato `{id_vaga, nota, pontos_a_favor, pontos_contra, alerta_pegadinha}`. Sem parsing de texto livre, sem
-  regex em cima de resposta de IA.
-- **Temperatura 0**: mesma vaga, mesma nota. Importante para o usuário confiar no ranking.
+  formato `{id_vaga, area, curso, periodo_experiencia, habilidades_obrigatorias,
+  habilidades_desejaveis, pontos_a_favor, pontos_contra, alerta_pegadinha}`. Sem parsing de
+  texto livre nem nota escolhida pela IA.
+- **Pontuação no Python**: habilidades valem 50 pontos, curso 15, área 10,
+  período/experiência 15 e logística 10. A cobertura das habilidades é comparada por
+  tecnologias normalizadas e exatas; `Java` não corresponde a `JavaScript`.
+- **Temperatura 0**: os mesmos dados tendem a produzir a mesma extração de fatores.
 - **Trocar de modelo** é uma variável de ambiente (`GEMINI_MODELO`). Trocar de provedor é
   um adapter novo em `matching/`.
 - **Dois adapters** implementam a mesma interface: `AvaliadorGemini`, pela Developer API,
@@ -209,7 +213,7 @@ Regras para não afetar quem já usa:
 | `uv` | Python + dependências + lock | rápido, instala o Python sozinho, `uv.lock` garante versões iguais em toda máquina |
 | `ruff` | lint + formatação | uma ferramenta só, rápida, sem discussão de estilo |
 | `pytest` + `pytest-httpx` | testes; simula HTTP | testar coletor e notificador sem rede |
-| `pydantic` | entidades + validação do JSON da IA | nota fora de 0–100 nunca entra no sistema |
+| `pydantic` | entidades + validação do JSON da IA | fatores inválidos não entram no cálculo da nota |
 | `pydantic-settings` | `.env` → objeto tipado | erro claro quando falta variável |
 | `httpx` | Adzuna e Telegram | simples, moderno, fácil de simular |
 | `google-genai` | Gemini | SDK oficial com saída estruturada |

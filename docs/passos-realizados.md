@@ -515,7 +515,7 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 ## Números atuais do MVP
 
 - 13 passos, ~40 commits atômicos em Conventional Commits.
-- 272 testes coletados: 268 passam localmente e 4 integrações exigem um PostgreSQL de teste.
+- 280 testes coletados: 276 passam localmente e 4 integrações exigem um PostgreSQL de teste.
 - 1 execução diária automática; as requisições ao Gemini variam conforme usuários e lotes.
 
 ## Pendências para o grupo decidir

@@ -71,7 +71,11 @@ def test_avalia_vagas_com_saida_estruturada_do_agy():
             "avaliacoes": [
                 {
                     "id_vaga": "vaga-1",
-                    "nota": 88,
+                    "area": "compativel",
+                    "curso": "compativel",
+                    "periodo_experiencia": "compativel",
+                    "habilidades_obrigatorias": [],
+                    "habilidades_desejaveis": ["Python", "SQL"],
                     "pontos_a_favor": ["Python", "SQL"],
                     "alerta_pegadinha": None,
                 }
@@ -87,7 +91,7 @@ def test_avalia_vagas_com_saida_estruturada_do_agy():
 
     assert len(resultados) == 1
     assert resultados[0].vaga.id_externo == "vaga-1"
-    assert resultados[0].nota == 88
+    assert resultados[0].nota == 98
     assert resultados[0].pontos_a_favor == ["Python", "SQL"]
 
 

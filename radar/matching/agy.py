@@ -90,4 +90,4 @@ class AvaliadorAgy:
             avaliacoes = AvaliacoesIA.model_validate(envelope["structured_output"])
         except ValidationError as erro:
             raise ErroDeAvaliacao(f"AGY devolveu saída estruturada inválida: {erro}") from None
-        return casar_avaliacoes_com_vagas(avaliacoes, vagas)
+        return casar_avaliacoes_com_vagas(avaliacoes, vagas, perfil)

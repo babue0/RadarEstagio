@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -79,23 +80,49 @@ def erro_da_api(codigo: int, mensagem: str) -> errors.APIError:
     return errors.APIError(codigo, {"error": {"message": mensagem, "status": "ERRO"}})
 
 
+def avaliacao(numero: str, **alteracoes) -> dict:
+    dados = {
+        "id_vaga": numero,
+        "area": "compativel",
+        "curso": "compativel",
+        "periodo_experiencia": "compativel",
+        "habilidades_obrigatorias": [],
+        "habilidades_desejaveis": ["Python", "SQL"],
+        "pontos_a_favor": ["Python", "SQL"],
+        "pontos_contra": [],
+        "alerta_pegadinha": None,
+    }
+    dados.update(alteracoes)
+    return dados
+
+
+def resposta_com(*avaliacoes: dict) -> RespostaFalsa:
+    return RespostaFalsa(json.dumps({"avaliacoes": avaliacoes}))
+
+
 def test_converte_json_do_gemini_em_resultados_na_ordem_da_resposta():
     avaliador, _ = avaliador_com(
-        RespostaFalsa(
-            '{"avaliacoes": ['
-            '{"id_vaga": "2", "nota": 40, "pontos_contra": ["Exige Java"], '
-            '"alerta_pegadinha": "Exige pleno."},'
-            '{"id_vaga": "1", "nota": 85, "pontos_a_favor": ["Python", "SQL"], '
-            '"alerta_pegadinha": null}'
-            "]}"
+        resposta_com(
+            avaliacao(
+                "2",
+                area="incompativel",
+                curso="incompativel",
+                periodo_experiencia="parcial",
+                habilidades_obrigatorias=["Java"],
+                habilidades_desejaveis=[],
+                pontos_a_favor=[],
+                pontos_contra=["Java não informado"],
+                alerta_pegadinha="Exige pleno.",
+            ),
+            avaliacao("1"),
         )
     )
 
     resultados = avaliador.avaliar([vaga_exemplo(1), vaga_exemplo(2)], perfil_exemplo())
 
-    assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 40), ("1", 85)]
+    assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 15), ("1", 98)]
     assert resultados[0].alerta_pegadinha == "Exige pleno."
-    assert resultados[0].pontos_contra == ["Exige Java"]
+    assert resultados[0].pontos_contra == ["Java não informado"]
     assert resultados[1].pontos_a_favor == ["Python", "SQL"]
     assert resultados[1].alerta_pegadinha is None
 
@@ -122,12 +149,10 @@ def test_lista_vazia_nao_chama_o_gemini():
 
 def test_ignora_avaliacoes_com_id_desconhecido_ou_repetido():
     avaliador, _ = avaliador_com(
-        RespostaFalsa(
-            '{"avaliacoes": ['
-            '{"id_vaga": "1", "nota": 80, "pontos_a_favor": ["primeira"]},'
-            '{"id_vaga": "1", "nota": 10, "pontos_a_favor": ["repetida"]},'
-            '{"id_vaga": "999", "nota": 50, "pontos_a_favor": ["inventada"]}'
-            "]}"
+        resposta_com(
+            avaliacao("1", pontos_a_favor=["primeira"]),
+            avaliacao("1", pontos_a_favor=["repetida"]),
+            avaliacao("999", pontos_a_favor=["inventada"]),
         )
     )
 
@@ -137,7 +162,7 @@ def test_ignora_avaliacoes_com_id_desconhecido_ou_repetido():
 
 
 def test_vaga_ausente_na_resposta_simplesmente_nao_e_devolvida():
-    avaliador, _ = avaliador_com(RespostaFalsa('{"avaliacoes": [{"id_vaga": "1", "nota": 80}]}'))
+    avaliador, _ = avaliador_com(resposta_com(avaliacao("1")))
 
     resultados = avaliador.avaliar([vaga_exemplo(1), vaga_exemplo(2)], perfil_exemplo())
 
@@ -148,9 +173,9 @@ def test_vaga_ausente_na_resposta_simplesmente_nao_e_devolvida():
     "texto",
     [
         "isso não é json",
-        '{"avaliacoes": [{"id_vaga": "1", "nota": 150}]}',
-        '{"avaliacoes": [{"id_vaga": "1", "pontos_a_favor": ["sem nota"]}]}',
-        '{"nota": 50, "pontos_a_favor": ["formato antigo, sem lista"]}',
+        '{"avaliacoes": [{"id_vaga": "1", "area": "talvez"}]}',
+        '{"avaliacoes": [{"id_vaga": "1"}]}',
+        '{"area": "compativel", "pontos_a_favor": ["formato antigo, sem lista"]}',
         "",
         None,
     ],
@@ -200,3 +225,5 @@ def test_prompt_contem_perfil_e_todas_as_vagas_identificadas():
     assert "pontos_a_favor" in prompt
     assert "pontos_contra" in prompt
     assert "alerta_pegadinha" in prompt
+    assert "habilidades_obrigatorias" in prompt
+    assert "habilidades_desejaveis" in prompt

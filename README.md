@@ -18,7 +18,8 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 Adzuna + Gupy (vagas dos últimos 5 dias)
   → remove duplicatas entre as fontes (título + empresa)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
-  → Gemini avalia em lotes: nota 0–100, pontos a favor e contra, alerta de pegadinha
+  → Gemini extrai fatores e justificativas em lotes
+  → Python calcula a nota 0–100 com habilidades valendo 50% do resultado
   → ranqueia e pega as 5 melhores
   → envia a mensagem no Telegram
 ```

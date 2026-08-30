@@ -24,7 +24,7 @@ class AvaliadorGemini:
         if not vagas:
             return []
         avaliacoes = self._pedir_avaliacoes(montar_prompt(vagas, perfil))
-        return casar_avaliacoes_com_vagas(avaliacoes, vagas)
+        return casar_avaliacoes_com_vagas(avaliacoes, vagas, perfil)
 
     def _pedir_avaliacoes(self, prompt: str) -> AvaliacoesIA:
         try:

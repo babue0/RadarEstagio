@@ -188,7 +188,10 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   (`Vaga`, `Perfil`, `ResultadoMatch`, ports, perfil fixo), coletor da Adzuna com
   testes e verificação manual (`python -m radar coletar`), pré-filtro por regras
   (`filtering/prefiltro.py`), matching com Gemini API (`matching/gemini.py`) ou AGY local
-  (`matching/agy.py`), ambos com saída estruturada e verificados com
+  (`matching/agy.py`), ambos com saída estruturada de fatores; `matching/avaliacoes.py`
+  calcula a nota com pesos de 50 para habilidades, 15 para curso, 10 para área, 15 para
+  período/experiência e 10 para logística. Tecnologias são comparadas por nomes normalizados
+  e exatos, de modo que `Java` não corresponde a `JavaScript`. O fluxo foi verificado com
   `python -m radar avaliar`, e
   notificação no Telegram (`notification/formatador.py` monta a mensagem em HTML e
   divide acima de 4096 caracteres; `notification/telegram.py` envia; verificado com
