@@ -14,7 +14,8 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - sugere cursos e habilidades comuns, mas mantém entrada livre para outros perfis;
 - pede e-mail e senha somente depois que o usuário configura o radar;
 - persiste o perfil no Supabase e abre o vínculo seguro com o Telegram;
-- reconhece quando o webhook concluiu o vínculo.
+- reconhece quando o webhook concluiu o vínculo;
+- registra os eventos do funil sem bloquear o cadastro quando a telemetria falha.
 - ainda não oferece edição, pausa ou retomada do perfil; essas ações ficam para a Fase 3.
 
 Quando a confirmação de e-mail está ativa no Supabase, os campos do perfil ficam temporariamente
@@ -30,7 +31,8 @@ RLS e pelas permissões de coluna das migrations. Nunca use a chave `service_rol
 No Supabase Auth, adicione a URL publicada do site e `http://localhost:8000` à lista de Redirect
 URLs. A confirmação de e-mail retorna ao site, que conclui a criação do perfil automaticamente.
 
-Antes de publicar, aplique também `supabase/migrations/0002_permissoes_frontend.sql` no projeto.
+Antes de publicar, aplique todas as migrations, incluindo
+`supabase/migrations/0005_eventos_produto.sql` para a instrumentação do funil.
 
 ## Como abrir
 
@@ -49,6 +51,8 @@ O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a sta
 - A implementação usa HTML, CSS e JavaScript, sem framework, build ou dependências.
 - O site usa Supabase Auth e escreve diretamente na tabela `perfis`; não existe API Python entre
   os dois componentes.
+- A sessão de eventos é um UUID aleatório no `localStorage`; propriedades não recebem e-mail,
+  curso, cidade ou outros campos livres do perfil.
 - O front não pedirá `@username` nem `chat_id` do Telegram.
 - Após salvar o perfil, o site lê `token_vinculo` e abre o bot. O comando `/start` vincula o
   usuário real do Telegram ao perfil cadastrado.

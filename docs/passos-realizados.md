@@ -512,10 +512,36 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ---
 
+## Passo 14 — Instrumentação mínima do funil (Fase 2)
+
+**O que foi feito**
+
+- `0005_eventos_produto.sql` cria um catálogo fechado com os 16 eventos do plano RCD, contexto
+  opcional de sessão, usuário, perfil e vaga, propriedades JSON limitadas e índices por jornada.
+- A landing registra visualização, abertura do cadastro, conclusão das três etapas, salvamento
+  do perfil e abertura do Telegram. Uma sessão anônima persistente permite reconstruir o trecho
+  anterior à autenticação sem colocar dados do perfil na telemetria.
+- Gatilhos registram os marcos autoritativos de conta, confirmação de e-mail, perfil, vínculo,
+  primeira recomendação e pausa. Os dados existentes são retropreenchidos pela migration.
+- RLS restringe visitantes e usuários autenticados aos eventos web esperados. Os eventos de
+  vaga aberta, feedback e candidatura ficam reservados até as respectivas interações existirem.
+- `docs/metricas.md` contém a matriz de emissores e uma consulta que reconstrói a primeira
+  ocorrência de cada etapa por usuário, ligando sessões anônimas apenas quando a associação é
+  inequívoca.
+
+**Como foi testado**
+
+- Testes estáticos verificam o catálogo, contexto, RLS, gatilhos, emissores web e identificação
+  da posição dos CTAs.
+- O teste de integração do repositório verifica que a primeira recomendação cria um único evento,
+  mesmo quando o registro da entrega é repetido.
+
+---
+
 ## Números atuais do MVP
 
-- 13 passos, ~40 commits atômicos em Conventional Commits.
-- 280 testes coletados: 276 passam localmente e 4 integrações exigem um PostgreSQL de teste.
+- 14 passos, ~40 commits atômicos em Conventional Commits.
+- 286 testes coletados: 282 passam localmente e 4 integrações exigem um PostgreSQL de teste.
 - 1 execução diária automática; as requisições ao Gemini variam conforme usuários e lotes.
 
 ## Pendências para o grupo decidir

@@ -11,13 +11,15 @@ Estado atual:
 
 - Duas fontes de vagas somadas: Adzuna (API oficial gratuita) e Gupy (API interna do
   portal, sem chave, com modalidade estruturada)
-- Banco Supabase com perfis, vagas, avaliações e envios por usuário
+- Banco Supabase com perfis, vagas, avaliações, envios e eventos de produto por usuário
 - Cadastro web com conta, perfil estruturado e vínculo com o Telegram
 - Matching de compatibilidade via IA (Gemini API ou Antigravity CLI/AGY)
 - Entrega da mensagem ranqueada no Telegram
 - Agendamento diário via GitHub Actions
 - Deduplicação e histórico entre execuções quando o banco está configurado
 - Evento de ativação registrado na primeira entrega relevante
+- Funil instrumentado da landing à primeira recomendação, com eventos web sob RLS e marcos
+  autoritativos registrados por gatilhos do banco
 
 Ainda não disponível: edição, pausa e retomada do perfil, feedback para ranking, painel web e
 novas fontes além de Adzuna e Gupy.
@@ -87,8 +89,9 @@ MySQL foi considerado e não oferece vantagem neste caso: suporte a JSON mais li
 opções gerenciadas gratuitas piores que as de PostgreSQL.
 
 A Fase 1 não usava banco. O Passo 9 (Fase 2) adicionou o Supabase como opcional: tabelas
-`perfis`, `vagas`, `avaliacoes` e `envios`, todas com RLS; só `perfis` tem policy (para o
-site). O pipeline só conhece `Repositorio`; a falha de leitura dos usuários é a única fatal,
+`perfis`, `vagas`, `avaliacoes`, `envios` e `eventos_produto`, todas com RLS; `perfis` limita
+o usuário à própria linha e `eventos_produto` limita o navegador ao catálogo web permitido.
+O pipeline só conhece `Repositorio`; a falha de leitura dos usuários é a única fatal,
 erros ao enviar ou gravar de um usuário viram aviso. Nunca alterar tabela pelo painel — só
 por migration em `supabase/migrations/`.
 

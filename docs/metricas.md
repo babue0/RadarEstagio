@@ -1,5 +1,70 @@
 # Métricas de produto
 
+## Eventos do funil
+
+A migration `0005_eventos_produto.sql` cria `eventos_produto`, o catálogo fechado dos eventos
+do plano e os gatilhos para marcos que precisam de uma fonte autoritativa. Cada evento registra
+o instante, a origem e ao menos uma identidade entre sessão anônima, usuário ou perfil.
+
+O navegador mantém um `sessao_id` aleatório no `localStorage`. Ele permite ligar a visita
+anônima ao usuário quando o perfil é salvo, sem guardar e-mail, curso, cidade ou outro dado
+pessoal nas propriedades do evento. Propriedades livres são limitadas a um objeto JSON de 4 KB.
+
+| Origem | Eventos emitidos agora |
+|---|---|
+| Web | `landing_visualizada`, `cta_cadastro_aberto`, as três etapas concluídas, `perfil_salvo`, `telegram_aberto` |
+| Gatilhos do banco | `conta_criada`, `email_confirmado`, `perfil_salvo`, `telegram_vinculado`, `primeira_recomendacao_enviada`, `entregas_pausadas` |
+| Contrato reservado | `vaga_aberta`, `vaga_util`, `vaga_irrelevante`, `candidatura_iniciada` |
+
+`perfil_salvo` pode aparecer duas vezes: o gatilho garante o marco autoritativo e o evento web
+liga a sessão anônima ao usuário. Consultas de funil devem usar o primeiro instante por evento,
+não contar linhas brutas.
+
+Esta consulta reconstrói a primeira ocorrência de cada etapa por usuário, incluindo os eventos
+anônimos da sessão que posteriormente salvou um perfil:
+
+```sql
+with sessoes_identificadas as (
+  select sessao_id, min(user_id::text)::uuid as user_id
+  from public.eventos_produto
+  where sessao_id is not null and user_id is not null
+  group by sessao_id
+  having count(distinct user_id) = 1
+), eventos_identificados as (
+  select
+    coalesce(evento.user_id, sessao.user_id) as user_id,
+    evento.nome,
+    evento.ocorrido_em
+  from public.eventos_produto as evento
+  left join sessoes_identificadas as sessao using (sessao_id)
+), funil as (
+  select
+    user_id,
+    min(ocorrido_em) filter (where nome = 'landing_visualizada') as landing_visualizada_em,
+    min(ocorrido_em) filter (where nome = 'cta_cadastro_aberto') as cadastro_aberto_em,
+    min(ocorrido_em) filter (where nome = 'etapa_perfil_concluida') as perfil_concluido_em,
+    min(ocorrido_em) filter (where nome = 'etapa_habilidades_concluida') as habilidades_concluidas_em,
+    min(ocorrido_em) filter (where nome = 'etapa_preferencias_concluida') as preferencias_concluidas_em,
+    min(ocorrido_em) filter (where nome = 'conta_criada') as conta_criada_em,
+    min(ocorrido_em) filter (where nome = 'email_confirmado') as email_confirmado_em,
+    min(ocorrido_em) filter (where nome = 'perfil_salvo') as perfil_salvo_em,
+    min(ocorrido_em) filter (where nome = 'telegram_aberto') as telegram_aberto_em,
+    min(ocorrido_em) filter (where nome = 'telegram_vinculado') as telegram_vinculado_em,
+    min(ocorrido_em) filter (
+      where nome = 'primeira_recomendacao_enviada'
+    ) as primeira_recomendacao_em,
+    min(ocorrido_em) filter (where nome = 'vaga_aberta') as primeira_vaga_aberta_em,
+    min(ocorrido_em) filter (where nome = 'vaga_util') as primeira_vaga_util_em,
+    min(ocorrido_em) filter (where nome = 'candidatura_iniciada') as primeira_candidatura_em
+  from eventos_identificados
+  where user_id is not null
+  group by user_id
+)
+select *
+from funil
+order by conta_criada_em desc nulls last;
+```
+
 ## Evento de ativação
 
 O evento de ativação do Radar é a **primeira entrega bem-sucedida no Telegram contendo ao

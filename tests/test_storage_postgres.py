@@ -74,6 +74,14 @@ def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, us
     assert conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[
         0
     ]
+    assert (
+        conexao.execute(
+            "select count(*) from eventos_produto "
+            "where perfil_id = %s and nome = 'primeira_recomendacao_enviada'",
+            (usuario.id,),
+        ).fetchone()[0]
+        == 1
+    )
 
 
 def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: Usuario):
@@ -94,6 +102,14 @@ def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: 
     assert (
         conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[0]
         == primeira_ativacao
+    )
+    assert (
+        conexao.execute(
+            "select count(*) from eventos_produto "
+            "where perfil_id = %s and nome = 'primeira_recomendacao_enviada'",
+            (usuario.id,),
+        ).fetchone()[0]
+        == 1
     )
 
 

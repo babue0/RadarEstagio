@@ -10,6 +10,8 @@ const submitProfile = document.querySelector("#submit-profile");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
 const telegramLink = document.querySelector("#telegram-link");
 const pendingProfileKey = "radar-perfil-pendente";
+const eventSessionKey = "radar-sessao-eventos";
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 let currentStep = 1;
 let authMode = "signup";
 let radarClient = null;
@@ -37,6 +39,31 @@ function getClient() {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
   return radarClient;
+}
+
+function eventSessionId() {
+  const existing = localStorage.getItem(eventSessionKey);
+  if (existing && uuidPattern.test(existing)) return existing;
+  const created = crypto.randomUUID();
+  localStorage.setItem(eventSessionKey, created);
+  return created;
+}
+
+async function registerEvent(name, properties = {}) {
+  try {
+    const client = getClient();
+    const { data } = await client.auth.getSession();
+    const { error } = await client.from("eventos_produto").insert({
+      nome: name,
+      sessao_id: eventSessionId(),
+      user_id: data.session?.user.id ?? null,
+      propriedades: properties,
+    });
+    if (error) throw error;
+  } catch {
+    return false;
+  }
+  return true;
 }
 
 function showStep(step) {
@@ -318,6 +345,7 @@ async function persistProfile(userId, profile) {
     .single();
   if (error) throw error;
   clearPendingProfile();
+  void registerEvent("perfil_salvo");
   return data;
 }
 
@@ -384,20 +412,33 @@ async function resumeConfirmedSignup() {
   }
 }
 
+function completeProfileStep() {
+  if (!validateStep(1)) return;
+  void registerEvent("etapa_perfil_concluida");
+  showStep(2);
+}
+
+function completeSkillsStep() {
+  addCustomSkill();
+  if (!validateStep(2)) return;
+  void registerEvent("etapa_habilidades_concluida", { quantidade: selectedSkills.size });
+  showStep(3);
+}
+
 document.querySelectorAll(".js-open-signup").forEach((button) => {
-  button.addEventListener("click", openSignup);
+  button.addEventListener("click", () => {
+    void registerEvent("cta_cadastro_aberto", {
+      origem: button.dataset.eventOrigin ?? "desconhecida",
+    });
+    openSignup();
+  });
 });
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
 document.querySelector("#finish-signup").addEventListener("click", closeSignup);
 document.querySelector("#previous-step").addEventListener("click", () => showStep(2));
-document.querySelector("#next-step").addEventListener("click", () => {
-  if (validateStep(1)) showStep(2);
-});
+document.querySelector("#next-step").addEventListener("click", completeProfileStep);
 document.querySelector("[data-previous-step]").addEventListener("click", () => showStep(1));
-document.querySelector("[data-next-step]").addEventListener("click", () => {
-  addCustomSkill();
-  if (validateStep(2)) showStep(3);
-});
+document.querySelector("[data-next-step]").addEventListener("click", completeSkillsStep);
 document.querySelectorAll("[data-skill]").forEach((button) => {
   button.addEventListener("click", () => {
     const skill = button.dataset.skill;
@@ -419,6 +460,7 @@ toggleAuthMode.addEventListener("click", () => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!validateStep(3)) return;
+  void registerEvent("etapa_preferencias_concluida");
   const email = form.elements.email.value.trim();
   const password = form.elements.senha.value;
   let profileSaveStarted = false;
@@ -451,6 +493,7 @@ form.addEventListener("submit", async (event) => {
 });
 
 telegramLink.addEventListener("click", () => {
+  void registerEvent("telegram_aberto");
   window.setTimeout(refreshActivationStatus, 1500);
 });
 
@@ -468,8 +511,9 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && dialog.open) closeSignup();
   if (event.key === "Enter" && dialog.open && currentStep === 1 && event.target.matches("input, select")) {
     event.preventDefault();
-    if (validateStep(1)) showStep(2);
+    completeProfileStep();
   }
 });
 
+void registerEvent("landing_visualizada", { pagina: window.location.pathname });
 resumeConfirmedSignup();

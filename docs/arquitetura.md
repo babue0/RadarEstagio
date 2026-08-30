@@ -202,9 +202,22 @@ Regras para não afetar quem já usa:
 - **Schema versionado** em `supabase/migrations/`, aplicado com `supabase db push`. É o
   contrato com o site: ninguém altera tabela pelo painel.
 - **RLS** em todas as tabelas. Só `perfis` tem policy (cada usuário lê e edita a própria
-  linha, para o site com a chave anônima). O job usa a string de conexão do Postgres, que
+  linha, para o site com a chave anônima); `eventos_produto` aceita apenas os eventos web
+  permitidos para a sessão ou usuário atual. O job usa a string de conexão do Postgres, que
   ignora RLS, e ela só existe no `.env` e nos secrets.
 - **Conexão pelo Session pooler** do Supabase: o runner do Actions só tem IPv4.
+
+### 11. Eventos de produto com fonte autoritativa
+
+`eventos_produto` concentra o funil em um catálogo fechado. A landing registra visita, CTA,
+etapas e abertura do Telegram com um UUID de sessão sem dados pessoais. Gatilhos do Postgres
+registram conta criada, confirmação de e-mail, perfil salvo, Telegram vinculado, primeira
+recomendação e pausa, porque esses marcos não devem depender do navegador permanecer aberto.
+
+A sessão anônima é ligada ao usuário por um evento autenticado de `perfil_salvo`. Consultas usam
+a primeira ocorrência de cada nome, pois o gatilho autoritativo e o navegador podem registrar o
+mesmo marco. Os eventos de clique, utilidade e candidatura permanecem reservados até existirem
+interações reais no Telegram; o contrato não fabrica comportamento futuro.
 
 ## Como cada ferramenta se encaixa
 

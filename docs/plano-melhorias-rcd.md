@@ -116,6 +116,8 @@ Apresentar separadamente:
 
 ### 4.1 Eventos mínimos
 
+**Status:** instrumentação da jornada existente concluída em 30/08/2026.
+
 - `landing_visualizada`
 - `cta_cadastro_aberto`
 - `etapa_perfil_concluida`
@@ -132,6 +134,11 @@ Apresentar separadamente:
 - `vaga_irrelevante`
 - `candidatura_iniciada`
 - `entregas_pausadas`
+
+Os eventos da landing ao primeiro envio são registrados no Supabase. Eventos que dependem de
+interações ainda inexistentes — `vaga_aberta`, `vaga_util`, `vaga_irrelevante` e
+`candidatura_iniciada` — já pertencem ao contrato, mas só serão emitidos quando o link rastreável
+e os botões de feedback forem implementados. Isso evita registrar intenção sem ação real.
 
 ### 4.2 Métricas do funil
 

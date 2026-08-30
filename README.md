@@ -49,6 +49,8 @@ Decisões atuais:
   na tabela `perfis` sob RLS;
 - vínculo com o Telegram por link do bot contendo token temporário, sem pedir `@username` ou
   `chat_id` no formulário;
+- eventos do funil registrados no Supabase com uma sessão anônima que é ligada à conta após o
+  perfil ser salvo;
 - React, Next.js ou outro framework só serão avaliados novamente se surgir uma necessidade real
   de interface mais complexa.
 
