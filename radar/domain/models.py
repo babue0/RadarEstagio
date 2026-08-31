@@ -12,6 +12,16 @@ class Modalidade(StrEnum):
     INDIFERENTE = "indiferente"
 
 
+class AreaDeInteresse(StrEnum):
+    DESENVOLVIMENTO_WEB = "desenvolvimento_web"
+    DESENVOLVIMENTO_MOBILE = "desenvolvimento_mobile"
+    DADOS_IA = "dados_ia"
+    INFRAESTRUTURA_REDES = "infraestrutura_redes"
+    SEGURANCA = "seguranca"
+    SUPORTE_TECNICO = "suporte_tecnico"
+    QA_TESTES = "qa_testes"
+
+
 class Vaga(BaseModel):
     id_externo: str
     fonte: str
@@ -31,6 +41,7 @@ class Perfil(BaseModel):
     habilidades: list[str] = Field(min_length=1)
     cidade: str
     modalidade: Modalidade
+    areas_de_interesse: list[AreaDeInteresse] = Field(default_factory=list)
 
     def nome_da_cidade(self) -> str:
         return self.cidade.split(",")[0].strip()

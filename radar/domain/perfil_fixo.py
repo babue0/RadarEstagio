@@ -1,4 +1,4 @@
-from radar.domain.models import Modalidade, Perfil
+from radar.domain.models import AreaDeInteresse, Modalidade, Perfil
 
 
 def perfil_do_mvp() -> Perfil:
@@ -8,4 +8,5 @@ def perfil_do_mvp() -> Perfil:
         habilidades=["Python", "Java"],
         cidade="Rio de Janeiro, RJ",
         modalidade=Modalidade.PRESENCIAL,
+        areas_de_interesse=[AreaDeInteresse.DESENVOLVIMENTO_WEB],
     )
