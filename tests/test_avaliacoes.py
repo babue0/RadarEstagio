@@ -62,10 +62,10 @@ def test_java_nao_corresponde_a_javascript():
     assert resultado.nota == 48
 
 
-def test_vaga_sem_stack_declarada_atende_o_fator_de_habilidades():
+def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(avaliacao())
 
-    assert resultado.nota == 98
+    assert resultado.nota == 73
 
 
 def test_c_nao_corresponde_a_csharp_nem_a_cpp():

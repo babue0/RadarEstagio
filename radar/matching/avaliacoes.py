@@ -12,6 +12,7 @@ PESO_PERIODO_EXPERIENCIA = 15
 PESO_LOGISTICA = 10
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
 PESO_DESEJAVEIS_QUANDO_MISTAS = 0.2
+COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.5
 COEFICIENTES = {
     "compativel": 1.0,
     "parcial": 0.5,
@@ -99,7 +100,7 @@ def _compatibilidade_de_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> f
         return obrigatorias
     if desejaveis is not None:
         return desejaveis
-    return 1.0
+    return COBERTURA_NEUTRA_SEM_STACK_DECLARADA
 
 
 def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:

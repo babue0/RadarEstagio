@@ -193,7 +193,9 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   (`filtering/prefiltro.py`), matching com Gemini API (`matching/gemini.py`) ou AGY local
   (`matching/agy.py`), ambos com saída estruturada de fatores; `matching/avaliacoes.py`
   calcula a nota com pesos de 50 para habilidades, 15 para curso, 10 para área, 15 para
-  período/experiência e 10 para logística. Tecnologias são comparadas por nomes normalizados
+  período/experiência e 10 para logística. Vaga que não declara stack recebe cobertura
+  neutra de 0.5 no fator de habilidades, para não ranquear acima de vaga específica
+  compatível com o perfil. Tecnologias são comparadas por nomes normalizados
   e exatos, de modo que `Java` não corresponde a `JavaScript`. O fluxo foi verificado com
   `python -m radar avaliar`, e
   notificação no Telegram (`notification/formatador.py` monta a mensagem em HTML e
