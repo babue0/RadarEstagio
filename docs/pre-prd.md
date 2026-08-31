@@ -1,446 +1,429 @@
 # Radar de Estágio — Documento de Definição (Pré-PRD)
 
-**Status:** Fase 2 parcialmente implementada; validação técnica e de produto em andamento<br>
-**Atualizado em:** 30/08/2026<br>
-**Entrega prevista:** 02/09/2026<br>
-**Disciplina:** Métodos e Aplicações de IA (IBM3116), turma 8001<br>
-**Professor:** Alvaro Riz<br>
-**Integrantes:** Igor Costa, Ian Dias e Miguel Esteves<br>
-**Objetivo:** avaliar a viabilidade do projeto antes da elaboração do PRD<br>
-**Base:** visão do produto, plano do MVP e prova técnica já executada pelo grupo
+**Status:** base técnica viável; Fase 2 em validação de produto e operação
 
-## 1. Finalidade deste documento
+**Atualizado em:** 30/08/2026
 
-Este Pré-PRD organiza o que já sabemos sobre o Radar de Estágio e o que ainda precisa ser validado. Ele não especifica todos os requisitos do produto final. Sua função é:
+**Entrega prevista:** 02/09/2026
 
-- esclarecer o problema e a hipótese central;
-- separar fatos comprovados de premissas ainda não testadas;
-- avaliar viabilidade técnica, financeira, operacional, de prazo e de produto;
-- expor vulnerabilidades antes que elas se tornem custo de desenvolvimento;
-- listar oportunidades sem transformá-las automaticamente em escopo;
-- pedir ao grupo a priorização das características pertinentes ao problema;
-- registrar as decisões necessárias para avançar ao PRD.
+**Disciplina:** Métodos e Aplicações de IA (IBM3116), turma 8001
 
-## 2. Resumo executivo
+**Professor:** Alvaro Riz
 
-O Radar de Estágio reduz o esforço diário de estudantes que procuram o primeiro estágio. O sistema coleta vagas da Adzuna e da Gupy, remove duplicatas, elimina anúncios claramente incompatíveis, compara as oportunidades com o perfil do estudante e entrega pelo Telegram uma lista curta, ranqueada e explicada.
+**Integrantes:** Igor Costa, Ian Dias e Miguel Esteves
 
-A prova técnica principal já existe: o projeto coleta vagas da Adzuna e da Gupy, aplica pré-filtro,
-avalia as oportunidades com Gemini e envia recomendações pelo Telegram. Em 30/08/2026, uma coleta
-real com dois perfis presenciais no Rio produziu 703 vagas únicas e 55 candidatas após o
-pré-filtro. O fluxo também pode usar o AGY localmente para testes sem consumir a cota da API
-direta. A suíte atual possui 268 testes passando e 4 integrações condicionadas a um PostgreSQL
-de teste.
+## 1. Objetivo do documento
 
-As principais incertezas agora são de produto e operação:
+Este documento antecede o PRD. Seu objetivo não é transformar toda ideia em requisito, mas
+permitir que o grupo decida, com base em evidências, se o Radar de Estágio é viável e qual
+produto merece ser especificado depois da validação.
 
-- Adzuna e Gupy oferecem volume suficiente de vagas relevantes?
-- os estudantes confiam no ranking e nas justificativas?
-- Telegram é um canal aceitável para o público?
-- a versão atual executa de forma estável no agendamento diário?
-- a cota disponível do Gemini suporta a frequência e a quantidade de análises no CI?
-- o benefício percebido é suficiente para gerar uso recorrente?
+Ele deve servir para:
 
-> **Veredito preliminar:** a Fase 1 é tecnicamente viável e está implementada. A viabilidade como produto ainda depende da cobertura das fontes, da confiança no matching, da aceitação do canal e da operação contínua dentro dos limites das APIs.
+- tirar dúvidas sobre problema, público, solução, matching, canal e operação;
+- separar fatos comprovados de hipóteses e decisões ainda abertas;
+- tornar vulnerabilidades visíveis antes que gerem custo ou invalidem a proposta;
+- listar oportunidades sem incorporá-las automaticamente ao escopo;
+- pedir a priorização das características realmente pertinentes ao problema;
+- avaliar viabilidade técnica, financeira, operacional, de prazo, privacidade e produto;
+- definir quais evidências autorizam o avanço para um PRD completo.
 
-## 3. Problema que queremos resolver
+### 1.1 Como interpretar as afirmações
 
-Procurar estágio exige acompanhamento frequente de diferentes portais. Grande parte dos anúncios não combina com o curso, período, habilidades, localização ou modalidade desejada pelo estudante. Ao mesmo tempo, boas oportunidades podem fechar rapidamente.
+| Classificação | Significado |
+| --- | --- |
+| **Comprovado** | Existe código, teste automatizado, execução real ou dado observável. |
+| **Parcialmente comprovado** | A base existe, mas falta repetição, volume ou usuário externo. |
+| **Hipótese** | É uma expectativa que ainda precisa de teste. |
+| **Decisão aberta** | O grupo precisa escolher uma regra antes de medir ou desenvolver. |
 
-O estudante precisa repetir três trabalhos:
+O princípio central é **prova antes de promessa**: cadastro, quantidade de funcionalidades e
+volume coletado não demonstram valor sozinhos. O valor inicial ocorre quando o estudante recebe
+uma recomendação relevante; a utilidade só se confirma quando ele abre, aprova ou se candidata à
+vaga.
+
+## 2. Resumo executivo e veredito
+
+O Radar de Estágio reduz o trabalho diário de estudantes que procuram o primeiro estágio. O
+sistema coleta vagas da Adzuna e da Gupy, elimina duplicatas e incompatibilidades evidentes,
+compara as oportunidades com o perfil do estudante e entrega pelo Telegram uma lista curta,
+ranqueada e explicada.
+
+A prova técnica funciona de ponta a ponta. O projeto possui cadastro web, múltiplos usuários,
+vínculo com Telegram, persistência no Supabase, histórico entre execuções, matching estruturado,
+nota determinística, entrega e instrumentação do funil até a primeira recomendação. Em
+30/08/2026, a suíte possui **282 testes passando e 4 integrações ignoradas** sem um PostgreSQL de
+teste. As cinco migrações estão aplicadas no banco remoto.
+
+Uma coleta real em 30/08/2026, usando Adzuna e Gupy para dois perfis presenciais no Rio de
+Janeiro, produziu **703 vagas únicas e 55 candidatas após o pré-filtro**. O agendamento externo
+executou o workflow com sucesso às 07:23 BRT do mesmo dia. A execução posterior do commit de
+instrumentação foi cancelada, portanto o estado mais recente ainda precisa de uma execução
+completa no GitHub Actions.
+
+### Veredito atual
+
+> **O Radar é viável como MVP acadêmico e piloto técnico controlado. Ainda não está comprovado
+> como produto de uso recorrente.**
+
+É recomendado continuar a validação, sem ampliar fontes ou escopo agora. A elaboração de um PRD
+completo deve depender de quatro provas ainda ausentes:
+
+1. cobertura útil das fontes durante vários dias;
+2. concordância aceitável entre o ranking e avaliações humanas;
+3. ativação de usuários externos até a primeira recomendação;
+4. ação útil após a entrega, como abertura da vaga ou candidatura.
+
+## 3. Problema, público e limite da proposta
+
+### 3.1 Problema
+
+Procurar estágio exige acompanhamento frequente de diferentes portais. Muitos anúncios não
+combinam com curso, período, habilidades, localização ou modalidade do estudante, e as melhores
+oportunidades podem fechar rapidamente.
+
+O estudante repete três trabalhos:
 
 1. procurar vagas em fontes diferentes;
-2. eliminar manualmente anúncios irrelevantes;
-3. interpretar requisitos para decidir onde vale a pena se candidatar.
+2. eliminar anúncios irrelevantes;
+3. interpretar requisitos para escolher onde investir atenção.
 
-Quando esse processo depende apenas de disciplina diária, surgem três consequências:
+As consequências esperadas são tempo perdido, candidaturas tardias e abandono da rotina de
+busca. A frequência e a intensidade dessas dores ainda precisam ser confirmadas com estudantes
+externos ao grupo.
 
-- tempo perdido analisando vagas inadequadas;
-- candidaturas tardias;
-- abandono da rotina de busca.
+### 3.2 Público inicial
 
-### Público inicial
+- universitários de tecnologia no Brasil;
+- em busca do primeiro estágio;
+- com perfil mínimo de curso, período, habilidades, cidade e modalidade;
+- dispostos a testar o Telegram como canal de entrega.
 
-- Universitários de tecnologia.
-- Em busca do primeiro estágio.
-- Inicialmente no Brasil.
-- Dispostos a receber oportunidades pelo Telegram.
-- O próprio grupo atua como primeiro conjunto de usuários e avaliadores.
+O próprio grupo é útil para verificar funcionamento, mas não comprova demanda. Outros cursos,
+trainee, vagas júnior, bolsas, expansão internacional e recrutadores estão fora da validação
+inicial.
 
-Outros cursos, trainee, vagas júnior, bolsas, programas universitários e expansão internacional não fazem parte da validação inicial.
+### 3.3 Trabalho que o produto pretende resolver
 
-## 4. Hipótese central
+> “Mostre, sem eu precisar procurar todos os dias, quais vagas recentes merecem minha atenção e
+> explique por quê.”
 
-Se um estudante informar seu perfil uma vez e o Radar monitorar vagas, remover oportunidades incompatíveis, explicar o nível de compatibilidade e notificá-lo proativamente, então ele gastará menos tempo procurando e conseguirá se candidatar mais cedo às vagas relevantes.
+O Radar não se candidata pelo estudante, não garante contratação, não substitui os portais e não
+é um chatbot genérico. Sua proposta de valor é a combinação de recorrência, filtro, ranking
+explicável e entrega proativa.
 
-Essa hipótese contém quatro promessas que precisam ser avaliadas separadamente:
+## 4. Hipótese central e promessas
 
-- **economia de tempo:** menos esforço de busca e triagem;
-- **relevância:** maior proporção de vagas adequadas ao perfil;
-- **velocidade:** descoberta mais próxima da publicação da vaga;
-- **confiança:** explicações suficientes para o usuário compreender a recomendação.
+Se um estudante informar seu perfil uma vez e o Radar monitorar vagas, remover oportunidades
+incompatíveis, explicar a compatibilidade e notificá-lo proativamente, então ele gastará menos
+tempo procurando e poderá se candidatar mais cedo às vagas relevantes.
 
-## 5. Solução proposta
-
-### 5.1 Experiência desejada do produto
-
-Na visão de produto, o usuário preenche um cadastro curto com curso, período, habilidades, cidade e preferência de modalidade. Em seguida, ativa seu Radar no Telegram. A partir daí, recebe periodicamente as melhores vagas novas, contendo:
-
-- título, empresa e localização;
-- nota de compatibilidade entre 0 e 100;
-- até três pontos concretos a favor e três pontos contra;
-- alerta de possível inconsistência ou “pegadinha”;
-- link para candidatura.
-
-O Radar não se candidata em nome do usuário, não substitui os portais de vagas e não funciona como um chatbot genérico. Seu valor está na execução recorrente, no filtro, no ranking explicável e na entrega proativa.
-
-### 5.2 Separação por fases
-
-Para preservar a viabilidade, a visão completa não deve ser tratada como uma única entrega.
-
-#### Fase 1 — Prova técnica de ponta a ponta (implementada)
-
-- Duas fontes: Adzuna, por API oficial, e Gupy, por endpoint público não oficial.
-- Coleta combinada com tolerância à falha parcial e deduplicação por título e empresa.
-- Um perfil fixo.
-- Pré-filtro determinístico.
-- Matching com Gemini API no CI ou AGY em testes locais.
-- Avaliação em lotes e saída estruturada validada por schema.
-- Mensagem ranqueada no Telegram.
-- Execução diária pelo GitHub Actions.
-- Sem banco de dados.
-- Sem cadastro web.
-- Sem múltiplos usuários.
-- Sem aprendizado por feedback.
-
-#### Fase 2 — MVP de validação com usuários (em andamento)
-
-- Cadastro estruturado do perfil (implementado no site).
-- Persistência de perfis, vagas e avaliações em PostgreSQL/Supabase (implementada).
-- Reutilização da avaliação quando a mesma vaga reaparecer.
-- Explicação mais detalhada da nota sem aumentar a mensagem principal no Telegram.
-- Vínculo seguro entre cadastro e Telegram (implementado).
-- Suporte a vários usuários (implementado).
-- Métricas do funil e da qualidade das vagas (estrutura implementada).
-- Pausar, retomar e editar o perfil (ainda não disponível).
-- Feedback simples sobre as recomendações (ainda não disponível).
-
-#### Evoluções posteriores
-
-- Mais fontes de vagas.
-- Deduplicação entre execuções e histórico de vagas já vistas.
-- Alertas instantâneos para oportunidades excepcionais.
-- Aprendizado com histórico de feedback.
-- Tendências do mercado e lacunas de competências.
-- Outros cursos e níveis profissionais.
-
-### 5.3 Tecnologias escolhidas
-
-| Tecnologia | Uso no projeto | Motivo da escolha |
+| Promessa | O que precisa ser observado | Situação atual |
 | --- | --- | --- |
-| Python | Implementação do pipeline e das regras | Permite integrar APIs e escrever regras com uma base de código pequena. |
-| uv | Ambiente e dependências | Reproduz o ambiente local e o ambiente do GitHub Actions a partir do arquivo de lock. |
-| Pydantic | Modelos, configurações e saída da IA | Valida dados de entrada, variáveis de ambiente e respostas estruturadas. |
-| httpx | Comunicação HTTP | Atende às integrações externas síncronas usadas pelo MVP. |
-| Adzuna | Fonte oficial de vagas | Possui API documentada e credenciais próprias para consulta. |
-| Gupy | Segunda fonte de vagas | Aumenta a cobertura e fornece descrições e modalidade mais completas, embora o endpoint não seja oficial. |
-| Gemini API | Matching no GitHub Actions | Oferece saída estruturada e camada gratuita suficiente para o volume inicial, com uso de lotes. |
-| AGY | Matching em testes locais | Permite testar o mesmo fluxo localmente sem consumir a cota da API direta. |
-| Telegram Bot API | Entrega das recomendações | Envia mensagens e links sem exigir o desenvolvimento de um aplicativo próprio. |
-| GitHub Actions | Agendamento diário | Executa o pipeline sem servidor dedicado e também permite disparo manual. |
-| pytest e Ruff | Testes e qualidade de código | Detectam regressões e verificam o padrão do código sem acessar serviços reais. |
-| PostgreSQL/Supabase | Persistência da Fase 2 | Guarda perfis, vagas, avaliações e envios fora da máquina temporária do Actions. |
+| Economia de tempo | Tempo de busca antes e depois ou relato consistente de redução | Hipótese |
+| Relevância | Proporção de recomendações julgadas úteis | Não mensurada |
+| Velocidade | Intervalo entre publicação, entrega e abertura | Parcialmente mensurável |
+| Confiança | Compreensão da nota e concordância com a justificativa | Não validada externamente |
+| Recorrência | Retorno ou permanência no serviço após a primeira entrega | Não mensurada |
 
-### 5.4 Alternativas consideradas
+## 5. Solução definida para o MVP
 
-| Alternativa | Decisão |
+### 5.1 Experiência desejada
+
+O usuário cria uma conta, informa seu perfil e vincula o Telegram. O Radar executa diariamente e
+entrega até cinco vagas novas com nota igual ou superior ao limite configurado. Cada vaga contém:
+
+- título, empresa, localização, fonte e data;
+- nota de compatibilidade de 0 a 100;
+- até três fatos a favor e três requisitos ou incompatibilidades contra;
+- alerta de possível inconsistência quando aplicável;
+- link direto para a oportunidade.
+
+O padrão atual envia até **5 vagas** com nota mínima **40**, ambos configuráveis.
+
+### 5.2 Jornada e definição de ativação
+
+```text
+landing → cadastro → perfil → confirmação de e-mail → Telegram vinculado
+        → primeira recomendação entregue → vaga aberta → ação útil
+```
+
+A ativação é a **primeira entrega bem-sucedida no Telegram contendo ao menos uma vaga
+recomendada**. Conta criada, formulário concluído e Telegram vinculado são etapas necessárias,
+mas não representam valor entregue.
+
+O funil está instrumentado até a ativação. Os eventos `vaga_aberta`, `vaga_util`,
+`vaga_irrelevante` e `candidatura_iniciada` estão reservados no banco, mas ainda não são emitidos
+porque o produto não possui link rastreado nem feedback. A definição e as consultas estão em
+[`metricas.md`](metricas.md).
+
+### 5.3 Escopo implementado
+
+- coleta combinada de Adzuna e Gupy, tolerando falha parcial;
+- deduplicação dentro da coleta e histórico entre execuções;
+- pré-filtro determinístico antes do uso de IA;
+- Gemini API no CI e AGY em testes locais;
+- fatores estruturados extraídos pela IA e nota calculada no Python;
+- avaliação em lotes, reaproveitamento de avaliações e tratamento de cota;
+- mensagem ranqueada no Telegram;
+- cadastro web, autenticação, perfil e vínculo seguro com Telegram;
+- Supabase com perfis, vagas, avaliações, envios e eventos de produto;
+- múltiplos usuários;
+- evento de ativação e funil da landing à primeira recomendação;
+- execução diária disparada externamente no GitHub Actions.
+
+### 5.4 Ainda não disponível
+
+- edição e exclusão do perfil pelo usuário;
+- pausa e retomada das entregas pela interface;
+- feedback “útil”, “irrelevante” ou “candidatei-me”;
+- rastreamento de abertura da vaga;
+- painel ou histórico para o estudante;
+- fontes além de Adzuna e Gupy.
+
+## 6. Definição do matching
+
+Gemini ou AGY interpreta a descrição e devolve fatores estruturados. A IA não escolhe livremente
+a nota final. O Python aplica a seguinte fórmula:
+
+\[
+N = 50H + 15C + 10A + 15P + 10L
+\]
+
+Em que cada fator varia de 0 a 1:
+
+- **H — habilidades:** cobertura das habilidades explícitas da vaga;
+- **C — curso:** incompatível, parcial ou compatível;
+- **A — área:** incompatível, parcial ou compatível;
+- **P — período/experiência:** incompatível, parcial ou compatível;
+- **L — logística:** média de localização e modalidade.
+
+Regras atuais:
+
+- habilidades valem 50% da nota porque são o principal sinal de capacidade prática;
+- quando existem requisitos obrigatórios e desejáveis, eles representam 80% e 20% do fator de
+  habilidades, respectivamente;
+- stack informada com zero correspondência recebe **0/50** em habilidades;
+- Java e JavaScript são comparados como tecnologias diferentes;
+- quando a vaga não explicita habilidades, o fator de habilidades recebe 50/50;
+- modalidade não informada recebe compatibilidade parcial apenas dentro de logística e não limita
+  globalmente a nota;
+- vaga presencial ou híbrida para um perfil que exige remoto tem nota limitada a 30;
+- fatores semânticos parciais recebem metade do respectivo peso.
+
+A regra de conceder 50/50 quando a vaga omite habilidades evita punir um anúncio incompleto, mas
+pode inflar vagas genéricas. Ela deve ser avaliada especificamente no teste humano, e não tratada
+como verdade definitiva.
+
+## 7. Arquitetura e operação atuais
+
+| Componente | Uso | Evidência ou ressalva |
+| --- | --- | --- |
+| Python e uv | Pipeline, regras e ambiente reproduzível | Comprovado localmente e no CI |
+| Adzuna | Fonte oficial de vagas | API documentada e autenticada |
+| Gupy | Segunda fonte | Endpoint público interno, sem garantia contratual |
+| Gemini API | Extração de fatores no Actions | Funciona, sujeito a cota variável |
+| AGY | Extração local para desenvolvimento | Não está disponível no Actions |
+| Telegram Bot API | Entrega proativa | Envios reais comprovados |
+| PostgreSQL/Supabase | Perfis, vagas, avaliações, envios e eventos | Migrações `0001` a `0005` aplicadas |
+| GitHub Actions | Execução do pipeline | Workflow apenas com `workflow_dispatch` |
+| cron-job.org | Disparo diário às 07:23 BRT | Sucesso observado; dependência externa |
+| pytest e Ruff | Regressão e qualidade | 282 testes passando, 4 ignorados |
+
+O workflow tem limite de quinze minutos. O disparo automático é externo porque o agendamento
+nativo do GitHub deixou de executar durante dois dias. Isso resolve o disparo inicial, mas aumenta
+a dependência operacional e precisa de observação contínua.
+
+## 8. Evidências e lacunas
+
+### 8.1 Comprovado
+
+- Adzuna e Gupy podem ser convertidas para o mesmo modelo e combinadas;
+- se uma fonte falha, a outra ainda pode fornecer vagas;
+- duplicatas são removidas e vagas já enviadas não são reenviadas com Supabase;
+- avaliações persistidas podem ser reutilizadas;
+- o pré-filtro reduz vagas antes da IA;
+- a nota é determinística a partir dos fatores estruturados;
+- o Telegram recebe mensagens formatadas e divididas quando necessário;
+- o pipeline já enviou uma lista real com cinco vagas;
+- uma execução automática ocorreu em 29/08 e outra em 30/08 às 07:23 BRT;
+- cadastro, vínculo Telegram e múltiplos usuários estão implementados;
+- eventos de ativação e funil foram implantados no banco;
+- 282 testes passam e 4 integrações dependem de PostgreSQL de teste.
+
+### 8.2 Parcialmente comprovado
+
+- volume inicial de 703 vagas únicas e 55 candidatas em uma coleta no Rio de Janeiro;
+- operação automática em dias recentes, ainda sem uma janela contínua longa;
+- funcionamento com vários perfis, mas sem piloto externo suficiente;
+- explicabilidade técnica da nota, ainda sem evidência de confiança do estudante.
+
+### 8.3 Ainda não comprovado
+
+- que o problema é frequente e importante para estudantes externos ao grupo;
+- que Adzuna e Gupy entregam vagas relevantes na maioria dos dias;
+- que a nota concorda com avaliadores humanos em diferentes áreas de tecnologia;
+- que o Telegram é aceito como canal de uso recorrente;
+- que usuários concluem cadastro e vínculo sem ajuda;
+- que recomendações geram abertura ou candidatura;
+- que o custo e a cota permanecem adequados com crescimento de usuários.
+
+## 9. Hipóteses e testes de baixo custo
+
+Os limites abaixo são propostas. O grupo deve aprová-los **antes** da coleta para evitar escolher
+um critério conveniente depois do resultado. Como o volume inicial é pequeno, entrevistas e
+sessões observadas produzem sinal melhor do que testes A/B sem amostra suficiente.
+
+| Hipótese | Teste mínimo | Sinal inicial proposto |
+| --- | --- | --- |
+| H1 — A busca manual é uma dor relevante | 5 entrevistas moderadas com estudantes do público; ampliar se os padrões forem inconclusivos | Pelo menos 4 relatam busca repetitiva e demonstram interesse em delegar a triagem |
+| H2 — O matching orienta a triagem | 20 vagas, 3 avaliadores sem ver a nota do sistema | Concordância de pelo menos 75% entre sistema e decisão majoritária |
+| H3 — As fontes têm cobertura útil | Executar por 7 dias e classificar vagas enviáveis | Ao menos 1 recomendação relevante em 5 dos 7 dias para a maioria dos perfis-piloto |
+| H4 — Telegram é um canal aceitável | Participantes vinculam o bot e recebem uma entrega | Pelo menos 4 de 5 concluem sem considerar o canal uma barreira |
+| H5 — A entrega gera ação útil | Pilotar por 2 semanas com link rastreado e feedback | Pelo menos metade abre uma vaga e 30% sinalizam utilidade ou candidatura |
+| H6 — A operação cabe nos limites | Medir duração, chamadas, falhas e cota por execução | 6 de 7 execuções automáticas concluem sem falha permanente e dentro de 15 minutos |
+
+Os percentuais de H1, H4 e H5 são sinais direcionais, não conclusões estatísticas. Resultados
+qualitativos devem registrar comportamento observado e justificativa, não apenas respostas “sim”.
+
+## 10. Dúvidas e decisões
+
+### 10.1 Já respondidas pela implementação
+
+| Dúvida | Resposta atual |
 | --- | --- |
-| LinkedIn | Descartado porque a plataforma restringe coleta automatizada. |
-| WhatsApp | Adiado por exigir uma integração mais cara e burocrática que o Telegram. |
-| SQLite no GitHub Actions | Descartado porque o arquivo não sobrevive ao fim de cada execução. |
-| Servidor próprio e framework web | Adiados porque o MVP funciona como uma tarefa diária e não precisa expor uma API HTTP. |
-| Uma única fonte de vagas | Substituída pela combinação de Adzuna e Gupy para aumentar a cobertura. |
-
-## 6. Evidências disponíveis
-
-### 6.1 O que já foi comprovado
-
-- O ambiente Python e as dependências funcionam localmente com `uv`.
-- A API oficial da Adzuna pode ser consultada com as credenciais do grupo.
-- A Gupy pode ser consultada sem credenciais pelo endpoint utilizado no portal.
-- As respostas das duas fontes podem ser convertidas para o mesmo modelo de domínio.
-- As fontes podem ser combinadas; se uma falhar, a outra ainda pode fornecer vagas.
-- Duplicatas da mesma execução são removidas por título e empresa, preservando a versão com mais informações.
-- O pré-filtro elimina casos incompatíveis antes do uso de IA.
-- Gemini API e AGY retornam os mesmos fatores estruturados, pontos a favor, pontos contra e
-  alerta; a nota é calculada deterministicamente no Python.
-- A avaliação em lotes reduz o número de requisições e isola falhas de vagas específicas.
-- O Telegram recebe mensagens formatadas e divididas quando necessário.
-- O formatador limita a exibição a três pontos a favor e três contra sem invalidar a avaliação.
-- O pipeline completo já enviou uma lista real com cinco vagas avaliadas.
-- O GitHub Actions teve execuções manuais bem-sucedidas em 26 e 27/08/2026 na versão anterior à Gupy.
-- O README documenta instalação, configuração, comandos locais e execução pelo Actions.
-- Em 30/08/2026, 268 testes automatizados passam e 4 integrações são ignoradas sem PostgreSQL de teste.
-
-### 6.2 Limitações já observadas
-
-- A camada gratuita observada do Gemini permite aproximadamente vinte requisições por dia; o valor pode mudar.
-- O uso de lotes reduz requisições, mas uma falha pode gerar novas tentativas e consumir cota adicional.
-- Ao atingir a cota diária, novas tentativas imediatas não resolvem o problema.
-- O AGY aumenta a capacidade de testes locais, mas não está disponível no GitHub Actions e não substitui a API no agendamento.
-- A Gupy é acessada por um endpoint não oficial, que pode mudar sem aviso.
-- No modo sem banco, a deduplicação ocorre apenas entre vagas da mesma execução e uma vaga pode
-  reaparecer em dias diferentes; com Supabase, o histórico de envios é persistido.
-- A cobertura conjunta de Adzuna e Gupy para estágios de tecnologia no Brasil ainda precisa ser medida durante vários dias.
-
-### 6.3 Trabalho técnico e validação restantes
-
-- Confirmar a execução da versão atual no GitHub Actions após a inclusão da Gupy.
-- Observar a execução automática atual por vários dias.
-- Registrar volume coletado, volume filtrado, avaliações realizadas e falhas.
-- Comparar uma amostra de resultados com avaliações humanas.
-- Validar o cadastro, o vínculo com o Telegram e o primeiro valor com usuários externos.
-
-## 7. Hipóteses e testes de baixo custo
-
-Os limites abaixo são propostas iniciais. O grupo deve confirmá-los antes da validação.
-
-| Hipótese | Como testar | Sinal inicial de aprovação |
-| --- | --- | --- |
-| H1 — Estudantes preferem receber vagas selecionadas a fazer toda a busca manualmente. | Entrevistar de 15 a 20 estudantes e oferecer uma demonstração. | Pelo menos 60% afirmam que usariam o serviço semanalmente. |
-| H2 — O matching é confiável o suficiente para orientar a triagem. | Separar 20 vagas reais; três integrantes avaliam relevância sem ver a nota da IA; depois comparar. | Concordância entre classificação humana e sistema em pelo menos 75% dos casos. |
-| H3 — As fontes atuais possuem cobertura útil para o nicho inicial. | Executar Adzuna e Gupy diariamente por sete dias e classificar os resultados. | Volume suficiente para entregar recomendações relevantes na maioria dos dias úteis. |
-| H4 — Telegram é um canal aceitável para o público inicial. | Incluir a pergunta nas entrevistas e permitir que os participantes testem a entrega. | Pelo menos 60% aceitam o canal sem considerar isso uma barreira. |
-| H5 — A entrega gera uma ação útil. | Enviar recomendações durante duas semanas para o grupo e convidados. | Usuários abrem vagas, salvam oportunidades ou relatam candidatura. |
-| H6 — O sistema opera dentro da cota e do custo disponíveis. | Medir vagas coletadas, descartadas e enviadas à IA em cada execução. | O pré-filtro mantém as avaliações diárias abaixo do limite operacional definido. |
-
-Para H3 e H5, o grupo ainda precisa definir números mínimos antes de observar os resultados. O limite não deve ser escolhido depois do teste apenas para justificar uma conclusão positiva.
-
-## 8. Características pertinentes ao problema
-
-Esta lista serve para priorização. Uma característica só deve entrar no produto quando tiver relação direta com a promessa central.
-
-| Característica | Problema atendido | Prioridade sugerida | Fase | Decisão |
-| --- | --- | --- | --- | --- |
-| Coleta automática de vagas | Evita busca manual diária | Essencial | 1 | Confirmada |
-| Pré-filtro determinístico | Reduz anúncios obviamente inadequados e custo de IA | Essencial | 1 | Confirmada |
-| Nota de compatibilidade | Ajuda a ordenar onde investir atenção | Essencial | 1 | Confirmada |
-| Justificativa da nota | Aumenta compreensão e confiança | Essencial | 1 | Confirmada |
-| Alerta de inconsistência | Sinaliza exigências incompatíveis com estágio | Importante | 1 | Confirmada |
-| Entrega automática no Telegram | Evita que o usuário precise lembrar de consultar o sistema | Essencial | 1 | Confirmada |
-| Link direto para a vaga | Encurta o caminho até a candidatura | Essencial | 1 | Confirmada |
-| Cadastro curto do perfil | Permite validar o produto com usuários diferentes | Essencial | 2 | Implementada |
-| Vínculo seguro cadastro → Telegram | Associa o perfil ao chat correto | Essencial | 2 | Implementada |
-| Pausar e retomar entregas | Dá controle ao usuário | Importante | 3 | Pendente |
-| Editar perfil | Evita recomendações baseadas em dados antigos | Importante | 3 | Pendente |
-| Feedback Gostei / Não gostei / Candidatei-me | Mede utilidade e pode orientar melhorias | Importante | 3 | Pendente |
-| Adzuna e Gupy | Aumentam cobertura e reduzem dependência de uma única fonte | Importante | 1 | Confirmada |
-| Fontes além de Adzuna e Gupy | Podem ampliar a cobertura se as fontes atuais forem insuficientes | Importante | Posterior | A discutir |
-| Alerta instantâneo | Reduz o tempo até vagas muito relevantes | Desejável | Posterior | Não priorizada |
-| Tendências de habilidades | Ajuda no planejamento de estudos | Desejável | Posterior | Não priorizada |
-| Aplicação automática | Retira a decisão do usuário e amplia riscos | Fora do escopo | — | Rejeitada |
-| Scraping do LinkedIn | Viola restrições da plataforma e aumenta risco | Fora do escopo | — | Rejeitada |
-
-### Pergunta de priorização
-
-Para cada item marcado como “A discutir”, o grupo deve responder:
-
-1. Sem essa característica, a promessa central deixa de funcionar?
-2. Existe uma forma manual ou mais simples de testar a mesma hipótese?
-3. Ela reduz uma incerteza importante ou apenas deixa a demonstração mais completa?
-4. Seu custo inclui manutenção, suporte, privacidade e observabilidade?
-5. Qual característica existente pode ser adiada para abrir espaço para ela?
-
-## 9. Vulnerabilidades e riscos
-
-| Vulnerabilidade | Impacto | Probabilidade | Situação | Mitigação proposta |
-| --- | --- | --- | --- | --- |
-| Baixa cobertura de Adzuna e Gupy para o nicho | Alto | Média | Não medida | Executar por sete dias, medir vagas úteis e definir critério para adicionar outra fonte. |
-| Mudança no endpoint não oficial da Gupy | Alto | Média | Risco permanente | Isolar o coletor, registrar falhas e continuar com Adzuna quando a Gupy estiver indisponível. |
-| Cota diária do Gemini | Alto | Alta | Comprovada | Pré-filtrar, avaliar em lotes, interromper ao receber cota excedida e estimar alternativa paga. |
-| Match Score incorreto | Alto | Média | Não validada | Comparação cega com avaliação humana, justificativa explícita e coleta de feedback. |
-| Notas diferentes para a mesma vaga | Médio | Média | Possível sem histórico | Persistir a avaliação e reutilizá-la quando a vaga reaparecer para o mesmo perfil. |
-| Vagas falsas, expiradas ou enganosas | Alto | Média | Não medida | Mostrar fonte e data, sinalizar inconsistências e permitir que o usuário reporte problemas. |
-| Falha silenciosa de coleta | Alto | Média | Parcialmente tratada | Logs, falha visível no GitHub Actions e alerta operacional ao grupo. |
-| Dependência de poucos provedores de vagas | Médio | Média | Parcialmente reduzida | Medir cobertura conjunta e adicionar outra fonte somente se H3 falhar. |
-| Dependência do Telegram | Médio | Média | Aceita inicialmente | Validar aceitação e manter a camada de notificação isolada. |
-| Perda de usuários entre site e Telegram | Médio | Alta | Parcialmente tratada | Deep link com token seguro, poucas etapas e medição do funil. |
-| Exposição de perfil e identificador do Telegram | Alto | Baixa/média | Mitigada na implementação | Coleta mínima, RLS, permissões de coluna e política clara de finalidade. |
-| Token previsível ou reutilizável no deep link | Alto | Baixa/média | Parcialmente tratada | Token aleatório e único já implementado; expiração e uso único continuam pendentes. |
-| Aumento de escopo durante o semestre | Alto | Alta | Risco atual | Separar fases e impedir que oportunidades futuras entrem automaticamente no MVP. |
-| Limites gratuitos ou preços mudarem | Médio | Média | Permanente | Registrar data e premissas de custo; recalcular antes do PRD e da apresentação. |
-| GitHub Actions atrasar ou falhar | Médio | Baixa/média | Disparo manual comprovado; cron pendente | Logs, alerta de job vermelho e observação do agendamento por vários dias. |
-
-## 10. Oportunidades
-
-Oportunidades são caminhos de expansão, não compromissos do MVP.
-
-### Curto prazo
-
-- **Early Alert:** antecipar vagas com compatibilidade muito alta.
-- **Explicabilidade:** oferecer mais detalhes sobre a nota sem aumentar a mensagem principal no Telegram.
-- **Métricas reais:** mostrar coleta, filtragem, avaliações, cliques e candidaturas na apresentação.
-- **Parcerias acadêmicas:** testar o Radar com colegas e centrais de carreira.
-
-### Médio prazo
-
-- **Learning Loop:** usar feedback para melhorar recomendações futuras.
-- **Career Gap:** mostrar habilidades recorrentes que faltam ao perfil.
-- **Radar do mercado:** resumir tecnologias e áreas mais solicitadas.
-- **Novas fontes adicionais:** aumentar cobertura se Adzuna e Gupy não forem suficientes.
-
-### Longo prazo
-
-- Outros cursos e níveis profissionais.
-- Rastreamento de candidaturas.
-- Integração com e-mail ou aplicativo próprio.
-- Relacionamento com empresas e recrutadores, condicionado à validação do lado do estudante.
-
-## 11. Análise de viabilidade
-
-### 11.1 Viabilidade técnica
-
-**Avaliação: favorável, com a base da Fase 1 e parte da Fase 2 implementadas.**
-
-As integrações centrais já funcionaram juntas em execuções reais. O projeto possui coletores independentes, deduplicação, pré-filtro, dois adapters de IA, avaliação em lotes, saída estruturada, formatação e envio pelo Telegram. Nenhuma parte da Fase 1 exige tecnologia experimental. Os principais riscos técnicos conhecidos são a cota diária da IA e a dependência do endpoint não oficial da Gupy.
-
-O Actions já funcionou sob disparo manual na versão anterior. Para concluir a demonstração da
-versão atual, ainda é necessário confirmar a execução com Adzuna e Gupy no Actions e observar o
-cron durante vários dias.
-
-### 11.2 Viabilidade financeira
-
-**Avaliação: favorável no volume acadêmico, condicionada aos limites gratuitos.**
-
-O cenário atual usa serviços com camadas gratuitas adequadas a uma prova acadêmica de baixo volume. Isso não significa custo permanentemente zero. Preços, cotas e políticas podem mudar, e o custo cresce com:
-
-- número de usuários;
-- número de vagas por usuário;
-- quantidade de avaliações feitas pela IA;
-- novas fontes e infraestrutura de persistência.
-
-Antes do PRD, o grupo deve registrar uma memória de cálculo com volume diário esperado, chamadas por serviço e um cenário alternativo pago. Valores devem incluir data da consulta e fonte.
-
-### 11.3 Viabilidade operacional
-
-**Avaliação: favorável para poucos usuários, ainda não comprovada em operação contínua.**
-
-A execução já está automatizada, mas “rodar sozinho” não significa ausência de manutenção. O grupo precisará acompanhar:
-
-- falhas de coleta e autenticação;
-- mudanças nas APIs;
-- cota da IA;
-- links expirados;
-- qualidade das recomendações;
-- rotação e proteção de credenciais.
-
-A operação atual usa duas fontes, banco, múltiplos usuários e uma entrega diária. A complexidade
-cresce de forma relevante quando entrarem feedback, edição de perfil e novas fontes.
-
-### 11.4 Viabilidade de prazo
-
-**Avaliação: favorável para concluir a entrega técnica; indefinida para a visão completa.**
-
-O núcleo da Fase 1, a automação, o Supabase, o cadastro web, o vínculo com Telegram e o suporte
-a múltiplos usuários estão implementados. O foco imediato é confirmar a operação atual no Actions,
-coletar evidências e validar o produto com estudantes; edição, pausa, retomada e feedback ficam
-para a próxima etapa.
-
-### 11.5 Viabilidade de produto
-
-**Avaliação: principal incerteza.**
-
-Ainda não foi comprovado que estudantes usarão o Radar de forma recorrente, confiarão nas notas ou aceitarão Telegram como canal. Essas questões não são resolvidas com mais código; exigem entrevistas, demonstrações e observação do comportamento.
-
-### Síntese
-
-| Dimensão | Avaliação atual | Evidência faltante |
-| --- | --- | --- |
-| Técnica | Favorável | Execução da versão atual no Actions e observação do cron |
-| Financeira | Favorável em baixo volume | Memória de cálculo e cenário pago |
-| Operacional | Favorável para a base atual | Monitoramento de execuções reais com vários usuários |
-| Prazo | Favorável para a entrega técnica | Validação do escopo restante da Fase 2 |
-| Produto | Incerta | Entrevistas, aceitação das recomendações e uso recorrente |
-
-## 12. Dúvidas que precisam ser respondidas
-
-### Produto
-
-- Quem exatamente participa do primeiro teste externo?
-- Quantas vagas devem chegar por entrega?
-- Existe nota mínima ou sempre são enviadas as melhores disponíveis?
-- Em dias sem vaga adequada, o Radar avisa ou permanece em silêncio?
-- Qual horário de entrega será testado?
-- O usuário precisa pausar, retomar ou pedir uma atualização manual?
-
-### Matching
-
-- O que torna uma vaga eliminatória antes da IA?
-- Como a nota combina skills, curso, período, modalidade e experiência?
-- Qual diferença entre “não recomendado” e uma nota apenas baixa?
-- Como medir concordância entre o sistema e avaliadores humanos?
-- A mesma régua funciona para desenvolvimento, dados, produto e suporte?
-
-### Fontes
-
-- Qual volume de vagas relevantes torna Adzuna e Gupy suficientes para a Fase 1?
-- Quando a baixa cobertura justifica adicionar uma fonte além das duas atuais?
-- Quais fontes possuem uso permitido e estabilidade aceitável?
-- Como medir erros da deduplicação atual e evitar repetições entre dias sem banco?
-
-### Canal e cadastro
-
-- Telegram é aceito pelo público ou apenas conveniente para o grupo?
-- Cadastro web é necessário para validar ou um formulário manual resolve o primeiro teste?
-- Quais campos são realmente necessários para uma recomendação útil?
-- Como o usuário edita ou exclui seus dados?
-
-### Acadêmico
-
-- O professor avaliará mais a demonstração, documentação, arquitetura ou métricas?
-- Quais evidências precisam aparecer na apresentação?
-- O objetivo do semestre é uma prova acadêmica ou validação com usuários externos?
-
-## 13. Critérios para avançar ao PRD
-
-O grupo deve avançar ao PRD quando:
-
-- o escopo da Fase 1 estiver congelado;
-- a versão atual tiver sido executada com sucesso no GitHub Actions;
-- a execução automática tiver funcionado durante o período de observação definido;
-- a cobertura conjunta de Adzuna e Gupy tiver sido medida;
-- o teste de concordância do matching tiver sido executado;
-- o grupo tiver realizado entrevistas com estudantes do público inicial;
-- os limites de aprovação de H1 a H6 estiverem definidos antes da análise dos resultados;
-- as características “A discutir” da Fase 2 estiverem priorizadas;
-- os dados obrigatórios e a política de exclusão estiverem definidos;
-- a memória de cálculo de custo estiver registrada;
-- o professor tiver confirmado os critérios acadêmicos da entrega.
-
-## 14. Perguntas prioritárias para a próxima reunião
-
-1. Estamos validando apenas a prova técnica ou também o cadastro com usuários externos neste semestre?
-2. Qual resultado mínimo da coleta torna Adzuna e Gupy suficientes?
-3. Qual regra inicial torna o Match Score explicável?
-4. Qual concordância mínima entre avaliação humana e sistema consideramos aceitável?
-5. Quantas vagas devem ser enviadas e qual comportamento usar em dias sem recomendação?
-6. Telegram será validado como hipótese ou assumido como decisão do projeto acadêmico?
-7. Quais três métricas serão apresentadas como evidência de que o projeto funcionou?
-8. Quais características da Fase 2 são necessárias para o teste e quais podem ser simuladas manualmente?
-
-## 15. Próximos passos sugeridos
-
-1. Até 28/08: executar manualmente no Actions a versão com Adzuna e Gupy e guardar a evidência.
-2. De 28/08 a 01/09: observar o cron e registrar volume coletado, vagas únicas, vagas filtradas, avaliações, envios e falhas.
-3. Até 31/08: avaliar manualmente uma amostra de vinte vagas e comparar com o sistema, se o grupo conseguir reunir os avaliadores.
-4. Até 01/09: definir as três métricas e os prints ou logs que entrarão na apresentação.
-5. Em 01/09: congelar o escopo, revisar o documento e ensaiar a demonstração.
-6. Em 02/09: entregar a Fase 1 com as evidências obtidas e declarar como pendentes as hipóteses de produto ainda não testadas.
-7. Após a entrega: projetar a explicação detalhada da nota e a persistência de vagas e avaliações.
-8. Depois: entrevistar estudantes, concluir H1 a H6 e elaborar o PRD somente para a fase aprovada.
+| Quantas vagas são entregues? | Até 5 por execução. |
+| Existe nota mínima? | Sim, 40 por padrão e configurável. |
+| Como a nota é calculada? | Fórmula determinística 50/15/10/15/10. |
+| Qual é a ativação? | Primeira recomendação relevante entregue no Telegram. |
+| Como evitar repetição entre dias? | Histórico de envios no Supabase. |
+| Qual é o horário atual? | 07:23 BRT, disparado externamente. |
+| O cadastro suporta vários usuários? | Sim. |
+| A ausência de modalidade limita a nota? | Não globalmente; reduz apenas parte da logística. |
+
+### 10.2 Decisões ainda abertas
+
+1. Em dias sem vaga adequada, enviar uma mensagem ou permanecer em silêncio?
+2. A nota mínima 40 é adequada para o piloto ou permite recomendações fracas?
+3. A vaga sem habilidades explícitas deve continuar recebendo 50/50 nesse fator?
+4. A mesma régua funciona para desenvolvimento, dados, produto, suporte e infraestrutura?
+5. Qual volume diário torna Adzuna e Gupy suficientes?
+6. Feedback e clique rastreado entram antes da entrega ou serão simulados manualmente?
+7. Qual política permite editar, pausar e excluir os dados do usuário?
+8. Qual comportamento invalida o Telegram como canal inicial?
+9. O professor espera prioritariamente arquitetura, demonstração, documentação ou métricas?
+
+## 11. Vulnerabilidades e riscos
+
+| Vulnerabilidade | Impacto | Situação | Mitigação ou decisão necessária |
+| --- | --- | --- | --- |
+| Cobertura baixa ou irregular | Alto | Uma coleta promissora, sem série suficiente | Executar H3 antes de adicionar fonte |
+| Match Score incorreto | Alto | Não validado externamente | Comparação cega, justificativa e feedback |
+| Vaga sem stack ganhar nota alta | Alto | Regra intencional, não validada | Medir falsos positivos e revisar o fator H |
+| Mudança no endpoint da Gupy | Alto | Risco permanente | Isolar coletor, alertar falha e continuar com Adzuna |
+| Cota variável do Gemini | Alto | HTTP 429 já observado | Pré-filtro, lotes, interrupção segura e cenário pago |
+| Job exceder 15 minutos | Alto | Execução de 30/08 ficou próxima do limite | Medir duração e reduzir volume por execução |
+| Falha ou cancelamento do agendamento | Médio/alto | Sucessos recentes e um cancelamento posterior | Monitorar e executar o commit atual com sucesso |
+| Falha silenciosa de coleta | Alto | Parcialmente tratada | Logs, job vermelho e alerta operacional |
+| Não medir ação após a mensagem | Alto | Eventos reservados, sem emissão | Link rastreado ou feedback manual antes de H5 |
+| Telegram não ser aceito | Médio | Conveniente para o grupo, não validado | Testar vínculo e entrega com usuários externos |
+| Abandono entre site e Telegram | Alto | Funil instrumentado | Medir cada etapa e observar 5 sessões reais |
+| Vagas falsas, expiradas ou enganosas | Alto | Não medido | Mostrar fonte/data, alertar inconsistência e receber reporte |
+| Token reutilizável ou dados sem exclusão | Alto | Token aleatório; expiração e exclusão pendentes | Uso único/expiração e política de exclusão |
+| Dependência de serviços gratuitos | Médio | Adequado ao piloto | Memória de cálculo com data e cenário pago |
+| Crescimento de escopo | Alto | Risco atual | Aplicar o filtro de características da seção 12 |
+
+## 12. Oportunidades e características pertinentes
+
+Toda característica nova gera custo de manutenção, suporte, documentação, privacidade e carga
+cognitiva. Antes de aprová-la, o grupo deve responder:
+
+1. Ela reforça diretamente a promessa de encontrar vagas relevantes mais cedo?
+2. Ela reduz uma incerteza importante do Pré-PRD?
+3. Existe um teste manual ou menor que produza a mesma evidência?
+4. Qual é o custo permanente, além do desenvolvimento inicial?
+5. Qual item atual pode ser adiado para abrir espaço?
+
+Para cada linha abaixo, o grupo deve escolher **aprovar agora**, **simular manualmente**,
+**adiar** ou **rejeitar**.
+
+| Característica | Problema ou hipótese atendida | Menor versão útil | Recomendação atual |
+| --- | --- | --- | --- |
+| Link rastreado para a vaga | Mede ação após a entrega | Redirecionamento que registra `vaga_aberta` | Aprovar agora ou simular no piloto |
+| Feedback útil/irrelevante/candidatei-me | Valida relevância e H5 | Três ações simples ligadas à vaga | Aprovar agora ou coletar manualmente |
+| Mensagem de dia sem vagas | Reduz incerteza sobre falha do serviço | Uma mensagem curta de estado | Decisão aberta |
+| Editar perfil | Evita recomendações com dados antigos | Reabrir formulário existente | Aprovar após a entrega |
+| Pausar e retomar | Dá controle e reduz rejeição ao canal | Um estado ativo/inativo | Aprovar após a entrega |
+| Excluir conta e dados | Atende controle e privacidade | Fluxo autenticado de exclusão | Necessária antes de ampliar o piloto |
+| Explicação detalhada da nota | Pode elevar confiança | Link ou detalhe opcional, sem alongar Telegram | Testar compreensão primeiro |
+| Histórico de vagas | Ajuda a recuperar oportunidades | Lista simples das últimas recomendações | Adiar até H5 |
+| Nova fonte de vagas | Pode aumentar cobertura | Um coletor adicional | Somente se H3 falhar |
+| Alertas instantâneos | Pode reduzir tempo até candidatura | Regra para notas muito altas | Adiar |
+| Lacunas de competências | Ajuda planejamento de estudos | Resumo de skills recorrentes ausentes | Adiar |
+| Aplicação automática | Remove decisão e amplia riscos | Não há versão segura necessária ao MVP | Rejeitar |
+| Scraping do LinkedIn | Aumentaria volume com risco de restrição | Não aplicável | Rejeitar |
+
+## 13. Análise de viabilidade
+
+| Dimensão | Avaliação | Evidência | Condição restante |
+| --- | --- | --- | --- |
+| Técnica | **Favorável** | Pipeline, fontes, IA, banco, Telegram, eventos e testes funcionando | Executar com sucesso o commit atual no Actions |
+| Financeira | **Favorável no piloto acadêmico** | Serviços gratuitos suportam o volume atual | Registrar chamadas e cenário pago |
+| Operacional | **Favorável com ressalvas** | Automação e persistência existem | Observar 7 dias, duração, cota e alertas |
+| Prazo | **Favorável para a entrega técnica** | Núcleo e parte da Fase 2 concluídos | Não incluir novas expansões antes de 02/09 |
+| Privacidade | **Parcialmente favorável** | Coleta mínima, RLS e token aleatório | Expiração, uso único e exclusão dos dados |
+| Produto | **Inconclusiva** | Proposta coerente e prova técnica real | Entrevistas, matching humano, ativação e ação útil |
+
+### 13.1 Decisão de continuidade
+
+O projeto deve continuar como **piloto controlado**, porque a base técnica reduz risco suficiente
+para testar a proposta com baixo custo. Não deve ser declarado produto validado nem receber
+expansões relevantes antes das provas de produto.
+
+### 13.2 Critérios para avançar ao PRD
+
+O grupo pode avançar ao PRD quando:
+
+- o commit atual executar com sucesso no GitHub Actions;
+- a automação for observada durante a janela definida;
+- H1 a H6 tiverem limites aprovados antes da análise;
+- a cobertura conjunta for medida por sete dias;
+- o teste humano de vinte vagas for concluído;
+- pelo menos cinco estudantes externos forem observados ou entrevistados;
+- as características da seção 12 forem classificadas;
+- campos obrigatórios, expiração de token e exclusão de dados forem decididos;
+- a memória de cálculo de custo for registrada;
+- os critérios acadêmicos forem confirmados.
+
+Se cobertura, confiança ou ativação falharem, o resultado não é “construir tudo”: o grupo deve
+identificar a causa, testar a menor correção possível e reavaliar a viabilidade.
+
+## 14. Próximos passos até a entrega
+
+1. **30/08:** atualizar o Pré-PRD e aprovar dúvidas, limites e critérios de viabilidade.
+2. **30–31/08:** executar no Actions a versão atual e registrar duração, coleta, filtro,
+   avaliações, envios e falhas.
+3. **Até 31/08:** realizar a comparação humana de vinte vagas, incluindo anúncios sem stack.
+4. **Até 01/09:** consolidar a observação do cron e separar prova técnica de hipótese de produto.
+5. **Até 01/09:** decidir se clique e feedback serão implementados ou simulados manualmente.
+6. **Em 01/09:** congelar escopo, selecionar evidências e ensaiar demonstração.
+7. **Em 02/09:** entregar a prova técnica e declarar explicitamente as hipóteses não validadas.
+8. **Depois da entrega:** entrevistar e observar cinco estudantes, medir ativação e ação útil e
+   elaborar o PRD apenas para a fase aprovada.
+
+## 15. Perguntas prioritárias para a próxima reunião
+
+1. A conclusão “viável como piloto, produto ainda não validado” representa o entendimento do grupo?
+2. Os limites propostos para H1 a H6 serão aprovados ou alterados antes dos testes?
+3. A regra de habilidades ausentes será mantida após o teste das vinte vagas?
+4. Clique rastreado e feedback entram agora ou serão coletados manualmente?
+5. Qual é o comportamento em dias sem recomendação?
+6. Qual risco impediria a apresentação ou a continuidade para o PRD?
+7. Quais três evidências serão mostradas para comprovar viabilidade?
+8. Quais características serão aprovadas, simuladas, adiadas ou rejeitadas?
 
 ---
 
-**Status do documento:** FASE 1 IMPLEMENTADA; FASE 2 EM ANDAMENTO — a base técnica é favorável,
-mas cobertura, confiança, uso recorrente e validação com usuários continuam pendentes para
-comprovar a viabilidade do produto.
+**Síntese final:** a implementação demonstra viabilidade técnica e de prazo para um MVP acadêmico.
+A decisão de produto permanece condicionada à cobertura recorrente, à confiança no matching, à
+ativação de usuários externos e à observação de uma ação útil após a recomendação.
