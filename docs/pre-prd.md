@@ -200,14 +200,17 @@ Em que cada fator varia de 0 a 1:
 
 Regras atuais:
 
-- habilidades valem 50% da nota porque são o principal sinal de capacidade prática;
+- habilidades valem 45% da nota porque são o principal sinal de capacidade prática;
+- áreas de interesse do perfil valem 10%: a IA classifica a vaga em subáreas de computação
+  (catálogo fechado) e vaga fora das áreas escolhidas perde o fator e recebe aviso; perfil
+  sem interesses não é penalizado;
 - quando existem requisitos obrigatórios e desejáveis, eles representam 80% e 20% do fator de
   habilidades, respectivamente;
 - a cobertura é suavizada, `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil conta
   como incerteza, não como veto, e não há travas de nota por habilidade ausente;
 - idiomas e pacote Office não entram na cobertura, mas seguem visíveis na lista de requisitos;
 - Java e JavaScript são comparados como tecnologias diferentes;
-- quando a vaga não explicita habilidades, o fator de habilidades recebe cobertura neutra de 0,35 (17,5/50);
+- quando a vaga não explicita habilidades, o fator de habilidades recebe cobertura neutra de 0,35 (15,75/45);
 - modalidade não informada recebe compatibilidade parcial apenas dentro de logística e não limita
   globalmente a nota;
 - vaga presencial ou híbrida para um perfil que exige remoto tem nota limitada a 30;

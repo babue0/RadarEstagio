@@ -192,8 +192,14 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   testes e verificação manual (`python -m radar coletar`), pré-filtro por regras
   (`filtering/prefiltro.py`), matching com Gemini API (`matching/gemini.py`) ou AGY local
   (`matching/agy.py`), ambos com saída estruturada de fatores; `matching/avaliacoes.py`
-  calcula a nota com pesos de 50 para habilidades, 15 para curso, 10 para área, 15 para
-  período/experiência e 10 para logística. A cobertura de requisitos é suavizada,
+  calcula a nota com pesos de 45 para habilidades, 10 para curso, 10 para área, 15 para
+  período/experiência, 10 para logística e 10 para área de interesse (01/09/2026): a IA
+  classifica a vaga em subáreas de um catálogo fechado de 7 (`AreaDeInteresse` no domínio)
+  e o fator compara com `perfis.areas_de_interesse` — match ganha o fator cheio, vaga sem
+  subárea reconhecida fica neutra, mismatch zera o fator e põe o aviso "Fora das suas áreas
+  de interesse" na mensagem; perfil sem interesses declarados não é penalizado. A migration
+  `0006_areas_de_interesse.sql` foi aplicada ao projeto atual em 01/09/2026 e o cadastro web
+  coleta o campo. A cobertura de requisitos é suavizada,
   `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil vale como incerteza ("não
   informado"), nunca como veto — as travas de 60/70 pontos por habilidade ausente foram
   removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de Dados a 48 por
