@@ -13,8 +13,8 @@ from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.domain.ports import ColetorDeVagas, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
-from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.enriquecimento import AvaliadorComDescricoesCompletas
+from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.factory import criar_avaliador, nome_do_modelo
 from radar.matching.lotes import AvaliadorEmLotes
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
@@ -117,9 +117,7 @@ def montar_coletor(
     return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades)
 
 
-def montar_avaliador(
-    settings: Settings, cliente_http: httpx.Client
-) -> AvaliadorEmLotes:
+def montar_avaliador(settings: Settings, cliente_http: httpx.Client) -> AvaliadorEmLotes:
     com_descricoes_completas = AvaliadorComDescricoesCompletas(
         criar_avaliador(settings), cliente_http
     )
