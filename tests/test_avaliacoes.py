@@ -71,8 +71,11 @@ def test_stack_principal_usa_as_mesmas_habilidades_na_nota_e_na_explicacao():
         perfil(habilidades=["Python", "Sprint Boot", "Django", "SQL", "Java"]),
     )
 
-    assert resultado.pontos_a_favor == ["SQL informado"]
-    assert resultado.pontos_contra == ["C# não informado", "JavaScript não informado"]
+    assert resultado.requisitos_atendidos == ["SQL"]
+    assert resultado.requisitos_nao_atendidos == ["C#", "JavaScript"]
+    assert resultado.requisitos_tecnicos_analisados
+    assert resultado.pontos_a_favor == []
+    assert resultado.pontos_contra == []
 
 
 def test_java_nao_corresponde_a_javascript():

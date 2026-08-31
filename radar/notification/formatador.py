@@ -33,6 +33,21 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
         f"🏷️ Fonte: {escape(rotulo_fonte(vaga.fonte))} · Publicada em {vaga.publicada_em:%d/%m/%Y}",
         f"⭐ <b>Nota {resultado.nota}/100</b>",
     ]
+    if resultado.requisitos_atendidos:
+        linhas.append(
+            f"✅ <b>Requisitos atendidos:</b> {formatar_requisitos(resultado.requisitos_atendidos)}"
+        )
+    if resultado.requisitos_nao_atendidos:
+        linhas.append(
+            "❌ <b>Requisitos não atendidos:</b> "
+            f"{formatar_requisitos(resultado.requisitos_nao_atendidos)}"
+        )
+    if (
+        resultado.requisitos_tecnicos_analisados
+        and not resultado.requisitos_atendidos
+        and not resultado.requisitos_nao_atendidos
+    ):
+        linhas.append("ℹ️ <b>Requisitos técnicos:</b> não informados na descrição")
     if resultado.pontos_a_favor:
         linhas.append(f"✅ {formatar_pontos(resultado.pontos_a_favor)}")
     if resultado.pontos_contra:
@@ -58,6 +73,10 @@ def rotulo_fonte(fonte: str) -> str:
 def formatar_pontos(pontos: list[str]) -> str:
     selecionados = pontos[:MAXIMO_DE_PONTOS_EXIBIDOS]
     return " · ".join(escape(ponto) for ponto in selecionados)
+
+
+def formatar_requisitos(requisitos: list[str]) -> str:
+    return " · ".join(escape(requisito) for requisito in requisitos)
 
 
 def dividir_em_mensagens(texto: str) -> list[str]:

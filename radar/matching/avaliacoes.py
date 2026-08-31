@@ -77,18 +77,21 @@ def casar_avaliacoes_com_vagas(
         vaga = vagas_por_id.get(avaliacao.id_vaga)
         if vaga is None or avaliacao.id_vaga in resultados:
             continue
-        pontos_a_favor, pontos_contra = _explicar_habilidades(avaliacao, perfil)
+        requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(
+            avaliacao, perfil
+        )
         requisitos = _juntar_habilidades_da_vaga(avaliacao)
         resultados[avaliacao.id_vaga] = ResultadoMatch(
             vaga=vaga,
             nota=_calcular_nota(avaliacao, vaga, perfil),
+            requisitos_atendidos=requisitos_atendidos,
+            requisitos_nao_atendidos=requisitos_nao_atendidos,
+            requisitos_tecnicos_analisados=True,
             pontos_a_favor=_juntar_sem_repetir(
-                pontos_a_favor,
-                _remover_explicacoes_de_habilidades(avaliacao.pontos_a_favor, requisitos),
+                _remover_explicacoes_de_habilidades(avaliacao.pontos_a_favor, requisitos)
             ),
             pontos_contra=_juntar_sem_repetir(
-                pontos_contra,
-                _remover_explicacoes_de_habilidades(avaliacao.pontos_contra, requisitos),
+                _remover_explicacoes_de_habilidades(avaliacao.pontos_contra, requisitos)
             ),
             alerta_pegadinha=avaliacao.alerta_pegadinha,
         )
@@ -164,24 +167,24 @@ def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
     return len(atendidas) / len(requisitos_normalizados)
 
 
-def _explicar_habilidades(
+def _classificar_habilidades(
     avaliacao: AvaliacaoIA, perfil: Perfil
 ) -> tuple[list[str], list[str]]:
     habilidades_do_perfil = {
         _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
     }
     requisitos = _juntar_habilidades_da_vaga(avaliacao)
-    pontos_a_favor = [
-        f"{habilidade} informado"
+    requisitos_atendidos = [
+        habilidade
         for habilidade in requisitos
         if _normalizar_habilidade(habilidade) in habilidades_do_perfil
     ]
-    pontos_contra = [
-        f"{habilidade} não informado"
+    requisitos_nao_atendidos = [
+        habilidade
         for habilidade in requisitos
         if _normalizar_habilidade(habilidade) not in habilidades_do_perfil
     ]
-    return pontos_a_favor, pontos_contra
+    return requisitos_atendidos, requisitos_nao_atendidos
 
 
 def _juntar_habilidades_da_vaga(avaliacao: AvaliacaoIA) -> list[str]:

@@ -44,6 +44,9 @@ class Usuario(BaseModel):
 class ResultadoMatch(BaseModel):
     vaga: Vaga
     nota: int = Field(ge=0, le=100)
+    requisitos_atendidos: list[str] = Field(default_factory=list)
+    requisitos_nao_atendidos: list[str] = Field(default_factory=list)
+    requisitos_tecnicos_analisados: bool = False
     pontos_a_favor: list[str] = Field(default_factory=list)
     pontos_contra: list[str] = Field(default_factory=list)
     avisos_objetivos: list[str] = Field(default_factory=list)

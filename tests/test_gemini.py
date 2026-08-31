@@ -122,8 +122,10 @@ def test_converte_json_do_gemini_em_resultados_na_ordem_da_resposta():
 
     assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 15), ("1", 98)]
     assert resultados[0].alerta_pegadinha == "Exige pleno."
-    assert resultados[0].pontos_contra == ["Java não informado"]
-    assert resultados[1].pontos_a_favor == ["Python informado", "SQL informado"]
+    assert resultados[0].requisitos_nao_atendidos == ["Java"]
+    assert resultados[0].pontos_contra == []
+    assert resultados[1].requisitos_atendidos == ["Python", "SQL"]
+    assert resultados[1].pontos_a_favor == []
     assert resultados[1].alerta_pegadinha is None
 
 

@@ -31,6 +31,9 @@ def resultado(
     a_favor: list[str] | None = None,
     contra: list[str] | None = None,
     avisos: list[str] | None = None,
+    requisitos_atendidos: list[str] | None = None,
+    requisitos_nao_atendidos: list[str] | None = None,
+    requisitos_analisados: bool = False,
 ) -> ResultadoMatch:
     return ResultadoMatch(
         vaga=vaga(titulo, numero),
@@ -38,6 +41,11 @@ def resultado(
         pontos_a_favor=["Python"] if a_favor is None else a_favor,
         pontos_contra=["Exige Java"] if contra is None else contra,
         avisos_objetivos=[] if avisos is None else avisos,
+        requisitos_atendidos=[] if requisitos_atendidos is None else requisitos_atendidos,
+        requisitos_nao_atendidos=(
+            [] if requisitos_nao_atendidos is None else requisitos_nao_atendidos
+        ),
+        requisitos_tecnicos_analisados=requisitos_analisados,
         alerta_pegadinha=alerta,
     )
 
@@ -79,6 +87,33 @@ def test_inclui_titulo_empresa_nota_pontos_e_link():
     assert "✅ Python · SQL" in texto
     assert "❌ Presencial em SP" in texto
     assert '<a href="https://exemplo.com/vaga/1">' in texto
+
+
+def test_exibe_requisitos_tecnicos_atendidos_e_nao_atendidos_explicitamente():
+    texto = formatar_mensagem(
+        [
+            resultado(
+                64,
+                a_favor=[],
+                contra=[],
+                requisitos_atendidos=["SQL"],
+                requisitos_nao_atendidos=["C#", "JavaScript"],
+                requisitos_analisados=True,
+            )
+        ],
+        DATA_DE_TESTE,
+    )
+
+    assert "✅ <b>Requisitos atendidos:</b> SQL" in texto
+    assert "❌ <b>Requisitos não atendidos:</b> C# · JavaScript" in texto
+
+
+def test_avisa_quando_descricao_nao_informa_requisitos_tecnicos():
+    texto = formatar_mensagem(
+        [resultado(73, a_favor=[], contra=[], requisitos_analisados=True)], DATA_DE_TESTE
+    )
+
+    assert "ℹ️ <b>Requisitos técnicos:</b> não informados na descrição" in texto
 
 
 def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
