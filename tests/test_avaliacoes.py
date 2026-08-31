@@ -68,6 +68,22 @@ def test_vaga_sem_stack_declarada_atende_o_fator_de_habilidades():
     assert resultado.nota == 98
 
 
+def test_c_nao_corresponde_a_csharp_nem_a_cpp():
+    resultado = resultado_da(
+        avaliacao(habilidades_desejaveis=["C#", "C++"]), perfil(habilidades=["C"])
+    )
+
+    assert resultado.nota == 48
+
+
+def test_csharp_por_extenso_corresponde_ao_simbolo():
+    resultado = resultado_da(
+        avaliacao(habilidades_desejaveis=["C#", "C++"]), perfil(habilidades=["CSharp", "CPP"])
+    )
+
+    assert resultado.nota == 98
+
+
 def test_alias_js_corresponde_a_javascript():
     resultado = resultado_da(
         avaliacao(habilidades_desejaveis=["JavaScript"]), perfil(habilidades=["JS"])

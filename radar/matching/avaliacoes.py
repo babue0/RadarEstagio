@@ -18,12 +18,20 @@ COEFICIENTES = {
     "incompativel": 0.0,
 }
 ALIASES_DE_HABILIDADES = {
+    "cplusplus": "c++",
+    "cpp": "c++",
+    "csharp": "c#",
     "css3": "css",
+    "golang": "go",
     "html5": "html",
     "js": "javascript",
+    "node": "nodejs",
     "postgres": "postgresql",
     "python3": "python",
+    "reactjs": "react",
     "restapi": "rest",
+    "ts": "typescript",
+    "vuejs": "vue",
 }
 
 
@@ -107,7 +115,9 @@ def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
 
 def _normalizar_habilidade(habilidade: str) -> str:
     normalizada = _normalizar_texto(habilidade)
-    compacta = "".join(caractere for caractere in normalizada if caractere.isalnum())
+    compacta = "".join(
+        caractere for caractere in normalizada if caractere.isalnum() or caractere in "#+"
+    )
     return ALIASES_DE_HABILIDADES.get(compacta, compacta)
 
 
