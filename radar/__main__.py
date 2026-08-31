@@ -14,6 +14,7 @@ from radar.domain.ports import ColetorDeVagas, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.errors import ErroDeAvaliacao
+from radar.matching.enriquecimento import AvaliadorComDescricoesCompletas
 from radar.matching.factory import criar_avaliador, nome_do_modelo
 from radar.matching.lotes import AvaliadorEmLotes
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
@@ -80,13 +81,14 @@ def avaliar(settings: Settings) -> None:
     usuarios = listar_usuarios(settings)
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
-    vagas = filtrar(remover_duplicatas(coletadas), perfil)
-    selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
-    print(
-        f"{len(vagas)} vagas após o pré-filtro; "
-        f"avaliando {len(selecionadas)} com {settings.avaliador}"
-    )
-    for resultado in montar_avaliador(settings).avaliar(selecionadas, perfil):
+        vagas = filtrar(remover_duplicatas(coletadas), perfil)
+        selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
+        print(
+            f"{len(vagas)} vagas após o pré-filtro; "
+            f"avaliando {len(selecionadas)} com {settings.avaliador}"
+        )
+        resultados = montar_avaliador(settings, cliente_http).avaliar(selecionadas, perfil)
+    for resultado in resultados:
         vaga = resultado.vaga
         print(f"- [{resultado.nota:3d}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
         print(f"  A favor: {', '.join(resultado.pontos_a_favor) or '-'}")
@@ -115,8 +117,13 @@ def montar_coletor(
     return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades)
 
 
-def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
-    return AvaliadorEmLotes(criar_avaliador(settings), settings.gemini_vagas_por_lote)
+def montar_avaliador(
+    settings: Settings, cliente_http: httpx.Client
+) -> AvaliadorEmLotes:
+    com_descricoes_completas = AvaliadorComDescricoesCompletas(
+        criar_avaliador(settings), cliente_http
+    )
+    return AvaliadorEmLotes(com_descricoes_completas, settings.gemini_vagas_por_lote)
 
 
 def executar_fluxo(
@@ -125,7 +132,7 @@ def executar_fluxo(
     coletor = montar_coletor(settings, cliente_http, repositorio.listar_ativos())
     enviadas = executar(
         coletor,
-        montar_avaliador(settings),
+        montar_avaliador(settings, cliente_http),
         NotificadorTelegram(settings.telegram_bot_token, cliente_http),
         repositorio,
         nome_do_modelo(settings),

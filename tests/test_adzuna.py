@@ -91,6 +91,18 @@ def test_vaga_sem_empresa_ou_localizacao_recebe_valores_padrao(
     assert vaga.localizacao == "Brasil"
 
 
+def test_marca_resumo_de_500_caracteres_como_descricao_incompleta(
+    httpx_mock: HTTPXMock, coletor: ColetorAdzuna
+):
+    resumido = item(1)
+    resumido["description"] = "x" * 499 + "…"
+    httpx_mock.add_response(json={"results": [resumido]})
+
+    vaga = coletor.coletar()[0]
+
+    assert not vaga.descricao_completa
+
+
 def test_envia_credenciais_e_filtros_na_busca(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
     httpx_mock.add_response(json={"results": []})
 

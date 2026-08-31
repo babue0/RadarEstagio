@@ -18,6 +18,7 @@ RESULTADOS_POR_PAGINA = 50
 LIMITE_DE_PAGINAS_POR_REGIAO = 4
 POSICAO_DO_ESTADO = 2
 POSICAO_DA_CIDADE = 3
+TAMANHO_DO_RESUMO_DA_API = 500
 
 
 class ColetorAdzuna:
@@ -88,13 +89,19 @@ def formatar_localizacao(campo: dict | None) -> str:
 
 
 def converter_em_vaga(item: dict) -> Vaga:
+    descricao = item["description"]
     return Vaga(
         id_externo=str(item["id"]),
         fonte=FONTE,
         titulo=item["title"],
         empresa=nome_exibido(item.get("company"), EMPRESA_NAO_INFORMADA),
         localizacao=formatar_localizacao(item.get("location")),
-        descricao=item["description"],
+        descricao=descricao,
         url=item["redirect_url"],
         publicada_em=item["created"],
+        descricao_completa=not descricao_esta_truncada(descricao),
     )
+
+
+def descricao_esta_truncada(descricao: str) -> bool:
+    return len(descricao) >= TAMANHO_DO_RESUMO_DA_API or descricao.rstrip().endswith(("…", "..."))
