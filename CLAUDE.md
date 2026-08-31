@@ -196,8 +196,9 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   período/experiência, 10 para logística e 10 para área de interesse (01/09/2026): a IA
   classifica a vaga em subáreas de um catálogo fechado de 7 (`AreaDeInteresse` no domínio)
   e o fator compara com `perfis.areas_de_interesse` — match ganha o fator cheio, vaga sem
-  subárea reconhecida fica neutra, mismatch zera o fator e põe o aviso "Fora das suas áreas
-  de interesse" na mensagem; perfil sem interesses declarados não é penalizado. A migration
+  subárea reconhecida fica neutra, mismatch zera o fator, limita a nota a 65 e põe o aviso
+  "Fora das suas áreas de interesse" na mensagem (vaga de outra área preenche dia vazio,
+  mas nunca passa na frente da área do candidato); perfil sem interesses não é penalizado. A migration
   `0006_areas_de_interesse.sql` foi aplicada ao projeto atual em 01/09/2026 e o cadastro web
   coleta o campo. A cobertura de requisitos é suavizada,
   `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil vale como incerteza ("não
