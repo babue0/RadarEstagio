@@ -4,13 +4,14 @@ from uuid import UUID
 import psycopg
 from psycopg.rows import dict_row
 
-from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
 
 SQL_USUARIOS_ATIVOS = """
-    select id, curso, periodo, habilidades, cidade, modalidade, telegram_chat_id
+    select id, curso, periodo, habilidades, cidade, modalidade, telegram_chat_id,
+           coalesce(areas_de_interesse, '{}'::text[]) as areas_de_interesse
     from perfis
     where ativo and telegram_chat_id is not null
     order by criado_em
@@ -207,6 +208,7 @@ def converter_em_usuario(linha: dict) -> Usuario:
             habilidades=linha["habilidades"],
             cidade=linha["cidade"],
             modalidade=Modalidade(linha["modalidade"]),
+            areas_de_interesse=[AreaDeInteresse(area) for area in linha["areas_de_interesse"]],
         ),
         chat_id=linha["telegram_chat_id"],
     )

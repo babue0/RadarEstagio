@@ -5,7 +5,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 
-from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
 from radar.storage.postgres import RepositorioPostgres
 
 DATABASE_URL_TESTE = os.environ.get("DATABASE_URL_TESTE", "")
@@ -31,8 +31,8 @@ def usuario(conexao: psycopg.Connection) -> Usuario:
     )
     perfil_id = conexao.execute(
         "insert into perfis (user_id, curso, periodo, habilidades, cidade, modalidade, "
-        "telegram_chat_id) values (%s, 'Engenharia', 4, '{Python}', 'Rio de Janeiro, RJ', "
-        "'remoto', %s) returning id",
+        "telegram_chat_id, areas_de_interesse) values (%s, 'Engenharia', 4, '{Python}', "
+        "'Rio de Janeiro, RJ', 'remoto', %s, '{desenvolvimento_web}') returning id",
         (user_id, str(uuid4().int)[:9]),
     ).fetchone()[0]
     return RepositorioPostgres(conexao).listar_ativos()[-1].model_copy(update={"id": perfil_id})
@@ -58,6 +58,7 @@ def test_lista_apenas_perfis_ativos_com_chat_id(conexao: psycopg.Connection, usu
     assert usuario.id in {item.id for item in usuarios}
     assert all(item.chat_id for item in usuarios)
     assert isinstance(usuarios[0].perfil, Perfil)
+    assert usuario.perfil.areas_de_interesse == [AreaDeInteresse.DESENVOLVIMENTO_WEB]
 
 
 def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, usuario: Usuario):
