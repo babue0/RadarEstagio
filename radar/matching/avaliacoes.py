@@ -11,6 +11,7 @@ PESO_AREA = 10
 PESO_PERIODO_EXPERIENCIA = 15
 PESO_LOGISTICA = 10
 PESO_INTERESSE = 10
+LIMITE_FORA_DAS_AREAS_DE_INTERESSE = 65
 AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
@@ -126,6 +127,8 @@ def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
         + PESO_LOGISTICA * _compatibilidade_logistica(vaga, perfil)
         + PESO_INTERESSE * _compatibilidade_de_interesse(avaliacao, perfil)
     )
+    if _compatibilidade_de_interesse(avaliacao, perfil) == 0.0:
+        nota = min(nota, LIMITE_FORA_DAS_AREAS_DE_INTERESSE)
     return int(nota + 0.5)
 
 

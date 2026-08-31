@@ -160,6 +160,19 @@ def test_vaga_sem_area_reconhecida_fica_neutra_para_quem_tem_interesses():
     assert resultado.avisos_objetivos == []
 
 
+def test_match_total_de_habilidades_fora_do_interesse_fica_limitado_a_65():
+    perfil_web = perfil(habilidades=["SQL"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(
+        avaliacao(habilidades_obrigatorias=["SQL"], areas_da_vaga=["infraestrutura_redes"]),
+        perfil_web,
+    )
+
+    assert resultado.nota == 65
+    assert resultado.avisos_objetivos == ["Fora das suas áreas de interesse"]
+
+
 def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():
     resultado = resultado_da(avaliacao(areas_da_vaga=["infraestrutura_redes"]))
 
