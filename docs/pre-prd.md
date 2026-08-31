@@ -2,7 +2,7 @@
 
 **Status:** base técnica viável; Fase 2 em validação de produto e operação
 
-**Atualizado em:** 30/08/2026
+**Atualizado em:** 31/08/2026
 
 **Entrega prevista:** 02/09/2026
 
@@ -52,7 +52,7 @@ ranqueada e explicada.
 A prova técnica funciona de ponta a ponta. O projeto possui cadastro web, múltiplos usuários,
 vínculo com Telegram, persistência no Supabase, histórico entre execuções, matching estruturado,
 nota determinística, entrega e instrumentação do funil até a primeira recomendação. Em
-30/08/2026, a suíte possui **282 testes passando e 4 integrações ignoradas** sem um PostgreSQL de
+31/08/2026, a suíte possui **284 testes passando e 4 integrações ignoradas** sem um PostgreSQL de
 teste. As cinco migrações estão aplicadas no banco remoto.
 
 Uma coleta real em 30/08/2026, usando Adzuna e Gupy para dois perfis presenciais no Rio de
@@ -205,15 +205,17 @@ Regras atuais:
   habilidades, respectivamente;
 - stack informada com zero correspondência recebe **0/50** em habilidades;
 - Java e JavaScript são comparados como tecnologias diferentes;
-- quando a vaga não explicita habilidades, o fator de habilidades recebe 50/50;
+- quando a vaga não explicita habilidades, o fator de habilidades recebe cobertura neutra de 0,5 (25/50);
 - modalidade não informada recebe compatibilidade parcial apenas dentro de logística e não limita
   globalmente a nota;
 - vaga presencial ou híbrida para um perfil que exige remoto tem nota limitada a 30;
 - fatores semânticos parciais recebem metade do respectivo peso.
 
-A regra de conceder 50/50 quando a vaga omite habilidades evita punir um anúncio incompleto, mas
-pode inflar vagas genéricas. Ela deve ser avaliada especificamente no teste humano, e não tratada
-como verdade definitiva.
+A versão anterior concedia 50/50 quando a vaga omitia habilidades. Em 31/08/2026, a análise das
+98 vagas já enviadas confirmou o efeito colateral: os anúncios genéricos, sem stack declarada,
+ocupavam o topo com nota 98, acima de vagas que citavam exatamente as habilidades do perfil
+(notas 78 a 85). A cobertura passou a ser neutra (0,5), o que reordena o topo em favor das vagas
+específicas compatíveis. A régua nova ainda deve ser conferida no teste humano das vinte vagas.
 
 ## 7. Arquitetura e operação atuais
 
@@ -228,7 +230,7 @@ como verdade definitiva.
 | PostgreSQL/Supabase | Perfis, vagas, avaliações, envios e eventos | Migrações `0001` a `0005` aplicadas |
 | GitHub Actions | Execução do pipeline | Workflow apenas com `workflow_dispatch` |
 | cron-job.org | Disparo diário às 07:23 BRT | Sucesso observado; dependência externa |
-| pytest e Ruff | Regressão e qualidade | 282 testes passando, 4 ignorados |
+| pytest e Ruff | Regressão e qualidade | 284 testes passando, 4 ignorados |
 
 O workflow tem limite de quinze minutos. O disparo automático é externo porque o agendamento
 nativo do GitHub deixou de executar durante dois dias. Isso resolve o disparo inicial, mas aumenta
@@ -249,7 +251,7 @@ a dependência operacional e precisa de observação contínua.
 - uma execução automática ocorreu em 29/08 e outra em 30/08 às 07:23 BRT;
 - cadastro, vínculo Telegram e múltiplos usuários estão implementados;
 - eventos de ativação e funil foram implantados no banco;
-- 282 testes passam e 4 integrações dependem de PostgreSQL de teste.
+- 284 testes passam e 4 integrações dependem de PostgreSQL de teste.
 
 ### 8.2 Parcialmente comprovado
 
@@ -300,18 +302,18 @@ qualitativos devem registrar comportamento observado e justificativa, não apena
 | Qual é o horário atual? | 07:23 BRT, disparado externamente. |
 | O cadastro suporta vários usuários? | Sim. |
 | A ausência de modalidade limita a nota? | Não globalmente; reduz apenas parte da logística. |
+| Vaga sem stack declarada ganha nota cheia? | Não; recebe cobertura neutra de 0,5 desde 31/08, após análise das vagas enviadas. |
 
 ### 10.2 Decisões ainda abertas
 
 1. Em dias sem vaga adequada, enviar uma mensagem ou permanecer em silêncio?
 2. A nota mínima 40 é adequada para o piloto ou permite recomendações fracas?
-3. A vaga sem habilidades explícitas deve continuar recebendo 50/50 nesse fator?
-4. A mesma régua funciona para desenvolvimento, dados, produto, suporte e infraestrutura?
-5. Qual volume diário torna Adzuna e Gupy suficientes?
-6. Feedback e clique rastreado entram antes da entrega ou serão simulados manualmente?
-7. Qual política permite editar, pausar e excluir os dados do usuário?
-8. Qual comportamento invalida o Telegram como canal inicial?
-9. O professor espera prioritariamente arquitetura, demonstração, documentação ou métricas?
+3. A mesma régua funciona para desenvolvimento, dados, produto, suporte e infraestrutura?
+4. Qual volume diário torna Adzuna e Gupy suficientes?
+5. Feedback e clique rastreado entram antes da entrega ou serão simulados manualmente?
+6. Qual política permite editar, pausar e excluir os dados do usuário?
+7. Qual comportamento invalida o Telegram como canal inicial?
+8. O professor espera prioritariamente arquitetura, demonstração, documentação ou métricas?
 
 ## 11. Vulnerabilidades e riscos
 
@@ -319,7 +321,7 @@ qualitativos devem registrar comportamento observado e justificativa, não apena
 | --- | --- | --- | --- |
 | Cobertura baixa ou irregular | Alto | Uma coleta promissora, sem série suficiente | Executar H3 antes de adicionar fonte |
 | Match Score incorreto | Alto | Não validado externamente | Comparação cega, justificativa e feedback |
-| Vaga sem stack ganhar nota alta | Alto | Regra intencional, não validada | Medir falsos positivos e revisar o fator H |
+| Vaga sem stack ganhar nota alta | Alto | Mitigada em 31/08 com cobertura neutra, após confirmação nos envios reais | Conferir a régua nova no teste humano das vinte vagas |
 | Mudança no endpoint da Gupy | Alto | Risco permanente | Isolar coletor, alertar falha e continuar com Adzuna |
 | Cota variável do Gemini | Alto | HTTP 429 já observado | Pré-filtro, lotes, interrupção segura e cenário pago |
 | Job exceder 15 minutos | Alto | Execução de 30/08 ficou próxima do limite | Medir duração e reduzir volume por execução |
@@ -415,7 +417,7 @@ identificar a causa, testar a menor correção possível e reavaliar a viabilida
 
 1. A conclusão “viável como piloto, produto ainda não validado” representa o entendimento do grupo?
 2. Os limites propostos para H1 a H6 serão aprovados ou alterados antes dos testes?
-3. A regra de habilidades ausentes será mantida após o teste das vinte vagas?
+3. A cobertura neutra para habilidades ausentes se sustenta no teste das vinte vagas?
 4. Clique rastreado e feedback entram agora ou serão coletados manualmente?
 5. Qual é o comportamento em dias sem recomendação?
 6. Qual risco impediria a apresentação ou a continuidade para o PRD?
