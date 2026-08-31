@@ -97,6 +97,31 @@ def test_java_nao_corresponde_a_javascript():
     assert com_correspondencia.nota == 98
 
 
+def test_idiomas_e_pacote_office_nao_contam_na_nota_mas_aparecem_na_lista():
+    resultado = resultado_da(
+        avaliacao(habilidades_obrigatorias=["Inglês avançado", "Excel", "Python"])
+    )
+
+    assert resultado.nota == 98
+    assert resultado.requisitos_atendidos == ["Python"]
+    assert resultado.requisitos_nao_atendidos == ["Inglês avançado", "Excel"]
+
+
+def test_vaga_que_so_pede_idiomas_e_office_e_tratada_como_sem_stack():
+    so_genericos = resultado_da(
+        avaliacao(habilidades_obrigatorias=["Inglês", "Word", "PowerPoint"])
+    )
+    sem_stack = resultado_da(avaliacao())
+
+    assert so_genericos.nota == sem_stack.nota
+
+
+def test_wordpress_nao_e_confundido_com_word():
+    resultado = resultado_da(avaliacao(habilidades_obrigatorias=["WordPress", "PHP"]))
+
+    assert resultado.nota == 64
+
+
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(avaliacao())
 

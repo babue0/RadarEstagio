@@ -26,6 +26,23 @@ COEFICIENTES = {
     "parcial": 0.5,
     "incompativel": 0.0,
 }
+REQUISITOS_FORA_DO_PERFIL_TECNICO = frozenset(
+    {
+        "excel",
+        "libreoffice",
+        "microsoft365",
+        "microsoftoffice",
+        "msoffice",
+        "office",
+        "outlook",
+        "pacoteoffice",
+        "planilhas",
+        "powerpoint",
+        "teams",
+        "word",
+    }
+)
+PREFIXOS_DE_IDIOMA = ("alemao", "espanhol", "frances", "ingles", "italiano", "mandarim")
 ALIASES_DE_HABILIDADES = {
     "cplusplus": "c++",
     "cpp": "c++",
@@ -141,7 +158,11 @@ def _compatibilidade_de_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> f
 
 
 def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
-    requisitos_normalizados = {_normalizar_habilidade(item) for item in requisitos if item.strip()}
+    requisitos_normalizados = {
+        normalizado
+        for item in requisitos
+        if item.strip() and _conta_para_a_nota(normalizado := _normalizar_habilidade(item))
+    }
     if not requisitos_normalizados:
         return None
     habilidades_normalizadas = {
@@ -151,6 +172,12 @@ def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
     return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (
         SUAVIZACAO_DA_COBERTURA + len(requisitos_normalizados)
     )
+
+
+def _conta_para_a_nota(requisito_normalizado: str) -> bool:
+    if requisito_normalizado in REQUISITOS_FORA_DO_PERFIL_TECNICO:
+        return False
+    return not requisito_normalizado.startswith(PREFIXOS_DE_IDIOMA)
 
 
 def _classificar_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> tuple[list[str], list[str]]:
