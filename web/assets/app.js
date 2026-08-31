@@ -243,6 +243,7 @@ function profileFromForm() {
       .filter(Boolean),
     cidade: data.get("cidade").trim(),
     modalidade: data.get("modalidade"),
+    areas_de_interesse: data.getAll("areas"),
   };
   if (!profile.curso) throw validationError("Informe seu curso para continuar.");
   if (!Number.isInteger(profile.periodo) || profile.periodo < 1) {
@@ -327,7 +328,7 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,telegram_chat_id,token_vinculo,ativo")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -341,7 +342,7 @@ async function persistProfile(userId, profile) {
     ? getClient().from("perfis").update(fields).eq("user_id", userId)
     : getClient().from("perfis").insert({ user_id: userId, ...profile });
   const { data, error } = await query
-    .select("curso,periodo,habilidades,cidade,modalidade,telegram_chat_id,token_vinculo,ativo")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo")
     .single();
   if (error) throw error;
   clearPendingProfile();
