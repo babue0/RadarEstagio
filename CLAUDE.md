@@ -193,10 +193,16 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   (`filtering/prefiltro.py`), matching com Gemini API (`matching/gemini.py`) ou AGY local
   (`matching/agy.py`), ambos com saída estruturada de fatores; `matching/avaliacoes.py`
   calcula a nota com pesos de 50 para habilidades, 15 para curso, 10 para área, 15 para
-  período/experiência e 10 para logística. Vaga que não declara stack recebe cobertura
-  neutra de 0.5 no fator de habilidades, para não ranquear acima de vaga específica
-  compatível com o perfil. Tecnologias são comparadas por nomes normalizados
-  e exatos, de modo que `Java` não corresponde a `JavaScript`. O fluxo foi verificado com
+  período/experiência e 10 para logística. A cobertura de requisitos é suavizada,
+  `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil vale como incerteza ("não
+  informado"), nunca como veto — as travas de 60/70 pontos por habilidade ausente foram
+  removidas em 31/08/2026 porque enterravam vagas boas (EPE Ciência de Dados a 48 por
+  "faltar Power BI") enquanto anúncios sem stack ocupavam o topo. Idiomas e pacote Office
+  não contam na cobertura (ninguém os cadastra no perfil), mas seguem visíveis na lista de
+  requisitos. Vaga que não declara stack recebe cobertura neutra de 0.35 (~nota 65):
+  entregável, porém atrás de vaga detalhada e parcialmente compatível. Tecnologias são
+  comparadas por nomes normalizados e exatos, de modo que `Java` não corresponde a
+  `JavaScript`. O fluxo foi verificado com
   `python -m radar avaliar`, e
   notificação no Telegram (`notification/formatador.py` monta a mensagem em HTML e
   divide acima de 4096 caracteres; `notification/telegram.py` envia; verificado com

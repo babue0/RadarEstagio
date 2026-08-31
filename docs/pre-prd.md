@@ -203,9 +203,11 @@ Regras atuais:
 - habilidades valem 50% da nota porque são o principal sinal de capacidade prática;
 - quando existem requisitos obrigatórios e desejáveis, eles representam 80% e 20% do fator de
   habilidades, respectivamente;
-- stack informada com zero correspondência recebe **0/50** em habilidades;
+- a cobertura é suavizada, `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil conta
+  como incerteza, não como veto, e não há travas de nota por habilidade ausente;
+- idiomas e pacote Office não entram na cobertura, mas seguem visíveis na lista de requisitos;
 - Java e JavaScript são comparados como tecnologias diferentes;
-- quando a vaga não explicita habilidades, o fator de habilidades recebe cobertura neutra de 0,5 (25/50);
+- quando a vaga não explicita habilidades, o fator de habilidades recebe cobertura neutra de 0,35 (17,5/50);
 - modalidade não informada recebe compatibilidade parcial apenas dentro de logística e não limita
   globalmente a nota;
 - vaga presencial ou híbrida para um perfil que exige remoto tem nota limitada a 30;
@@ -214,8 +216,11 @@ Regras atuais:
 A versão anterior concedia 50/50 quando a vaga omitia habilidades. Em 31/08/2026, a análise das
 98 vagas já enviadas confirmou o efeito colateral: os anúncios genéricos, sem stack declarada,
 ocupavam o topo com nota 98, acima de vagas que citavam exatamente as habilidades do perfil
-(notas 78 a 85). A cobertura passou a ser neutra (0,5), o que reordena o topo em favor das vagas
-específicas compatíveis. A régua nova ainda deve ser conferida no teste humano das vinte vagas.
+(notas 78 a 85). A cobertura passou a ser neutra e, em 31/08/2026 à noite, o teste com vinte vagas reais
+revelou o efeito inverso: as travas de 60/70 pontos e requisitos como inglês e Excel derrubavam
+toda vaga que declarava stack, devolvendo o topo aos anúncios genéricos. A régua atual usa
+cobertura suavizada sem travas, ignora idiomas e Office na nota e rebaixa a cobertura neutra
+para 0,35; no reteste das vinte vagas, as detalhadas e parcialmente compatíveis assumiram o topo.
 
 ## 7. Arquitetura e operação atuais
 
@@ -302,7 +307,7 @@ qualitativos devem registrar comportamento observado e justificativa, não apena
 | Qual é o horário atual? | 07:23 BRT, disparado externamente. |
 | O cadastro suporta vários usuários? | Sim. |
 | A ausência de modalidade limita a nota? | Não globalmente; reduz apenas parte da logística. |
-| Vaga sem stack declarada ganha nota cheia? | Não; recebe cobertura neutra de 0,5 desde 31/08, após análise das vagas enviadas. |
+| Vaga sem stack declarada ganha nota cheia? | Não; recebe cobertura neutra de 0,35 desde 31/08, atrás de vaga detalhada e meio compatível. |
 
 ### 10.2 Decisões ainda abertas
 
