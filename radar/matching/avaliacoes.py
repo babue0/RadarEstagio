@@ -20,8 +20,7 @@ PESO_OBRIGATORIAS_QUANDO_TODAS = 0.6
 PESO_PRINCIPAIS_QUANDO_TODAS = 0.3
 PESO_DESEJAVEIS_QUANDO_TODAS = 0.1
 COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.5
-LIMITE_COM_HABILIDADE_OBRIGATORIA_AUSENTE = 60
-LIMITE_COM_MAIORIA_DAS_HABILIDADES_PRINCIPAIS_AUSENTE = 70
+SUAVIZACAO_DA_COBERTURA = 1
 COEFICIENTES = {
     "compativel": 1.0,
     "parcial": 0.5,
@@ -77,9 +76,7 @@ def casar_avaliacoes_com_vagas(
         vaga = vagas_por_id.get(avaliacao.id_vaga)
         if vaga is None or avaliacao.id_vaga in resultados:
             continue
-        requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(
-            avaliacao, perfil
-        )
+        requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(avaliacao, perfil)
         requisitos = _juntar_habilidades_da_vaga(avaliacao)
         resultados[avaliacao.id_vaga] = ResultadoMatch(
             vaga=vaga,
@@ -106,20 +103,7 @@ def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
         + PESO_PERIODO_EXPERIENCIA * _coeficiente(avaliacao.periodo_experiencia)
         + PESO_LOGISTICA * _compatibilidade_logistica(vaga, perfil)
     )
-    nota_arredondada = int(nota + 0.5)
-    return min(nota_arredondada, _limite_por_habilidades(avaliacao, perfil))
-
-
-def _limite_por_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> int:
-    cobertura_obrigatorias = _cobertura(
-        avaliacao.habilidades_obrigatorias, perfil.habilidades
-    )
-    if cobertura_obrigatorias is not None and cobertura_obrigatorias < 1:
-        return LIMITE_COM_HABILIDADE_OBRIGATORIA_AUSENTE
-    cobertura_principais = _cobertura(avaliacao.habilidades_principais, perfil.habilidades)
-    if cobertura_principais is not None and cobertura_principais < 0.5:
-        return LIMITE_COM_MAIORIA_DAS_HABILIDADES_PRINCIPAIS_AUSENTE
-    return 100
+    return int(nota + 0.5)
 
 
 def _compatibilidade_de_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
@@ -164,12 +148,12 @@ def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
         _normalizar_habilidade(item) for item in habilidades if item.strip()
     }
     atendidas = requisitos_normalizados & habilidades_normalizadas
-    return len(atendidas) / len(requisitos_normalizados)
+    return (SUAVIZACAO_DA_COBERTURA + len(atendidas)) / (
+        SUAVIZACAO_DA_COBERTURA + len(requisitos_normalizados)
+    )
 
 
-def _classificar_habilidades(
-    avaliacao: AvaliacaoIA, perfil: Perfil
-) -> tuple[list[str], list[str]]:
+def _classificar_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> tuple[list[str], list[str]]:
     habilidades_do_perfil = {
         _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
     }
@@ -208,9 +192,7 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
     return list(unicos.values())
 
 
-def _remover_explicacoes_de_habilidades(
-    pontos: list[str], habilidades: list[str]
-) -> list[str]:
+def _remover_explicacoes_de_habilidades(pontos: list[str], habilidades: list[str]) -> list[str]:
     rotulos_de_habilidades = {
         _normalizar_texto(rotulo)
         for habilidade in habilidades

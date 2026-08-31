@@ -48,12 +48,21 @@ def resultado_da(avaliacao_ia: AvaliacaoIA, candidato: Perfil | None = None):
     return resultados[0]
 
 
-def test_stack_desejavel_sem_correspondencia_recebe_48_pontos():
+def test_stack_desejavel_sem_correspondencia_recebe_nota_baixa():
     requisitos = ["PHP", "MySQL", "SQL", "HTML5", "JavaScript", "REST", "VueJS", "AJAX", "jQuery"]
 
     resultado = resultado_da(avaliacao(habilidades_desejaveis=requisitos))
 
-    assert resultado.nota == 48
+    assert resultado.nota == 53
+
+
+def test_muitos_requisitos_ausentes_pesam_mais_que_um_so():
+    muitos = ["PHP", "MySQL", "HTML5", "VueJS", "AJAX", "jQuery"]
+
+    com_muitos = resultado_da(avaliacao(habilidades_desejaveis=muitos))
+    com_um = resultado_da(avaliacao(habilidades_desejaveis=["PHP"]))
+
+    assert com_muitos.nota < com_um.nota
 
 
 def test_stack_principal_parcial_nao_recebe_nota_de_compatibilidade_total():
@@ -62,7 +71,7 @@ def test_stack_principal_parcial_nao_recebe_nota_de_compatibilidade_total():
         perfil(habilidades=["Python", "Sprint Boot", "Django", "SQL", "Java"]),
     )
 
-    assert resultado.nota == 64
+    assert resultado.nota == 73
 
 
 def test_stack_principal_usa_as_mesmas_habilidades_na_nota_e_na_explicacao():
@@ -79,9 +88,13 @@ def test_stack_principal_usa_as_mesmas_habilidades_na_nota_e_na_explicacao():
 
 
 def test_java_nao_corresponde_a_javascript():
-    resultado = resultado_da(avaliacao(habilidades_desejaveis=["JavaScript"]))
+    sem_correspondencia = resultado_da(avaliacao(habilidades_desejaveis=["JavaScript"]))
+    com_correspondencia = resultado_da(
+        avaliacao(habilidades_desejaveis=["JavaScript"]), perfil(habilidades=["JavaScript"])
+    )
 
-    assert resultado.nota == 48
+    assert sem_correspondencia.nota == 73
+    assert com_correspondencia.nota == 98
 
 
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
@@ -95,7 +108,7 @@ def test_c_nao_corresponde_a_csharp_nem_a_cpp():
         avaliacao(habilidades_desejaveis=["C#", "C++"]), perfil(habilidades=["C"])
     )
 
-    assert resultado.nota == 48
+    assert resultado.nota == 64
 
 
 def test_csharp_por_extenso_corresponde_ao_simbolo():
@@ -128,19 +141,19 @@ def test_obrigatorias_valem_oitenta_porcento_quando_ha_desejaveis():
         )
     )
 
-    assert resultado.nota == 88
+    assert resultado.nota == 93
 
 
-def test_habilidade_obrigatoria_ausente_limita_nota_a_60():
+def test_habilidade_obrigatoria_ausente_reduz_a_nota_sem_vetar():
     resultado = resultado_da(
         avaliacao(habilidades_obrigatorias=["Python", "C#"]),
         perfil(habilidades=["Python"]),
     )
 
-    assert resultado.nota == 60
+    assert resultado.nota == 81
 
 
-def test_maioria_da_stack_principal_ausente_limita_nota_a_70():
+def test_stack_principal_parcial_reduz_a_nota_proporcionalmente():
     resultado = resultado_da(
         avaliacao(
             habilidades_obrigatorias=["Python"],
@@ -149,7 +162,7 @@ def test_maioria_da_stack_principal_ausente_limita_nota_a_70():
         perfil(habilidades=["Python", "SQL"]),
     )
 
-    assert resultado.nota == 70
+    assert resultado.nota == 90
 
 
 def test_fatores_parciais_recebem_metade_do_peso():

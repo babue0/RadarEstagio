@@ -120,7 +120,7 @@ def test_converte_json_do_gemini_em_resultados_na_ordem_da_resposta():
 
     resultados = avaliador.avaliar([vaga_exemplo(1), vaga_exemplo(2)], perfil_exemplo())
 
-    assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 15), ("1", 98)]
+    assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 40), ("1", 98)]
     assert resultados[0].alerta_pegadinha == "Exige pleno."
     assert resultados[0].requisitos_nao_atendidos == ["Java"]
     assert resultados[0].pontos_contra == []
