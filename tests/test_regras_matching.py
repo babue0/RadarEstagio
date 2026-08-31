@@ -28,7 +28,7 @@ def perfil(modalidade: Modalidade = Modalidade.REMOTO) -> Perfil:
     )
 
 
-def test_limita_nota_sem_modalidade_e_preserva_apenas_lacunas_semanticas():
+def test_mantem_nota_sem_modalidade_e_preserva_apenas_lacunas_semanticas():
     original = ResultadoMatch(
         vaga=vaga(None),
         nota=95,
@@ -37,23 +37,22 @@ def test_limita_nota_sem_modalidade_e_preserva_apenas_lacunas_semanticas():
 
     corrigido = aplicar_regras_objetivas([original], perfil())[0]
 
-    assert corrigido.nota == 85
+    assert corrigido.nota == 95
     assert corrigido.pontos_contra == ["SQL não informado"]
-    assert corrigido.avisos_objetivos == ["Nota limitada a 85: modalidade não informada"]
-    assert original.nota == 95
+    assert corrigido.avisos_objetivos == []
     assert original.pontos_contra == ["Modalidade não informada", "SQL não informado"]
 
 
 def test_nao_cria_aviso_quando_nota_ja_respeita_o_limite():
     original = ResultadoMatch(
-        vaga=vaga(None),
-        nota=82,
-        pontos_contra=["Modalidade não informada"],
+        vaga=vaga(Modalidade.PRESENCIAL),
+        nota=25,
+        pontos_contra=["Vaga presencial"],
     )
 
     corrigido = aplicar_regras_objetivas([original], perfil())[0]
 
-    assert corrigido.nota == 82
+    assert corrigido.nota == 25
     assert corrigido.pontos_contra == []
     assert corrigido.avisos_objetivos == []
 

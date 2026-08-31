@@ -155,14 +155,14 @@ def test_aviso_objetivo_aparece_separado_dos_pontos_contra():
             resultado(
                 85,
                 contra=["SQL não informado"],
-                avisos=["Nota limitada a 85: modalidade não informada"],
+                avisos=["Nota limitada a 30: modalidade incompatível"],
             )
         ],
         DATA_DE_TESTE,
     )
 
     assert "❌ SQL não informado" in texto
-    assert "⚠️ Nota limitada a 85: modalidade não informada" in texto
+    assert "⚠️ Nota limitada a 30: modalidade incompatível" in texto
     assert "❌ Nota limitada" not in texto
 
 

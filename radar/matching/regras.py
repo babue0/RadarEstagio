@@ -1,8 +1,6 @@
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch
 
-LIMITE_MODALIDADE_NAO_INFORMADA = 85
 LIMITE_MODALIDADE_INCOMPATIVEL = 30
-AVISO_MODALIDADE_NAO_INFORMADA = "Nota limitada a 85: modalidade não informada"
 AVISO_MODALIDADE_INCOMPATIVEL = "Nota limitada a 30: modalidade incompatível"
 TERMOS_DE_MODALIDADE = (
     "modalidade",
@@ -41,7 +39,7 @@ def aplicar_regras_ao_resultado(resultado: ResultadoMatch, perfil: Perfil) -> Re
 def limite_de_modalidade(resultado: ResultadoMatch, perfil: Perfil) -> tuple[int, str]:
     modalidade = resultado.vaga.modalidade
     if modalidade is None:
-        return LIMITE_MODALIDADE_NAO_INFORMADA, AVISO_MODALIDADE_NAO_INFORMADA
+        return 100, ""
     if perfil.modalidade is Modalidade.REMOTO and modalidade in {
         Modalidade.PRESENCIAL,
         Modalidade.HIBRIDO,
