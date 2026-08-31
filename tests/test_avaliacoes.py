@@ -125,7 +125,17 @@ def test_wordpress_nao_e_confundido_com_word():
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(avaliacao())
 
-    assert resultado.nota == 73
+    assert resultado.nota == 65
+
+
+def test_vaga_sem_stack_nao_supera_vaga_detalhada_e_meio_compativel():
+    sem_stack = resultado_da(avaliacao())
+    detalhada = resultado_da(
+        avaliacao(habilidades_principais=["Python", "SQL", "Git"]),
+        perfil(habilidades=["Python", "Git"]),
+    )
+
+    assert detalhada.nota > sem_stack.nota
 
 
 def test_c_nao_corresponde_a_csharp_nem_a_cpp():
