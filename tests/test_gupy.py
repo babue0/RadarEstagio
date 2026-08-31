@@ -39,7 +39,7 @@ def item(numero: int, publicada_em: str = "2026-08-26T10:00:00.000Z") -> dict:
 @pytest.fixture
 def coletor():
     with httpx.Client() as cliente_http:
-        yield ColetorGupy(cliente_http, PUBLICADAS_DESDE)
+        yield ColetorGupy(cliente_http, PUBLICADAS_DESDE, esperar=lambda _: None)
 
 
 def test_converte_resposta_da_gupy_em_vagas(httpx_mock: HTTPXMock, coletor: ColetorGupy):
@@ -172,7 +172,7 @@ def test_mesma_vaga_no_pais_e_na_cidade_aparece_uma_vez(httpx_mock: HTTPXMock):
 
 @pytest.mark.parametrize("status", [403, 429, 500])
 def test_erro_http_levanta_erro_de_coleta(httpx_mock: HTTPXMock, coletor: ColetorGupy, status):
-    httpx_mock.add_response(status_code=status, text="erro")
+    httpx_mock.add_response(status_code=status, text="erro", is_reusable=True)
 
     with pytest.raises(ErroDeColeta) as capturado:
         coletor.coletar()
@@ -182,7 +182,18 @@ def test_erro_http_levanta_erro_de_coleta(httpx_mock: HTTPXMock, coletor: Coleto
 
 
 def test_falha_de_rede_levanta_erro_de_coleta(httpx_mock: HTTPXMock, coletor: ColetorGupy):
-    httpx_mock.add_exception(httpx.ConnectError("conexão recusada"))
+    httpx_mock.add_exception(httpx.ConnectError("conexão recusada"), is_reusable=True)
 
     with pytest.raises(ErroDeColeta, match="ConnectError"):
         coletor.coletar()
+
+
+def test_erro_transitorio_e_tentado_de_novo_antes_de_desistir(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(status_code=503, text="indisponível")
+    httpx_mock.add_response(json=resposta_vazia())
+    esperas: list[float] = []
+    with httpx.Client() as cliente_http:
+        vagas = ColetorGupy(cliente_http, PUBLICADAS_DESDE, esperar=esperas.append).coletar()
+
+    assert vagas == []
+    assert esperas == [2]

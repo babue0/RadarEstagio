@@ -55,7 +55,7 @@ def pagina_cheia(inicio: int) -> dict:
 @pytest.fixture
 def coletor():
     with httpx.Client() as cliente_http:
-        yield ColetorAdzuna(settings_de_teste(), cliente_http)
+        yield ColetorAdzuna(settings_de_teste(), cliente_http, esperar=lambda _: None)
 
 
 def test_converte_resposta_da_adzuna_em_vagas(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
@@ -183,7 +183,7 @@ def test_resposta_sem_resultados_retorna_lista_vazia(httpx_mock: HTTPXMock, cole
 def test_erro_http_levanta_erro_de_coleta_sem_expor_credenciais(
     httpx_mock: HTTPXMock, coletor: ColetorAdzuna, status: int
 ):
-    httpx_mock.add_response(status_code=status, json={"exception": "erro"})
+    httpx_mock.add_response(status_code=status, json={"exception": "erro"}, is_reusable=True)
 
     with pytest.raises(ErroDeColeta) as capturado:
         coletor.coletar()
@@ -194,7 +194,7 @@ def test_erro_http_levanta_erro_de_coleta_sem_expor_credenciais(
 
 
 def test_falha_de_rede_levanta_erro_de_coleta(httpx_mock: HTTPXMock, coletor: ColetorAdzuna):
-    httpx_mock.add_exception(httpx.ConnectError("conexão recusada"))
+    httpx_mock.add_exception(httpx.ConnectError("conexão recusada"), is_reusable=True)
 
     with pytest.raises(ErroDeColeta, match="ConnectError"):
         coletor.coletar()
@@ -209,3 +209,26 @@ def test_coletas_sucessivas_nao_compartilham_estado(httpx_mock: HTTPXMock, colet
 
     assert len(primeira_coleta) == 3
     assert segunda_coleta == []
+
+
+def test_erro_transitorio_e_tentado_de_novo_antes_de_desistir(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(status_code=503, text="indisponível")
+    httpx_mock.add_response(json=resposta_gravada())
+    esperas: list[float] = []
+    with httpx.Client() as cliente_http:
+        coletor = ColetorAdzuna(settings_de_teste(), cliente_http, esperar=esperas.append)
+        vagas = coletor.coletar()
+
+    assert len(vagas) == 3
+    assert esperas == [2]
+
+
+def test_erro_de_autenticacao_nao_e_tentado_de_novo(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(status_code=401, text="não autorizado")
+    esperas: list[float] = []
+    with httpx.Client() as cliente_http:
+        coletor = ColetorAdzuna(settings_de_teste(), cliente_http, esperar=esperas.append)
+        with pytest.raises(ErroDeColeta, match="401"):
+            coletor.coletar()
+
+    assert esperas == []

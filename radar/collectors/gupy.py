@@ -1,11 +1,12 @@
 import html
 import re
-from collections.abc import Iterable
+import time
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 
 import httpx
 
-from radar.collectors.errors import ErroDeColeta
+from radar.collectors.tentativas import requisitar_com_tentativas
 from radar.domain.models import Modalidade, Vaga
 
 URL_BUSCA = "https://employability-portal.gupy.io/api/v1/jobs"
@@ -25,11 +26,16 @@ PADRAO_ESPACOS = re.compile(r"\s+")
 
 class ColetorGupy:
     def __init__(
-        self, cliente_http: httpx.Client, publicadas_desde: datetime, cidades: Iterable[str] = ()
+        self,
+        cliente_http: httpx.Client,
+        publicadas_desde: datetime,
+        cidades: Iterable[str] = (),
+        esperar: Callable[[float], None] = time.sleep,
     ) -> None:
         self._cliente_http = cliente_http
         self._publicadas_desde = publicadas_desde
         self._cidades = tuple(cidades)
+        self._esperar = esperar
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
@@ -58,16 +64,11 @@ class ColetorGupy:
         }
         if cidade:
             parametros["city"] = cidade
-        try:
-            resposta = self._cliente_http.get(URL_BUSCA, params=parametros)
-            resposta.raise_for_status()
-        except httpx.HTTPStatusError as erro:
-            status = erro.response.status_code
-            raise ErroDeColeta(f"Gupy respondeu HTTP {status} ao buscar vagas") from None
-        except httpx.HTTPError as erro:
-            raise ErroDeColeta(
-                f"Falha de rede ao buscar vagas na Gupy ({type(erro).__name__})"
-            ) from erro
+        resposta = requisitar_com_tentativas(
+            "Gupy",
+            lambda: self._cliente_http.get(URL_BUSCA, params=parametros),
+            self._esperar,
+        )
         return resposta.json()["data"]
 
     def _e_recente(self, item: dict) -> bool:

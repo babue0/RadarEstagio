@@ -1,8 +1,9 @@
-from collections.abc import Iterable
+import time
+from collections.abc import Callable, Iterable
 
 import httpx
 
-from radar.collectors.errors import ErroDeColeta
+from radar.collectors.tentativas import requisitar_com_tentativas
 from radar.domain.models import Vaga
 from radar.settings import Settings
 
@@ -23,11 +24,16 @@ TAMANHO_DO_RESUMO_DA_API = 500
 
 class ColetorAdzuna:
     def __init__(
-        self, settings: Settings, cliente_http: httpx.Client, cidades: Iterable[str] = ()
+        self,
+        settings: Settings,
+        cliente_http: httpx.Client,
+        cidades: Iterable[str] = (),
+        esperar: Callable[[float], None] = time.sleep,
     ) -> None:
         self._settings = settings
         self._cliente_http = cliente_http
         self._cidades = tuple(cidades)
+        self._esperar = esperar
 
     def coletar(self) -> list[Vaga]:
         vagas_por_id: dict[str, Vaga] = {}
@@ -47,18 +53,13 @@ class ColetorAdzuna:
         return itens
 
     def _buscar_pagina(self, pagina: int, cidade: str | None) -> list[dict]:
-        try:
-            resposta = self._cliente_http.get(
+        resposta = requisitar_com_tentativas(
+            "Adzuna",
+            lambda: self._cliente_http.get(
                 f"{URL_BUSCA}/{pagina}", params=self._parametros_da_busca(cidade)
-            )
-            resposta.raise_for_status()
-        except httpx.HTTPStatusError as erro:
-            status = erro.response.status_code
-            raise ErroDeColeta(f"Adzuna respondeu HTTP {status} ao buscar vagas") from None
-        except httpx.HTTPError as erro:
-            raise ErroDeColeta(
-                f"Falha de rede ao buscar vagas na Adzuna ({type(erro).__name__})"
-            ) from erro
+            ),
+            self._esperar,
+        )
         return resposta.json()["results"]
 
     def _parametros_da_busca(self, cidade: str | None) -> dict[str, str | int]:
