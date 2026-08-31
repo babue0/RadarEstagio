@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from radar.domain.models import Modalidade, Perfil, Vaga
+from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, Vaga
 from radar.matching.avaliacoes import AvaliacaoIA, AvaliacoesIA, casar_avaliacoes_com_vagas
 
 
@@ -53,7 +53,7 @@ def test_stack_desejavel_sem_correspondencia_recebe_nota_baixa():
 
     resultado = resultado_da(avaliacao(habilidades_desejaveis=requisitos))
 
-    assert resultado.nota == 53
+    assert resultado.nota == 57
 
 
 def test_muitos_requisitos_ausentes_pesam_mais_que_um_so():
@@ -71,7 +71,7 @@ def test_stack_principal_parcial_nao_recebe_nota_de_compatibilidade_total():
         perfil(habilidades=["Python", "Sprint Boot", "Django", "SQL", "Java"]),
     )
 
-    assert resultado.nota == 73
+    assert resultado.nota == 75
 
 
 def test_stack_principal_usa_as_mesmas_habilidades_na_nota_e_na_explicacao():
@@ -93,7 +93,7 @@ def test_java_nao_corresponde_a_javascript():
         avaliacao(habilidades_desejaveis=["JavaScript"]), perfil(habilidades=["JavaScript"])
     )
 
-    assert sem_correspondencia.nota == 73
+    assert sem_correspondencia.nota == 75
     assert com_correspondencia.nota == 98
 
 
@@ -119,13 +119,52 @@ def test_vaga_que_so_pede_idiomas_e_office_e_tratada_como_sem_stack():
 def test_wordpress_nao_e_confundido_com_word():
     resultado = resultado_da(avaliacao(habilidades_obrigatorias=["WordPress", "PHP"]))
 
-    assert resultado.nota == 64
+    assert resultado.nota == 68
 
 
 def test_vaga_sem_stack_declarada_recebe_cobertura_neutra():
     resultado = resultado_da(avaliacao())
 
-    assert resultado.nota == 65
+    assert resultado.nota == 68
+
+
+def test_vaga_da_area_de_interesse_ganha_o_peso_cheio():
+    perfil_web = perfil(habilidades=["Python", "Java"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(
+        avaliacao(areas_da_vaga=["desenvolvimento_web", "dados_ia"]), perfil_web
+    )
+
+    assert resultado.nota == 68
+    assert resultado.avisos_objetivos == []
+
+
+def test_vaga_fora_da_area_de_interesse_perde_o_fator_e_ganha_aviso():
+    perfil_web = perfil(habilidades=["Python", "Java"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(avaliacao(areas_da_vaga=["infraestrutura_redes"]), perfil_web)
+
+    assert resultado.nota == 58
+    assert resultado.avisos_objetivos == ["Fora das suas áreas de interesse"]
+
+
+def test_vaga_sem_area_reconhecida_fica_neutra_para_quem_tem_interesses():
+    perfil_web = perfil(habilidades=["Python", "Java"])
+    perfil_web.areas_de_interesse = [AreaDeInteresse.DESENVOLVIMENTO_WEB]
+
+    resultado = resultado_da(avaliacao(areas_da_vaga=["area_inventada"]), perfil_web)
+
+    assert resultado.nota == 63
+    assert resultado.avisos_objetivos == []
+
+
+def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():
+    resultado = resultado_da(avaliacao(areas_da_vaga=["infraestrutura_redes"]))
+
+    assert resultado.nota == 68
+    assert resultado.avisos_objetivos == []
 
 
 def test_vaga_sem_stack_nao_supera_vaga_detalhada_e_meio_compativel():
@@ -143,7 +182,7 @@ def test_c_nao_corresponde_a_csharp_nem_a_cpp():
         avaliacao(habilidades_desejaveis=["C#", "C++"]), perfil(habilidades=["C"])
     )
 
-    assert resultado.nota == 64
+    assert resultado.nota == 68
 
 
 def test_csharp_por_extenso_corresponde_ao_simbolo():
@@ -185,7 +224,7 @@ def test_habilidade_obrigatoria_ausente_reduz_a_nota_sem_vetar():
         perfil(habilidades=["Python"]),
     )
 
-    assert resultado.nota == 81
+    assert resultado.nota == 83
 
 
 def test_stack_principal_parcial_reduz_a_nota_proporcionalmente():
@@ -197,7 +236,7 @@ def test_stack_principal_parcial_reduz_a_nota_proporcionalmente():
         perfil(habilidades=["Python", "SQL"]),
     )
 
-    assert resultado.nota == 90
+    assert resultado.nota == 91
 
 
 def test_fatores_parciais_recebem_metade_do_peso():
@@ -210,4 +249,4 @@ def test_fatores_parciais_recebem_metade_do_peso():
         )
     )
 
-    assert resultado.nota == 78
+    assert resultado.nota == 80

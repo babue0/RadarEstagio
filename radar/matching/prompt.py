@@ -17,6 +17,11 @@ um item para cada vaga recebida, com:
 - id_vaga: o id informado no título da vaga, copiado sem alteração.
 - area: "compativel" quando a vaga é da área de tecnologia do candidato, "parcial" quando a \
 relação é indireta ou incerta e "incompativel" quando é de outra área.
+- areas_da_vaga: subáreas de computação que a vaga claramente cobre, escolhidas somente \
+entre: "desenvolvimento_web", "desenvolvimento_mobile", "dados_ia", "infraestrutura_redes", \
+"seguranca", "suporte_tecnico", "qa_testes". Desenvolvimento de software em geral (backend, \
+APIs, sistemas) conta como "desenvolvimento_web". Liste todas as que se aplicam; use lista \
+vazia quando nenhuma se aplicar com clareza.
 - curso: "compativel" quando o curso do candidato é explicitamente aceito ou claramente \
 correlato, "parcial" quando a relação é incerta e "incompativel" quando a vaga exige \
 exclusivamente outros cursos.

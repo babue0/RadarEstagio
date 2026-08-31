@@ -3,13 +3,16 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Vaga
+from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, ResultadoMatch, Vaga
 
-PESO_HABILIDADES = 50
-PESO_CURSO = 15
+PESO_HABILIDADES = 45
+PESO_CURSO = 10
 PESO_AREA = 10
 PESO_PERIODO_EXPERIENCIA = 15
 PESO_LOGISTICA = 10
+PESO_INTERESSE = 10
+AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
+AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
 PESO_DESEJAVEIS_QUANDO_MISTAS = 0.2
 PESO_OBRIGATORIAS_COM_PRINCIPAIS = 0.7
@@ -70,6 +73,7 @@ class NivelCompatibilidade(StrEnum):
 class AvaliacaoIA(BaseModel):
     id_vaga: str
     area: NivelCompatibilidade
+    areas_da_vaga: list[str] = Field(default_factory=list)
     curso: NivelCompatibilidade
     periodo_experiencia: NivelCompatibilidade
     habilidades_obrigatorias: list[str] = Field(default_factory=list)
@@ -101,6 +105,7 @@ def casar_avaliacoes_com_vagas(
             requisitos_atendidos=requisitos_atendidos,
             requisitos_nao_atendidos=requisitos_nao_atendidos,
             requisitos_tecnicos_analisados=True,
+            avisos_objetivos=_avisos_de_interesse(avaliacao, perfil),
             pontos_a_favor=_juntar_sem_repetir(
                 _remover_explicacoes_de_habilidades(avaliacao.pontos_a_favor, requisitos)
             ),
@@ -119,8 +124,29 @@ def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
         + PESO_AREA * _coeficiente(avaliacao.area)
         + PESO_PERIODO_EXPERIENCIA * _coeficiente(avaliacao.periodo_experiencia)
         + PESO_LOGISTICA * _compatibilidade_logistica(vaga, perfil)
+        + PESO_INTERESSE * _compatibilidade_de_interesse(avaliacao, perfil)
     )
     return int(nota + 0.5)
+
+
+def _compatibilidade_de_interesse(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
+    if not perfil.areas_de_interesse:
+        return 1.0
+    areas_da_vaga = _areas_reconhecidas(avaliacao)
+    if not areas_da_vaga:
+        return 0.5
+    interesses = {area.value for area in perfil.areas_de_interesse}
+    return 1.0 if areas_da_vaga & interesses else 0.0
+
+
+def _avisos_de_interesse(avaliacao: AvaliacaoIA, perfil: Perfil) -> list[str]:
+    if _compatibilidade_de_interesse(avaliacao, perfil) == 0.0:
+        return [AVISO_FORA_DAS_AREAS_DE_INTERESSE]
+    return []
+
+
+def _areas_reconhecidas(avaliacao: AvaliacaoIA) -> set[str]:
+    return {area.strip().casefold() for area in avaliacao.areas_da_vaga} & AREAS_RECONHECIDAS
 
 
 def _compatibilidade_de_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
