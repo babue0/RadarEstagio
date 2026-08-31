@@ -11,7 +11,23 @@ logger = logging.getLogger(__name__)
 FONTE_ADZUNA = "adzuna"
 CLASSE_DA_DESCRICAO = "adp-body"
 TAGS_DE_QUEBRA = frozenset({"br", "div", "li", "p"})
-TAGS_SEM_FECHAMENTO = frozenset({"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"})
+TAGS_SEM_FECHAMENTO = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "source",
+        "track",
+        "wbr",
+    }
+)
 
 
 class AvaliadorComDescricoesCompletas:

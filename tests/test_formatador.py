@@ -125,9 +125,7 @@ def test_descricao_incompleta_nao_afirma_que_requisitos_nao_foram_informados():
         avisos=["Descrição incompleta: requisitos podem estar ausentes; nota limitada a 60"],
     )
     resultado_incompleto = resultado_incompleto.model_copy(
-        update={
-            "vaga": resultado_incompleto.vaga.model_copy(update={"descricao_completa": False})
-        }
+        update={"vaga": resultado_incompleto.vaga.model_copy(update={"descricao_completa": False})}
     )
 
     texto = formatar_mensagem([resultado_incompleto], DATA_DE_TESTE)
