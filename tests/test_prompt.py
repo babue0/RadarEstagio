@@ -42,7 +42,7 @@ def test_gemini_extrai_fatores_sem_calcular_a_nota():
 
 def test_pontos_sao_concretos_curtos_e_ordenados_por_importancia():
     assert "ordenadas da mais importante" in INSTRUCAO_DO_RECRUTADOR
-    assert "de 2 a 6 palavras" in INSTRUCAO_DO_RECRUTADOR
+    assert "em 2 ou 3 palavras, sem finalidade" in INSTRUCAO_DO_RECRUTADOR
     assert '"alguns requisitos"' in INSTRUCAO_DO_RECRUTADOR
     assert "Não repita a mesma informação" in INSTRUCAO_DO_RECRUTADOR
 

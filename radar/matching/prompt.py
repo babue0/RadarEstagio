@@ -29,15 +29,16 @@ obrigatórias, uma por item. Use lista vazia quando não houver.
 desejáveis, diferenciais ou conhecimento recomendado, uma por item. Use lista vazia quando \
 não houver.
 - pontos_a_favor: até 3 evidências concretas de compatibilidade, ordenadas da mais importante \
-para a menos importante. Cada item deve ter de 2 a 6 palavras. Exemplos: \
-"Curso compatível", "Python informado", "Vaga explicitamente remota". Use lista vazia \
-quando não houver evidência positiva.
+para a menos importante. Cada item nomeia apenas o fato, em 2 ou 3 palavras, sem finalidade \
+nem justificativa: escreva "SQL informado", nunca "SQL informado para bancos relacionais". \
+Exemplos: "Curso compatível", "Python informado", "Vaga explicitamente remota". Use lista \
+vazia quando não houver evidência positiva.
 - pontos_contra: até 3 requisitos explícitos da vaga ausentes no perfil ou incompatibilidades \
 semânticas de curso, período, experiência e habilidades, ordenadas da mais importante para a \
-menos importante. Cada item deve ter de 2 a 6 palavras. Exemplos: "Java não informado", \
-"Período mínimo incompatível". Nunca afirme que o candidato não possui uma habilidade; diga \
-que ela não está informada no perfil. Não inclua localização ou modalidade: o sistema exibe e \
-valida esses dados separadamente.
+menos importante. Cada item nomeia apenas o fato, em 2 ou 3 palavras, sem finalidade nem \
+justificativa. Exemplos: "Java não informado", "Período mínimo incompatível". Nunca afirme \
+que o candidato não possui uma habilidade; diga que ela não está informada no perfil. Não \
+inclua localização ou modalidade: o sistema exibe e valida esses dados separadamente.
 - alerta_pegadinha: no máximo 10 palavras, apenas se a vaga esconder um problema que o \
 título não revela: exige experiência de pleno/sênior, é comercial ou operacional \
 disfarçada de TI, sem remuneração, exclusiva de outro curso. Nunca repita o que já está \
