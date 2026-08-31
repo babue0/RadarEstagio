@@ -43,6 +43,18 @@ def test_repositorio_em_memoria_ignora_database_url_e_nao_tem_historico():
     assert repositorio.avaliacoes_existentes(usuario, []) == []
 
 
+def test_repositorio_em_memoria_exige_chat_id_mesmo_quando_banco_esta_configurado():
+    settings = settings_de_teste(
+        database_url="postgresql://radar@banco-producao/radar", telegram_chat_id=""
+    )
+
+    with (
+        pytest.raises(ErroDeArmazenamento, match="TELEGRAM_CHAT_ID"),
+        abrir_repositorio_em_memoria(settings),
+    ):
+        pass
+
+
 def test_banco_inacessivel_levanta_erro_de_armazenamento():
     settings = settings_de_teste(database_url="postgresql://radar@127.0.0.1:1/radar")
 

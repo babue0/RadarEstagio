@@ -10,7 +10,7 @@ from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import cidades_de_interesse, criar_coletor
 from radar.domain.models import Usuario
 from radar.domain.perfil_fixo import perfil_do_mvp
-from radar.domain.ports import ColetorDeVagas
+from radar.domain.ports import ColetorDeVagas, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.errors import ErroDeAvaliacao
@@ -20,7 +20,7 @@ from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import executar
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
-from radar.storage.factory import abrir_repositorio
+from radar.storage.factory import abrir_repositorio, abrir_repositorio_em_memoria
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 TIMEOUT_HTTP_EM_SEGUNDOS = 30
@@ -119,24 +119,39 @@ def montar_avaliador(settings: Settings) -> AvaliadorEmLotes:
     return AvaliadorEmLotes(criar_avaliador(settings), settings.gemini_vagas_por_lote)
 
 
+def executar_fluxo(
+    settings: Settings, cliente_http: httpx.Client, repositorio: Repositorio
+) -> None:
+    coletor = montar_coletor(settings, cliente_http, repositorio.listar_ativos())
+    enviadas = executar(
+        coletor,
+        montar_avaliador(settings),
+        NotificadorTelegram(settings.telegram_bot_token, cliente_http),
+        repositorio,
+        nome_do_modelo(settings),
+        settings.quantidade_vagas_enviadas,
+        settings.nota_minima,
+        date.today(),
+    )
+    total = sum(len(selecionadas) for selecionadas in enviadas.values())
+    print(f"{total} vagas enviadas para {len(enviadas)} usuários")
+
+
 def rodar(settings: Settings) -> None:
     with (
         httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http,
         abrir_repositorio(settings) as repositorio,
     ):
-        coletor = montar_coletor(settings, cliente_http, repositorio.listar_ativos())
-        enviadas = executar(
-            coletor,
-            montar_avaliador(settings),
-            NotificadorTelegram(settings.telegram_bot_token, cliente_http),
-            repositorio,
-            nome_do_modelo(settings),
-            settings.quantidade_vagas_enviadas,
-            settings.nota_minima,
-            date.today(),
-        )
-    total = sum(len(selecionadas) for selecionadas in enviadas.values())
-    print(f"{total} vagas enviadas para {len(enviadas)} usuários")
+        executar_fluxo(settings, cliente_http, repositorio)
+
+
+def testar_local(settings: Settings) -> None:
+    print("Modo local: banco e histórico ignorados; todas as vagas serão avaliadas novamente.")
+    with (
+        httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http,
+        abrir_repositorio_em_memoria(settings) as repositorio,
+    ):
+        executar_fluxo(settings, cliente_http, repositorio)
 
 
 COMANDOS = {
@@ -144,6 +159,7 @@ COMANDOS = {
     "coletar": coletar,
     "avaliar": avaliar,
     "testar-telegram": testar_telegram,
+    "testar-local": testar_local,
     "rodar": rodar,
 }
 
@@ -168,6 +184,10 @@ def main() -> None:
         "avaliar", help="coleta, pré-filtra e avalia algumas vagas com o avaliador configurado"
     )
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
+    subcomandos.add_parser(
+        "testar-local",
+        help="executa o fluxo completo sem banco ou histórico e envia ao Telegram",
+    )
     argumentos = parser.parse_args()
 
     configurar_logging()

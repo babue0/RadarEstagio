@@ -199,6 +199,7 @@ Se faltar alguma variável, ele lista quais. Depois, teste cada parte:
 | `uv run python -m radar testar-telegram` | manda "Radar OK" para o seu chat | não |
 | `uv run python -m radar coletar` | lista as vagas de todas as fontes, sem duplicatas | não |
 | `uv run python -m radar avaliar` | avalia 3 vagas e imprime as notas | sim |
+| `uv run python -m radar testar-local` | executa o fluxo completo sem banco ou histórico e envia ao Telegram | sim |
 | `uv run python -m radar` | **fluxo completo**: coleta → avalia → envia no Telegram | sim |
 
 Testes automatizados e lint (não usam chave nenhuma):

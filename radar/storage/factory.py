@@ -36,6 +36,8 @@ def abrir_repositorio(settings: Settings) -> Iterator[Repositorio]:
 
 @contextmanager
 def abrir_repositorio_em_memoria(settings: Settings) -> Iterator[Repositorio]:
+    if not settings.telegram_chat_id.strip():
+        raise ErroDeArmazenamento("TELEGRAM_CHAT_ID é obrigatório no modo sem banco")
     yield RepositorioEmMemoria([usuario_fixo(settings)])
 
 
