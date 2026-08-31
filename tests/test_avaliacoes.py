@@ -120,12 +120,33 @@ def test_cobertura_total_da_stack_desejavel_recebe_98_pontos():
 def test_obrigatorias_valem_oitenta_porcento_quando_ha_desejaveis():
     resultado = resultado_da(
         avaliacao(
-            habilidades_obrigatorias=["Python", "JavaScript"],
+            habilidades_obrigatorias=["Python", "Java"],
             habilidades_desejaveis=["SQL"],
         )
     )
 
-    assert resultado.nota == 68
+    assert resultado.nota == 88
+
+
+def test_habilidade_obrigatoria_ausente_limita_nota_a_60():
+    resultado = resultado_da(
+        avaliacao(habilidades_obrigatorias=["Python", "C#"]),
+        perfil(habilidades=["Python"]),
+    )
+
+    assert resultado.nota == 60
+
+
+def test_maioria_da_stack_principal_ausente_limita_nota_a_70():
+    resultado = resultado_da(
+        avaliacao(
+            habilidades_obrigatorias=["Python"],
+            habilidades_principais=["C#", "JavaScript", "SQL"],
+        ),
+        perfil(habilidades=["Python", "SQL"]),
+    )
+
+    assert resultado.nota == 70
 
 
 def test_fatores_parciais_recebem_metade_do_peso():
