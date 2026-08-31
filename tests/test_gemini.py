@@ -123,7 +123,7 @@ def test_converte_json_do_gemini_em_resultados_na_ordem_da_resposta():
     assert [(r.vaga.id_externo, r.nota) for r in resultados] == [("2", 15), ("1", 98)]
     assert resultados[0].alerta_pegadinha == "Exige pleno."
     assert resultados[0].pontos_contra == ["Java não informado"]
-    assert resultados[1].pontos_a_favor == ["Python", "SQL"]
+    assert resultados[1].pontos_a_favor == ["Python informado", "SQL informado"]
     assert resultados[1].alerta_pegadinha is None
 
 
@@ -150,9 +150,9 @@ def test_lista_vazia_nao_chama_o_gemini():
 def test_ignora_avaliacoes_com_id_desconhecido_ou_repetido():
     avaliador, _ = avaliador_com(
         resposta_com(
-            avaliacao("1", pontos_a_favor=["primeira"]),
-            avaliacao("1", pontos_a_favor=["repetida"]),
-            avaliacao("999", pontos_a_favor=["inventada"]),
+            avaliacao("1", habilidades_desejaveis=[], pontos_a_favor=["primeira"]),
+            avaliacao("1", habilidades_desejaveis=[], pontos_a_favor=["repetida"]),
+            avaliacao("999", habilidades_desejaveis=[], pontos_a_favor=["inventada"]),
         )
     )
 

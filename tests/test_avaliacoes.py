@@ -56,6 +56,25 @@ def test_stack_desejavel_sem_correspondencia_recebe_48_pontos():
     assert resultado.nota == 48
 
 
+def test_stack_principal_parcial_nao_recebe_nota_de_compatibilidade_total():
+    resultado = resultado_da(
+        avaliacao(habilidades_principais=["SQL", "C#", "JavaScript"]),
+        perfil(habilidades=["Python", "Sprint Boot", "Django", "SQL", "Java"]),
+    )
+
+    assert resultado.nota == 64
+
+
+def test_stack_principal_usa_as_mesmas_habilidades_na_nota_e_na_explicacao():
+    resultado = resultado_da(
+        avaliacao(habilidades_principais=["SQL", "C#", "JavaScript"]),
+        perfil(habilidades=["Python", "Sprint Boot", "Django", "SQL", "Java"]),
+    )
+
+    assert resultado.pontos_a_favor == ["SQL informado"]
+    assert resultado.pontos_contra == ["C# não informado", "JavaScript não informado"]
+
+
 def test_java_nao_corresponde_a_javascript():
     resultado = resultado_da(avaliacao(habilidades_desejaveis=["JavaScript"]))
 

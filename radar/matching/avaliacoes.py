@@ -12,6 +12,13 @@ PESO_PERIODO_EXPERIENCIA = 15
 PESO_LOGISTICA = 10
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
 PESO_DESEJAVEIS_QUANDO_MISTAS = 0.2
+PESO_OBRIGATORIAS_COM_PRINCIPAIS = 0.7
+PESO_PRINCIPAIS_COM_OBRIGATORIAS = 0.3
+PESO_PRINCIPAIS_COM_DESEJAVEIS = 0.8
+PESO_DESEJAVEIS_COM_PRINCIPAIS = 0.2
+PESO_OBRIGATORIAS_QUANDO_TODAS = 0.6
+PESO_PRINCIPAIS_QUANDO_TODAS = 0.3
+PESO_DESEJAVEIS_QUANDO_TODAS = 0.1
 COBERTURA_NEUTRA_SEM_STACK_DECLARADA = 0.5
 COEFICIENTES = {
     "compativel": 1.0,
@@ -48,6 +55,7 @@ class AvaliacaoIA(BaseModel):
     curso: NivelCompatibilidade
     periodo_experiencia: NivelCompatibilidade
     habilidades_obrigatorias: list[str] = Field(default_factory=list)
+    habilidades_principais: list[str] = Field(default_factory=list)
     habilidades_desejaveis: list[str] = Field(default_factory=list)
     pontos_a_favor: list[str] = Field(default_factory=list)
     pontos_contra: list[str] = Field(default_factory=list)
@@ -67,11 +75,19 @@ def casar_avaliacoes_com_vagas(
         vaga = vagas_por_id.get(avaliacao.id_vaga)
         if vaga is None or avaliacao.id_vaga in resultados:
             continue
+        pontos_a_favor, pontos_contra = _explicar_habilidades(avaliacao, perfil)
+        requisitos = _juntar_habilidades_da_vaga(avaliacao)
         resultados[avaliacao.id_vaga] = ResultadoMatch(
             vaga=vaga,
             nota=_calcular_nota(avaliacao, vaga, perfil),
-            pontos_a_favor=avaliacao.pontos_a_favor,
-            pontos_contra=avaliacao.pontos_contra,
+            pontos_a_favor=_juntar_sem_repetir(
+                pontos_a_favor,
+                _remover_explicacoes_de_habilidades(avaliacao.pontos_a_favor, requisitos),
+            ),
+            pontos_contra=_juntar_sem_repetir(
+                pontos_contra,
+                _remover_explicacoes_de_habilidades(avaliacao.pontos_contra, requisitos),
+            ),
             alerta_pegadinha=avaliacao.alerta_pegadinha,
         )
     return list(resultados.values())
@@ -90,14 +106,33 @@ def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
 
 def _compatibilidade_de_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
     obrigatorias = _cobertura(avaliacao.habilidades_obrigatorias, perfil.habilidades)
+    principais = _cobertura(avaliacao.habilidades_principais, perfil.habilidades)
     desejaveis = _cobertura(avaliacao.habilidades_desejaveis, perfil.habilidades)
+    if obrigatorias is not None and principais is not None and desejaveis is not None:
+        return (
+            PESO_OBRIGATORIAS_QUANDO_TODAS * obrigatorias
+            + PESO_PRINCIPAIS_QUANDO_TODAS * principais
+            + PESO_DESEJAVEIS_QUANDO_TODAS * desejaveis
+        )
+    if obrigatorias is not None and principais is not None:
+        return (
+            PESO_OBRIGATORIAS_COM_PRINCIPAIS * obrigatorias
+            + PESO_PRINCIPAIS_COM_OBRIGATORIAS * principais
+        )
     if obrigatorias is not None and desejaveis is not None:
         return (
             PESO_OBRIGATORIAS_QUANDO_MISTAS * obrigatorias
             + PESO_DESEJAVEIS_QUANDO_MISTAS * desejaveis
         )
+    if principais is not None and desejaveis is not None:
+        return (
+            PESO_PRINCIPAIS_COM_DESEJAVEIS * principais
+            + PESO_DESEJAVEIS_COM_PRINCIPAIS * desejaveis
+        )
     if obrigatorias is not None:
         return obrigatorias
+    if principais is not None:
+        return principais
     if desejaveis is not None:
         return desejaveis
     return COBERTURA_NEUTRA_SEM_STACK_DECLARADA
@@ -112,6 +147,62 @@ def _cobertura(requisitos: list[str], habilidades: list[str]) -> float | None:
     }
     atendidas = requisitos_normalizados & habilidades_normalizadas
     return len(atendidas) / len(requisitos_normalizados)
+
+
+def _explicar_habilidades(
+    avaliacao: AvaliacaoIA, perfil: Perfil
+) -> tuple[list[str], list[str]]:
+    habilidades_do_perfil = {
+        _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
+    }
+    requisitos = _juntar_habilidades_da_vaga(avaliacao)
+    pontos_a_favor = [
+        f"{habilidade} informado"
+        for habilidade in requisitos
+        if _normalizar_habilidade(habilidade) in habilidades_do_perfil
+    ]
+    pontos_contra = [
+        f"{habilidade} não informado"
+        for habilidade in requisitos
+        if _normalizar_habilidade(habilidade) not in habilidades_do_perfil
+    ]
+    return pontos_a_favor, pontos_contra
+
+
+def _juntar_habilidades_da_vaga(avaliacao: AvaliacaoIA) -> list[str]:
+    habilidades = (
+        avaliacao.habilidades_obrigatorias
+        + avaliacao.habilidades_principais
+        + avaliacao.habilidades_desejaveis
+    )
+    unicas: dict[str, str] = {}
+    for habilidade in habilidades:
+        if habilidade.strip():
+            unicas.setdefault(_normalizar_habilidade(habilidade), habilidade.strip())
+    return list(unicas.values())
+
+
+def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
+    unicos: dict[str, str] = {}
+    for item in (item for grupo in grupos for item in grupo):
+        if item.strip():
+            unicos.setdefault(_normalizar_texto(item), item.strip())
+    return list(unicos.values())
+
+
+def _remover_explicacoes_de_habilidades(
+    pontos: list[str], habilidades: list[str]
+) -> list[str]:
+    rotulos_de_habilidades = {
+        _normalizar_texto(rotulo)
+        for habilidade in habilidades
+        for rotulo in (
+            habilidade,
+            f"{habilidade} informado",
+            f"{habilidade} não informado",
+        )
+    }
+    return [ponto for ponto in pontos if _normalizar_texto(ponto) not in rotulos_de_habilidades]
 
 
 def _normalizar_habilidade(habilidade: str) -> str:

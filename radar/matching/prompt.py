@@ -25,6 +25,10 @@ explícitos ou quando não há exigência, "parcial" quando falta informação o
 lacuna desejável e "incompativel" quando existe requisito obrigatório não atendido.
 - habilidades_obrigatorias: todas as tecnologias e habilidades técnicas explicitamente \
 obrigatórias, uma por item. Use lista vazia quando não houver.
+- habilidades_principais: tecnologias e habilidades técnicas que compõem a stack ou o trabalho \
+central da vaga, mas não estão marcadas explicitamente como obrigatórias nem desejáveis. Frases \
+como "atuará com", "trabalhará com", "nossa stack" e listas de tecnologias nas atividades da \
+vaga indicam habilidades principais. Use lista vazia quando não houver.
 - habilidades_desejaveis: todas as tecnologias e habilidades técnicas marcadas como \
 desejáveis, diferenciais ou conhecimento recomendado, uma por item. Use lista vazia quando \
 não houver.
@@ -52,8 +56,13 @@ Não repita a mesma informação em campos diferentes. Não use expressões vaga
 
 Regras para habilidades:
 - Extraia somente habilidades explicitamente presentes na vaga.
-- Separe obrigatórias de desejáveis pela linguagem do anúncio. "Necessário", "obrigatório" e \
-"requisito" indicam obrigatória; "desejável", "diferencial" e "será um plus" indicam desejável.
+- Toda tecnologia relevante para executar o trabalho deve aparecer exatamente uma vez entre \
+obrigatórias, principais e desejáveis. Não omita uma tecnologia apenas porque o anúncio não usa \
+as palavras "obrigatório" ou "desejável".
+- Separe obrigatórias, principais e desejáveis pela linguagem do anúncio. "Necessário", \
+"obrigatório" e "requisito" indicam obrigatória; "desejável", "diferencial" e "será um plus" \
+indicam desejável; tecnologias da stack, atividades e responsabilidades sem esses qualificadores \
+indicam principal.
 - O qualificador mais específico prevalece: um item marcado como "desejável" continua desejável \
 mesmo quando aparece dentro de uma seção chamada "Requisitos".
 - Extraia a tecnologia, não a frase inteira: "PHP orientado a objeto" vira "PHP" e \
