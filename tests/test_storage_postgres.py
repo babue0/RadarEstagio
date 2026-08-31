@@ -62,14 +62,26 @@ def test_lista_apenas_perfis_ativos_com_chat_id(conexao: psycopg.Connection, usu
 
 def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, usuario: Usuario):
     repositorio = RepositorioPostgres(conexao)
-    avaliadas = [ResultadoMatch(vaga=vaga(1), nota=80, pontos_a_favor=["Python"])]
+    avaliadas = [
+        ResultadoMatch(
+            vaga=vaga(1),
+            nota=80,
+            requisitos_atendidos=["Python"],
+            requisitos_nao_atendidos=["C#"],
+            requisitos_tecnicos_analisados=True,
+            pontos_a_favor=["Curso compatível"],
+        )
+    ]
     enviadas = avaliadas
 
     repositorio.registrar(usuario, avaliadas, enviadas, "modelo-teste")
 
     existentes = repositorio.avaliacoes_existentes(usuario, [vaga(1), vaga(2)])
     assert [resultado.nota for resultado in existentes] == [80]
-    assert existentes[0].pontos_a_favor == ["Python"]
+    assert existentes[0].requisitos_atendidos == ["Python"]
+    assert existentes[0].requisitos_nao_atendidos == ["C#"]
+    assert existentes[0].requisitos_tecnicos_analisados
+    assert existentes[0].pontos_a_favor == ["Curso compatível"]
     assert repositorio.ids_ja_enviadas(usuario) == {("adzuna", "teste-1")}
     assert conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[
         0

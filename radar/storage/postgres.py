@@ -19,7 +19,10 @@ SQL_USUARIOS_ATIVOS = """
 SQL_PERFIS_SEM_VINCULO = "select count(*) from perfis where ativo and telegram_chat_id is null"
 
 SQL_AVALIACOES_EXISTENTES = """
-    select v.fonte, v.id_externo, a.nota, a.pontos_a_favor, a.pontos_contra, a.alerta_pegadinha
+    select v.fonte, v.id_externo, a.nota,
+           a.requisitos_atendidos, a.requisitos_nao_atendidos,
+           a.requisitos_tecnicos_analisados,
+           a.pontos_a_favor, a.pontos_contra, a.alerta_pegadinha
     from avaliacoes a
     join vagas v on v.id = a.vaga_id
     where a.perfil_id = %(perfil_id)s
@@ -52,10 +55,12 @@ SQL_GUARDAR_VAGA = """
 
 SQL_GUARDAR_AVALIACAO = """
     insert into avaliacoes
-      (perfil_id, vaga_id, nota, pontos_a_favor, pontos_contra, alerta_pegadinha, modelo)
+      (perfil_id, vaga_id, nota, requisitos_atendidos, requisitos_nao_atendidos,
+       requisitos_tecnicos_analisados, pontos_a_favor, pontos_contra, alerta_pegadinha, modelo)
     values
-      (%(perfil_id)s, %(vaga_id)s, %(nota)s, %(pontos_a_favor)s, %(pontos_contra)s,
-       %(alerta_pegadinha)s, %(modelo)s)
+      (%(perfil_id)s, %(vaga_id)s, %(nota)s, %(requisitos_atendidos)s,
+       %(requisitos_nao_atendidos)s, %(requisitos_tecnicos_analisados)s,
+       %(pontos_a_favor)s, %(pontos_contra)s, %(alerta_pegadinha)s, %(modelo)s)
     on conflict (perfil_id, vaga_id) do nothing
 """
 
@@ -106,6 +111,9 @@ class RepositorioPostgres:
             ResultadoMatch(
                 vaga=vagas_por_chave[(linha["fonte"], linha["id_externo"])],
                 nota=linha["nota"],
+                requisitos_atendidos=linha["requisitos_atendidos"],
+                requisitos_nao_atendidos=linha["requisitos_nao_atendidos"],
+                requisitos_tecnicos_analisados=linha["requisitos_tecnicos_analisados"],
                 pontos_a_favor=linha["pontos_a_favor"],
                 pontos_contra=linha["pontos_contra"],
                 alerta_pegadinha=linha["alerta_pegadinha"],
@@ -171,6 +179,9 @@ def guardar_avaliacao(
             "perfil_id": perfil_id,
             "vaga_id": vaga_id,
             "nota": resultado.nota,
+            "requisitos_atendidos": resultado.requisitos_atendidos,
+            "requisitos_nao_atendidos": resultado.requisitos_nao_atendidos,
+            "requisitos_tecnicos_analisados": resultado.requisitos_tecnicos_analisados,
             "pontos_a_favor": resultado.pontos_a_favor,
             "pontos_contra": resultado.pontos_contra,
             "alerta_pegadinha": resultado.alerta_pegadinha,
