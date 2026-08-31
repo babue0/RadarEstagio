@@ -73,6 +73,10 @@ def test_nota_minima_padrao_e_40():
     assert Settings(_env_file=None, **configuracao_base(avaliador="agy")).nota_minima == 40
 
 
+def test_busca_vagas_dos_ultimos_3_dias_por_padrao():
+    assert Settings(_env_file=None, **configuracao_base(avaliador="agy")).dias_recentes == 3
+
+
 @pytest.mark.parametrize("nota", ["-1", "101"])
 def test_nota_minima_fora_de_0_a_100_e_rejeitada(nota: str):
     with pytest.raises(ValidationError):
