@@ -2,7 +2,11 @@ import pytest
 
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
-from radar.storage.factory import ID_DO_USUARIO_FIXO, abrir_repositorio
+from radar.storage.factory import (
+    ID_DO_USUARIO_FIXO,
+    abrir_repositorio,
+    abrir_repositorio_em_memoria,
+)
 from radar.storage.memoria import RepositorioEmMemoria
 
 
@@ -26,6 +30,17 @@ def test_sem_database_url_usa_o_perfil_fixo_em_memoria():
     assert len(usuarios) == 1
     assert usuarios[0].id == ID_DO_USUARIO_FIXO
     assert usuarios[0].chat_id == "123"
+
+
+def test_repositorio_em_memoria_ignora_database_url_e_nao_tem_historico():
+    settings = settings_de_teste(database_url="postgresql://radar@banco-producao/radar")
+
+    with abrir_repositorio_em_memoria(settings) as repositorio:
+        usuario = repositorio.listar_ativos()[0]
+
+    assert isinstance(repositorio, RepositorioEmMemoria)
+    assert repositorio.ids_ja_enviadas(usuario) == set()
+    assert repositorio.avaliacoes_existentes(usuario, []) == []
 
 
 def test_banco_inacessivel_levanta_erro_de_armazenamento():

@@ -19,7 +19,8 @@ TIMEOUT_DE_CONEXAO_EM_SEGUNDOS = 10
 @contextmanager
 def abrir_repositorio(settings: Settings) -> Iterator[Repositorio]:
     if not settings.usa_banco():
-        yield RepositorioEmMemoria([usuario_fixo(settings)])
+        with abrir_repositorio_em_memoria(settings) as repositorio:
+            yield repositorio
         return
     try:
         conexao = psycopg.connect(
@@ -31,6 +32,11 @@ def abrir_repositorio(settings: Settings) -> Iterator[Repositorio]:
         ) from erro
     with conexao:
         yield RepositorioPostgres(conexao)
+
+
+@contextmanager
+def abrir_repositorio_em_memoria(settings: Settings) -> Iterator[Repositorio]:
+    yield RepositorioEmMemoria([usuario_fixo(settings)])
 
 
 def usuario_fixo(settings: Settings) -> Usuario:
