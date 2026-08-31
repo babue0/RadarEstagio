@@ -44,6 +44,7 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
         )
     if (
         resultado.requisitos_tecnicos_analisados
+        and vaga.descricao_completa
         and not resultado.requisitos_atendidos
         and not resultado.requisitos_nao_atendidos
     ):

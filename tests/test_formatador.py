@@ -116,6 +116,26 @@ def test_avisa_quando_descricao_nao_informa_requisitos_tecnicos():
     assert "ℹ️ <b>Requisitos técnicos:</b> não informados na descrição" in texto
 
 
+def test_descricao_incompleta_nao_afirma_que_requisitos_nao_foram_informados():
+    resultado_incompleto = resultado(
+        60,
+        a_favor=[],
+        contra=[],
+        requisitos_analisados=True,
+        avisos=["Descrição incompleta: requisitos podem estar ausentes; nota limitada a 60"],
+    )
+    resultado_incompleto = resultado_incompleto.model_copy(
+        update={
+            "vaga": resultado_incompleto.vaga.model_copy(update={"descricao_completa": False})
+        }
+    )
+
+    texto = formatar_mensagem([resultado_incompleto], DATA_DE_TESTE)
+
+    assert "requisitos podem estar ausentes" in texto
+    assert "não informados na descrição" not in texto
+
+
 def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     oportunidade = vaga().model_copy(update={"modalidade": Modalidade.HIBRIDO})
     texto = formatar_mensagem(

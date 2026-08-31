@@ -2,6 +2,10 @@ from radar.domain.models import Modalidade, Perfil, ResultadoMatch
 
 LIMITE_MODALIDADE_INCOMPATIVEL = 30
 AVISO_MODALIDADE_INCOMPATIVEL = "Nota limitada a 30: modalidade incompatível"
+LIMITE_DESCRICAO_INCOMPLETA = 60
+AVISO_DESCRICAO_INCOMPLETA = (
+    "Descrição incompleta: requisitos podem estar ausentes; nota limitada a 60"
+)
 TERMOS_DE_MODALIDADE = (
     "modalidade",
     "presencial",
@@ -26,6 +30,10 @@ def aplicar_regras_ao_resultado(resultado: ResultadoMatch, perfil: Perfil) -> Re
     avisos = list(resultado.avisos_objetivos)
     if nota < resultado.nota and aviso not in avisos:
         avisos.append(aviso)
+    if not resultado.vaga.descricao_completa:
+        nota = min(nota, LIMITE_DESCRICAO_INCOMPLETA)
+        if AVISO_DESCRICAO_INCOMPLETA not in avisos:
+            avisos.append(AVISO_DESCRICAO_INCOMPLETA)
     pontos_contra = [ponto for ponto in resultado.pontos_contra if not descreve_modalidade(ponto)]
     return resultado.model_copy(
         update={

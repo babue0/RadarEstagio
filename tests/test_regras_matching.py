@@ -83,3 +83,17 @@ def test_mantem_resultado_quando_modalidade_e_compativel():
     assert corrigido.nota == 95
     assert corrigido.pontos_contra == ["SQL não informado"]
     assert corrigido.avisos_objetivos == []
+
+
+def test_limita_nota_e_avisa_quando_descricao_continua_incompleta():
+    original = ResultadoMatch(
+        vaga=vaga(Modalidade.REMOTO).model_copy(update={"descricao_completa": False}),
+        nota=95,
+    )
+
+    corrigido = aplicar_regras_objetivas([original], perfil())[0]
+
+    assert corrigido.nota == 60
+    assert corrigido.avisos_objetivos == [
+        "Descrição incompleta: requisitos podem estar ausentes; nota limitada a 60"
+    ]
