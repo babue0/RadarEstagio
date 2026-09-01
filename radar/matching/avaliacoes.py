@@ -119,15 +119,16 @@ def casar_avaliacoes_com_vagas(
 
 
 def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
+    interesse = _compatibilidade_de_interesse(avaliacao, perfil)
     nota = (
         PESO_HABILIDADES * _compatibilidade_de_habilidades(avaliacao, perfil)
         + PESO_CURSO * _coeficiente(avaliacao.curso)
         + PESO_AREA * _coeficiente(avaliacao.area)
         + PESO_PERIODO_EXPERIENCIA * _coeficiente(avaliacao.periodo_experiencia)
         + PESO_LOGISTICA * _compatibilidade_logistica(vaga, perfil)
-        + PESO_INTERESSE * _compatibilidade_de_interesse(avaliacao, perfil)
+        + PESO_INTERESSE * interesse
     )
-    if _compatibilidade_de_interesse(avaliacao, perfil) == 0.0:
+    if interesse < 1.0:
         nota = min(nota, LIMITE_FORA_DAS_AREAS_DE_INTERESSE)
     return int(nota + 0.5)
 

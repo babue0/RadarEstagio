@@ -195,8 +195,9 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   calcula a nota com pesos de 45 para habilidades, 10 para curso, 10 para área, 15 para
   período/experiência, 10 para logística e 10 para área de interesse (01/09/2026): a IA
   classifica a vaga em subáreas de um catálogo fechado de 7 (`AreaDeInteresse` no domínio)
-  e o fator compara com `perfis.areas_de_interesse` — match ganha o fator cheio, vaga sem
-  subárea reconhecida fica neutra, mismatch zera o fator, limita a nota a 65 e põe o aviso
+  e o fator compara com `perfis.areas_de_interesse` — match ganha o fator cheio; vaga sem
+  subárea reconhecida fica com meio fator e também respeita o teto de 65 (só passa de 65
+  quem é comprovadamente da área de interesse); mismatch zera o fator, limita a nota a 65 e põe o aviso
   "Fora das suas áreas de interesse" na mensagem (vaga de outra área preenche dia vazio,
   mas nunca passa na frente da área do candidato); perfil sem interesses não é penalizado. A migration
   `0006_areas_de_interesse.sql` foi aplicada ao projeto atual em 01/09/2026 e o cadastro web
