@@ -12,6 +12,9 @@ PESO_PERIODO_EXPERIENCIA = 15
 PESO_LOGISTICA = 10
 PESO_INTERESSE = 10
 LIMITE_FORA_DAS_AREAS_DE_INTERESSE = 65
+LIMITE_CURSO_PARCIAL = 75
+LIMITE_CURSO_INCOMPATIVEL = 35
+AVISO_CURSO_INCOMPATIVEL = "Exige formação de outra área"
 AREAS_RECONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 AVISO_FORA_DAS_AREAS_DE_INTERESSE = "Fora das suas áreas de interesse"
 PESO_OBRIGATORIAS_QUANDO_MISTAS = 0.8
@@ -106,7 +109,7 @@ def casar_avaliacoes_com_vagas(
             requisitos_atendidos=requisitos_atendidos,
             requisitos_nao_atendidos=requisitos_nao_atendidos,
             requisitos_tecnicos_analisados=True,
-            avisos_objetivos=_avisos_de_interesse(avaliacao, perfil),
+            avisos_objetivos=_avisos_objetivos(avaliacao, perfil),
             pontos_a_favor=_juntar_sem_repetir(
                 _remover_explicacoes_de_habilidades(avaliacao.pontos_a_favor, requisitos)
             ),
@@ -130,7 +133,16 @@ def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
     )
     if interesse < 1.0:
         nota = min(nota, LIMITE_FORA_DAS_AREAS_DE_INTERESSE)
+    nota = min(nota, _limite_por_curso(avaliacao))
     return int(nota + 0.5)
+
+
+def _limite_por_curso(avaliacao: AvaliacaoIA) -> float:
+    if avaliacao.curso is NivelCompatibilidade.INCOMPATIVEL:
+        return LIMITE_CURSO_INCOMPATIVEL
+    if avaliacao.curso is NivelCompatibilidade.PARCIAL:
+        return LIMITE_CURSO_PARCIAL
+    return 100.0
 
 
 def _compatibilidade_de_interesse(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
@@ -143,10 +155,13 @@ def _compatibilidade_de_interesse(avaliacao: AvaliacaoIA, perfil: Perfil) -> flo
     return 1.0 if areas_da_vaga & interesses else 0.0
 
 
-def _avisos_de_interesse(avaliacao: AvaliacaoIA, perfil: Perfil) -> list[str]:
+def _avisos_objetivos(avaliacao: AvaliacaoIA, perfil: Perfil) -> list[str]:
+    avisos = []
     if _compatibilidade_de_interesse(avaliacao, perfil) == 0.0:
-        return [AVISO_FORA_DAS_AREAS_DE_INTERESSE]
-    return []
+        avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
+    if avaliacao.curso is NivelCompatibilidade.INCOMPATIVEL:
+        avisos.append(AVISO_CURSO_INCOMPATIVEL)
+    return avisos
 
 
 def _areas_reconhecidas(avaliacao: AvaliacaoIA) -> set[str]:

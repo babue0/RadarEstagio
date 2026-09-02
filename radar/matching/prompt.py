@@ -24,7 +24,9 @@ APIs, sistemas) conta como "desenvolvimento_web". Liste todas as que se aplicam;
 vazia quando nenhuma se aplicar com clareza.
 - curso: "compativel" quando o curso do candidato é explicitamente aceito ou claramente \
 correlato, "parcial" quando a relação é incerta e "incompativel" quando a vaga exige \
-exclusivamente outros cursos.
+exclusivamente outros cursos. Uma lista de formações aceitas que não inclui nenhum curso \
+de computação é "incompativel", mesmo quando termina em "áreas afins" ou "áreas \
+correlatas": esses sufixos não tornam o curso do candidato aceito.
 - periodo_experiencia: "compativel" quando o candidato atende ao período e à experiência \
 explícitos ou quando não há exigência, "parcial" quando falta informação ou há apenas uma \
 lacuna desejável e "incompativel" quando existe requisito obrigatório não atendido.

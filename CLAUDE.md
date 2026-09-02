@@ -199,7 +199,11 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   subárea reconhecida fica com meio fator e também respeita o teto de 65 (só passa de 65
   quem é comprovadamente da área de interesse); mismatch zera o fator, limita a nota a 65 e põe o aviso
   "Fora das suas áreas de interesse" na mensagem (vaga de outra área preenche dia vazio,
-  mas nunca passa na frente da área do candidato); perfil sem interesses não é penalizado. A migration
+  mas nunca passa na frente da área do candidato); perfil sem interesses não é penalizado. O curso também impõe teto
+  (02/09/2026): incompatível limita a 35 (abaixo da nota mínima, sai da mensagem) com o
+  aviso "Exige formação de outra área"; parcial limita a 75 — vaga operacional de fundos
+  com Excel/Python/SQL chegou a 90 só pela stack genérica; o prompt trata lista de
+  formações sem curso de computação como incompatível mesmo com "áreas afins". A migration
   `0006_areas_de_interesse.sql` foi aplicada ao projeto atual em 01/09/2026 e o cadastro web
   coleta o campo. A cobertura de requisitos é suavizada,
   `(1+atendidas)/(1+exigidas)`: requisito ausente do perfil vale como incerteza ("não

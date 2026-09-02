@@ -264,6 +264,24 @@ def test_stack_principal_parcial_reduz_a_nota_proporcionalmente():
     assert resultado.nota == 91
 
 
+def test_curso_incompativel_limita_a_nota_a_35_com_aviso():
+    resultado = resultado_da(
+        avaliacao(curso="incompativel", habilidades_obrigatorias=["Python", "Java"])
+    )
+
+    assert resultado.nota == 35
+    assert "Exige formação de outra área" in resultado.avisos_objetivos
+
+
+def test_curso_parcial_limita_a_nota_a_75():
+    resultado = resultado_da(
+        avaliacao(curso="parcial", habilidades_obrigatorias=["Python", "Java"])
+    )
+
+    assert resultado.nota == 75
+    assert resultado.avisos_objetivos == []
+
+
 def test_fatores_parciais_recebem_metade_do_peso():
     resultado = resultado_da(
         avaliacao(
@@ -274,4 +292,4 @@ def test_fatores_parciais_recebem_metade_do_peso():
         )
     )
 
-    assert resultado.nota == 80
+    assert resultado.nota == 75
