@@ -261,6 +261,13 @@ def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
     assert "Empresa 1" not in notificador.textos[0]
 
 
+def test_avaliacao_toda_bloqueada_nao_manda_mensagem_enganosa():
+    selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {})
+
+    assert selecionadas == []
+    assert notificador.textos == []
+
+
 def test_vaga_com_nota_guardada_nao_vai_ao_avaliador():
     guardada = ResultadoMatch(vaga=vaga(1), nota=95, pontos_a_favor=["Guardado"])
     repositorio = RepositorioFalso([usuario()], guardadas=[guardada])

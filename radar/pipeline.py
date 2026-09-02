@@ -71,6 +71,13 @@ def atender_usuario(
     ids_guardados = {resultado.vaga.id_externo for resultado in guardadas}
     pendentes = [vaga for vaga in candidatas if vaga.id_externo not in ids_guardados]
     novas = aplicar_regras_objetivas(avaliador.avaliar(pendentes, usuario.perfil), usuario.perfil)
+    if pendentes and not novas and not guardadas:
+        logger.warning(
+            "usuário %s ficou sem mensagem: nenhuma das %d vagas pendentes pôde ser avaliada",
+            usuario.id,
+            len(pendentes),
+        )
+        return None
     selecionadas = selecionar(guardadas + novas, quantidade, nota_minima)
     logger.info(
         "usuário %s: %d candidatas, %d com nota guardada, %d avaliadas agora, %d enviadas",
