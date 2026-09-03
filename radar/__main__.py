@@ -99,8 +99,12 @@ def avaliar(settings: Settings) -> None:
     for resultado in resultados:
         vaga = resultado.vaga
         print(f"- [{resultado.nota:3d}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
+        print(f"  Atende: {', '.join(resultado.requisitos_atendidos) or '-'}")
+        print(f"  Não atende: {', '.join(resultado.requisitos_nao_atendidos) or '-'}")
         print(f"  A favor: {', '.join(resultado.pontos_a_favor) or '-'}")
         print(f"  Contra: {', '.join(resultado.pontos_contra) or '-'}")
+        for aviso in resultado.avisos_objetivos:
+            print(f"  Aviso: {aviso}")
         if resultado.alerta_pegadinha:
             print(f"  Alerta: {resultado.alerta_pegadinha}")
 
