@@ -85,6 +85,20 @@ def test_frontend_instrumenta_a_jornada_que_ja_existe():
         assert f'registerEvent("{evento}"' in javascript
 
 
+def test_falha_ao_registrar_evento_nao_passa_despercebida():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert 'console.warn(`Radar: o evento "${name}" não foi registrado.`, error)' in javascript
+
+
+def test_landing_visualizada_nao_conta_recarregamento():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert 'const landingViewKey = "radar-landing-vista"' in javascript
+    assert "sessionStorage.setItem(landingViewKey" in javascript
+    assert "if (!landingJaContadaNestaSessao()) {" in javascript
+
+
 def test_ctas_identificam_a_posicao_sem_coletar_texto_livre():
     html = (RAIZ / "web/index.html").read_text()
 

@@ -11,6 +11,7 @@ const toggleAuthMode = document.querySelector("#toggle-auth-mode");
 const telegramLink = document.querySelector("#telegram-link");
 const pendingProfileKey = "radar-perfil-pendente";
 const eventSessionKey = "radar-sessao-eventos";
+const landingViewKey = "radar-landing-vista";
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 let currentStep = 1;
 let authMode = "signup";
@@ -60,10 +61,21 @@ async function registerEvent(name, properties = {}) {
       propriedades: properties,
     });
     if (error) throw error;
-  } catch {
+  } catch (error) {
+    console.warn(`Radar: o evento "${name}" não foi registrado.`, error);
     return false;
   }
   return true;
+}
+
+function landingJaContadaNestaSessao() {
+  try {
+    if (sessionStorage.getItem(landingViewKey)) return true;
+    sessionStorage.setItem(landingViewKey, "1");
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 function showStep(step) {
@@ -516,5 +528,7 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-void registerEvent("landing_visualizada", { pagina: window.location.pathname });
+if (!landingJaContadaNestaSessao()) {
+  void registerEvent("landing_visualizada", { pagina: window.location.pathname });
+}
 resumeConfirmedSignup();
