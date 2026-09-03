@@ -30,7 +30,8 @@ radar/
   domain/        o centro: entidades e contratos. Não depende de nada.
   collectors/    de onde vêm as vagas (um por fonte + composto) → cumpre ColetorDeVagas
   filtering/     dedupe e regras baratas antes da IA
-  matching/      IA: prompt, cliente, lotes    → cumpre AvaliadorDeVagas
+  matching/      IA: prompt, cliente, lotes    → cumpre ExtratorDeVagas
+                 pontuação determinística      → compatibilidade.py, avaliacoes.py
   notification/  formatar e enviar a mensagem  → cumpre Notificador
   storage/       usuários, notas e envios      → cumpre Repositorio (Postgres ou memória)
   pipeline.py    orquestra; sem lógica própria
@@ -41,7 +42,7 @@ radar/
 ### `domain/` — o que o sistema *é*
 
 Quatro entidades (`Vaga`, `Perfil`, `Usuario`, `ResultadoMatch`) e os contratos
-(`ColetorDeVagas`, `AvaliadorDeVagas`, `Notificador`, `RepositorioDeUsuarios`,
+(`ColetorDeVagas`, `ExtratorDeVagas`, `Notificador`, `RepositorioDeUsuarios`,
 `RepositorioDeAvaliacoes`). Nada aqui sabe que Adzuna, Gemini ou Telegram existem.
 
 A regra de dependência é uma só: **tudo aponta para o domínio; o domínio não aponta para
@@ -63,13 +64,13 @@ muda (infraestrutura) fica na borda; a parte que não muda (domínio) fica no ce
 ### `pipeline.py` — o maestro
 
 ```python
-def executar(coletor, avaliador, notificador, perfil, quantidade, data):
-    coletadas = coletor.coletar()
-    unicas = remover_duplicatas(coletadas)
-    candidatas = filtrar(unicas, perfil)
-    resultados = avaliador.avaliar(candidatas, perfil)
-    selecionadas = ranquear(resultados)[:quantidade]
-    notificador.enviar(formatar_mensagem(selecionadas, data))
+def executar(coletor, extrator, notificador, repositorio, parametros, agora):
+    unicas = remover_duplicatas(coletor.coletar())
+    candidatas = candidatas_de_algum_perfil(unicas, usuarios)
+    extracoes = obter_extracoes(extrator, repositorio, candidatas)   # uma vez, para todos
+    for usuario in usuarios:                                        # por usuário, sem IA
+        resultados = pontuar_vagas(filtrar(unicas, usuario.perfil), extracoes, usuario.perfil)
+        notificador.enviar(usuario.chat_id, formatar_mensagem(ranquear(resultados), agora))
 ```
 
 Isso é literalmente o pipeline inteiro. Ele **recebe** as peças prontas (injeção de
@@ -98,30 +99,43 @@ opções gratuitas piores). Ver a decisão 10.
 É um script disparado por cron, não um serviço HTTP. Flask/FastAPI seriam peso morto.
 `httpx` para as duas chamadas HTTP (Adzuna e Telegram) basta.
 
-### 3. Avaliadores com saída estruturada
+### 3. Extração por vaga, pontuação por perfil
+
+A IA extrai **fatos da vaga**; o Python **compara** esses fatos com cada perfil. A separação
+existe por custo: o prompt não contém perfil algum, então uma vaga é extraída **uma vez** e a
+extração serve todos os usuários. O custo de IA passou de O(usuários × vagas) para O(vagas), e
+o vigésimo usuário não custa nada.
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
-- **Saída estruturada** (`response_schema` + Pydantic): a IA é obrigada a devolver JSON no
-  formato `{id_vaga, area, areas_da_vaga, curso, periodo_experiencia,
-  habilidades_obrigatorias, habilidades_principais, habilidades_desejaveis, pontos_a_favor,
-  pontos_contra, alerta_pegadinha}`. Sem parsing de texto livre nem nota escolhida pela IA.
-- **Pontuação no Python**: habilidades valem 45 pontos, curso 10, área 10,
-  período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das habilidades é
-  comparada por tecnologias normalizadas e exatas; `Java` não corresponde a `JavaScript`.
-- **Temperatura 0**: os mesmos dados tendem a produzir a mesma extração de fatores.
+- **Saída estruturada** (`response_schema` + Pydantic): a IA devolve JSON no formato
+  `{id_vaga, area_de_tecnologia, areas_da_vaga, cursos_aceitos, aceita_qualquer_curso,
+  periodo_minimo, experiencia_minima_anos, experiencia_desejavel, habilidades_obrigatorias,
+  habilidades_principais, habilidades_desejaveis, alerta_pegadinha}`. Tudo é fato do anúncio;
+  nada depende de candidato.
+- **A comparação é determinística** (`matching/compatibilidade.py`): `cursos_aceitos` vira
+  compatível/parcial/incompatível contra um catálogo fechado de cursos de computação;
+  `periodo_minimo` e `experiencia_minima_anos` viram o nível de período; os pontos a favor e
+  contra são montados da comparação, não escritos pela IA. Mesmos dados, mesma nota, sempre.
+- **Pontuação no Python** (`matching/avaliacoes.py`): habilidades valem 45 pontos, curso 10,
+  área 10, período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das
+  habilidades é comparada por tecnologias normalizadas e exatas; `Java` não corresponde a
+  `JavaScript`.
+- **A extração fica em `vagas.extracao`** (JSONB). Reexecução no mesmo dia, usuário novo
+  entrando ou coorte crescendo não gastam cota de novo.
+- **Temperatura 0**: os mesmos dados tendem a produzir a mesma extração.
 - **Trocar de modelo** é uma variável de ambiente (`GEMINI_MODELO`). Trocar de provedor é
   um adapter novo em `matching/`.
-- **Dois adapters** implementam a mesma interface: `AvaliadorGemini`, pela Developer API,
-  e `AvaliadorAgy`, pelo Antigravity CLI local. `AVALIADOR=gemini_api|agy` escolhe qual usar.
+- **Dois adapters** implementam a mesma interface: `ExtratorGemini`, pela Developer API,
+  e `ExtratorAgy`, pelo Antigravity CLI local. `AVALIADOR=gemini_api|agy` escolhe qual usar.
 - O adapter AGY roda em diretório temporário, com sandbox, timeout e JSON Schema; o fluxo do
-  domínio recebe os mesmos `ResultadoMatch` em ambos os casos.
+  domínio recebe as mesmas `ExtracaoDaVaga` em ambos os casos.
 
 ### 4. Pré-filtro por regras antes da IA
 
 Regras baratas (regex) cortam o óbvio — "Desenvolvedor Sênior", "5 anos de experiência" —
 antes de gastar cota e tempo de IA. A IA fica para o julgamento fino.
 
-### 5. Avaliação em lotes com tolerância a falhas
+### 5. Extração em lotes com tolerância a falhas
 
 O problema: a cota do Gemini varia por modelo e plano. Uma chamada por vaga multiplica custo,
 latência e risco de limite, além de poder interromper uma execução com volume alto.
@@ -129,27 +143,27 @@ latência e risco de limite, além de poder interromper uma execução com volum
 A solução é em duas camadas, separadas de propósito:
 
 ```
-AvaliadorEmLotes  (matching/lotes.py)   — sabe dividir, tentar de novo, desistir
+ExtratorEmLotes  (matching/lotes.py)   — sabe dividir, tentar de novo, desistir
       │  usa
       ▼
-AvaliadorGemini/AvaliadorAgy            — sabem falar com seu mecanismo. Só isso.
+ExtratorGemini/ExtratorAgy             — sabem falar com seu mecanismo. Só isso.
 ```
 
 O adapter selecionado recebe uma lista de vagas, faz **uma** chamada, devolve os resultados que
 conseguiu casar por id. Não sabe o que é "tentar de novo".
 
-`AvaliadorEmLotes` embrulha qualquer avaliador e aplica a estratégia:
+`ExtratorEmLotes` embrulha qualquer extrator e aplica a estratégia:
 
 | Situação | O que faz |
 |---|---|
 | 14 vagas, lote de 10 | 2 chamadas |
 | lote de 10 falha (JSON quebrado, erro 500) | divide em 5 + 5, tenta cada; repete até isolar a vaga com problema |
-| modelo esqueceu de responder 1 vaga | reavalia só ela |
+| modelo esqueceu de responder 1 vaga | extrai só ela |
 | esqueceu mesmo sozinha | ignora e registra |
 | cota excedida (HTTP 429) | para tudo, envia o que já tem |
 
 Por que separar: a estratégia de resiliência não tem nada a ver com o mecanismo de IA.
-`AvaliadorEmLotes` embrulha os dois adapters sem conhecer Gemini API ou AGY.
+`ExtratorEmLotes` embrulha os dois adapters sem conhecer Gemini API ou AGY.
 
 ### 6. Formatar ≠ enviar
 
@@ -181,7 +195,7 @@ falha se nenhuma responder. `FONTES` liga e desliga fontes sem mexer no código.
 A mesma vaga pode chegar pelas duas. `filtering/duplicatas.py` agrupa por título + empresa
 normalizados e fica com a versão **mais completa**: quem informa modalidade ganha; empate →
 descrição mais longa. Não precisa de IA para isso — é a mesma vaga, a nota seria a mesma; o
-que muda é a informação que chega ao avaliador.
+que muda é a informação que chega ao extrator.
 
 `Vaga.modalidade` é opcional: a Gupy preenche, a Adzuna não. O pré-filtro decide pelo campo
 quando existe e só recorre a regex no texto quando a fonte não informa.
@@ -219,7 +233,7 @@ Regras para não afetar quem já usa:
 - **Conexão pelo Session pooler** do Supabase: o runner do Actions só tem IPv4.
 - **Toda execução se reporta.** Ao terminar, o job manda ao chat de operação
   (`TELEGRAM_CHAT_ID`) quantos usuários estavam ativos, quantos receberam recomendação, quantas
-  vagas saíram e quantas requisições o avaliador consumiu. Um erro conhecido vira aviso de falha
+  vagas saíram e quantas requisições o extrator consumiu. Um erro conhecido vira aviso de falha
   antes de derrubar o processo; um kill por timeout, que o Python não consegue reportar, é
   coberto pelo passo `if: failure()` do workflow, que manda o link do run. O disparo é externo
   (cron-job.org): sem esse retorno, dois dias parados passam despercebidos, como já aconteceu.
@@ -254,9 +268,20 @@ interações reais no Telegram; o contrato não fabrica comportamento futuro.
 
 - Sem comentários no código; nomes autoexplicativos.
 - Commits atômicos em [Conventional Commits](https://www.conventionalcommits.org), em
-  português: `feat(matching): adiciona avaliador em lotes`.
+  português: `feat(matching): adiciona extrator em lotes`.
 - `.env` e segredos nunca commitados.
 - Toda funcionalidade com teste; a suíte roda sem chave e sem internet.
+
+## Custo de IA por usuário
+
+A extração compartilhada é o que torna a coorte do piloto viável na cota gratuita. Antes, cada
+perfil reavaliava as mesmas vagas: 20 estudantes no primeiro dia pediam cerca de 120 requisições
+contra um limite de 20 por minuto, e o job morria no timeout antes de atender a fila inteira —
+sempre pelos usuários mais recentes, porque a fila é ordenada por `criado_em`.
+
+Agora o número de requisições depende só de quantas vagas novas passaram no pré-filtro de algum
+perfil. O resumo de cada execução (decisão 10) informa esse número, e o teste
+`test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas` impede que a propriedade se perca.
 
 ## Estado da Fase 2
 

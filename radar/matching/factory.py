@@ -1,16 +1,16 @@
 from google import genai
 
-from radar.domain.ports import AvaliadorDeVagas
-from radar.matching.agy import AvaliadorAgy
-from radar.matching.gemini import AvaliadorGemini
+from radar.domain.ports import ExtratorDeVagas
+from radar.matching.agy import ExtratorAgy
+from radar.matching.gemini import ExtratorGemini
 from radar.settings import Settings
 
 
-def criar_avaliador(settings: Settings) -> AvaliadorDeVagas:
+def criar_extrator(settings: Settings) -> ExtratorDeVagas:
     if settings.avaliador == "agy":
-        return AvaliadorAgy(settings)
+        return ExtratorAgy(settings)
     cliente = genai.Client(api_key=settings.gemini_api_key)
-    return AvaliadorGemini(settings, cliente)
+    return ExtratorGemini(settings, cliente)
 
 
 def nome_do_modelo(settings: Settings) -> str:

@@ -1,4 +1,4 @@
-from radar.domain.models import ResultadoMatch, Usuario, Vaga
+from radar.domain.models import ExtracaoDaVaga, ResultadoMatch, Usuario, Vaga
 
 
 class RepositorioEmMemoria:
@@ -7,6 +7,12 @@ class RepositorioEmMemoria:
 
     def listar_ativos(self) -> list[Usuario]:
         return list(self._usuarios)
+
+    def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
+        return {}
+
+    def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
+        return None
 
     def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
         return []

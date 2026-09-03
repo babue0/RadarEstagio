@@ -22,6 +22,12 @@ class AreaDeInteresse(StrEnum):
     QA_TESTES = "qa_testes"
 
 
+class NivelCompatibilidade(StrEnum):
+    COMPATIVEL = "compativel"
+    PARCIAL = "parcial"
+    INCOMPATIVEL = "incompativel"
+
+
 class Vaga(BaseModel):
     id_externo: str
     fonte: str
@@ -33,6 +39,21 @@ class Vaga(BaseModel):
     publicada_em: datetime
     modalidade: Modalidade | None = None
     descricao_completa: bool = True
+
+
+class ExtracaoDaVaga(BaseModel):
+    id_vaga: str
+    area_de_tecnologia: NivelCompatibilidade
+    areas_da_vaga: list[str] = Field(default_factory=list)
+    cursos_aceitos: list[str] = Field(default_factory=list)
+    aceita_qualquer_curso: bool = False
+    periodo_minimo: int | None = None
+    experiencia_minima_anos: int | None = None
+    experiencia_desejavel: bool = False
+    habilidades_obrigatorias: list[str] = Field(default_factory=list)
+    habilidades_principais: list[str] = Field(default_factory=list)
+    habilidades_desejaveis: list[str] = Field(default_factory=list)
+    alerta_pegadinha: str | None = None
 
 
 class Perfil(BaseModel):

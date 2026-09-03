@@ -3,8 +3,8 @@ from html.parser import HTMLParser
 
 import httpx
 
-from radar.domain.models import Perfil, ResultadoMatch, Vaga
-from radar.domain.ports import AvaliadorDeVagas
+from radar.domain.models import ExtracaoDaVaga, Vaga
+from radar.domain.ports import ExtratorDeVagas
 
 logger = logging.getLogger(__name__)
 
@@ -30,15 +30,15 @@ TAGS_SEM_FECHAMENTO = frozenset(
 )
 
 
-class AvaliadorComDescricoesCompletas:
-    def __init__(self, avaliador: AvaliadorDeVagas, cliente_http: httpx.Client) -> None:
-        self._avaliador = avaliador
+class ExtratorComDescricoesCompletas:
+    def __init__(self, extrator: ExtratorDeVagas, cliente_http: httpx.Client) -> None:
+        self._extrator = extrator
         self._cliente_http = cliente_http
         self._cache: dict[tuple[str, str], Vaga] = {}
 
-    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         enriquecidas = [self._enriquecer(vaga) for vaga in vagas]
-        return self._avaliador.avaliar(enriquecidas, perfil)
+        return self._extrator.extrair(enriquecidas)
 
     def _enriquecer(self, vaga: Vaga) -> Vaga:
         if not descricao_parece_truncada(vaga):

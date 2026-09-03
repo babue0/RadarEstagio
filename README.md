@@ -108,7 +108,11 @@ commite o `.env`.
 
 A **Gupy**, a segunda fonte, não precisa de chave: o projeto usa a API pública do portal.
 
-### 2.2 Avaliador por IA
+### 2.2 Extrator por IA
+
+A IA lê cada vaga uma vez e extrai os requisitos dela — cursos aceitos, período mínimo,
+experiência e stack. A comparação com o perfil e a nota são calculadas em Python, sem IA, o que
+faz uma mesma vaga custar uma única requisição por mais usuários que o Radar tenha.
 
 O projeto aceita dois adapters, escolhidos por `AVALIADOR`:
 

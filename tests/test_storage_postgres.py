@@ -5,7 +5,16 @@ from uuid import uuid4
 import psycopg
 import pytest
 
-from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import (
+    AreaDeInteresse,
+    ExtracaoDaVaga,
+    Modalidade,
+    NivelCompatibilidade,
+    Perfil,
+    ResultadoMatch,
+    Usuario,
+    Vaga,
+)
 from radar.storage.postgres import RepositorioPostgres
 
 DATABASE_URL_TESTE = os.environ.get("DATABASE_URL_TESTE", "")
@@ -195,3 +204,28 @@ def test_usuario_ativo_traz_desde_quando_esta_sem_recomendacao(
     depois = next(item for item in repositorio.listar_ativos() if item.id == usuario.id)
     assert depois.sem_recomendacao_desde > criado_em
     assert depois.silencio_avisado_em is not None
+
+
+def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection):
+    repositorio = RepositorioPostgres(conexao)
+    extracao = ExtracaoDaVaga(
+        id_vaga="teste-1",
+        area_de_tecnologia=NivelCompatibilidade.COMPATIVEL,
+        cursos_aceitos=["Ciência da Computação"],
+        habilidades_obrigatorias=["Python"],
+        periodo_minimo=3,
+    )
+
+    assert repositorio.extracoes_existentes([vaga(1)]) == {}
+
+    repositorio.guardar_extracoes([(vaga(1), extracao)], "modelo-teste")
+
+    guardadas = repositorio.extracoes_existentes([vaga(1), vaga(2)])
+    assert list(guardadas) == ["teste-1"]
+    assert guardadas["teste-1"] == extracao
+    assert (
+        conexao.execute(
+            "select modelo_extracao from vagas where id_externo = 'teste-1'"
+        ).fetchone()[0]
+        == "modelo-teste"
+    )

@@ -3,8 +3,17 @@ from uuid import UUID
 
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
-from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import (
+    AreaDeInteresse,
+    ExtracaoDaVaga,
+    Modalidade,
+    Perfil,
+    ResultadoMatch,
+    Usuario,
+    Vaga,
+)
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
@@ -35,6 +44,21 @@ SQL_AVALIACOES_EXISTENTES = """
       and (v.fonte, v.id_externo) in (
         select * from unnest(%(fontes)s::text[], %(ids_externos)s::text[])
       )
+"""
+
+SQL_EXTRACOES_EXISTENTES = """
+    select id_externo, extracao
+    from vagas
+    where extracao is not null
+      and (fonte, id_externo) in (
+        select * from unnest(%(fontes)s::text[], %(ids_externos)s::text[])
+      )
+"""
+
+SQL_GUARDAR_EXTRACAO = """
+    update vagas
+    set extracao = %(extracao)s, extraida_em = now(), modelo_extracao = %(modelo)s
+    where id = %(vaga_id)s
 """
 
 SQL_IDS_ENVIADOS = """
@@ -123,6 +147,41 @@ class RepositorioPostgres:
         if sem_vinculo:
             logger.info("%d perfis ativos ainda sem Telegram vinculado", sem_vinculo)
         return [converter_em_usuario(linha) for linha in linhas]
+
+    def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
+        if not vagas:
+            return {}
+        parametros = {
+            "fontes": [vaga.fonte for vaga in vagas],
+            "ids_externos": [vaga.id_externo for vaga in vagas],
+        }
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linhas = cursor.execute(SQL_EXTRACOES_EXISTENTES, parametros).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao ler as extrações: {descrever(erro)}") from erro
+        return {
+            linha["id_externo"]: ExtracaoDaVaga.model_validate(linha["extracao"])
+            for linha in linhas
+        }
+
+    def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
+        if not extracoes:
+            return
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                for vaga, extracao in extracoes:
+                    vaga_id = guardar_vaga(cursor, vaga)
+                    cursor.execute(
+                        SQL_GUARDAR_EXTRACAO,
+                        {
+                            "vaga_id": vaga_id,
+                            "extracao": Jsonb(extracao.model_dump(mode="json")),
+                            "modelo": modelo,
+                        },
+                    )
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao gravar as extrações: {descrever(erro)}") from erro
 
     def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
         if not vagas:

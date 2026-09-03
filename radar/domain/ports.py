@@ -1,14 +1,14 @@
 from typing import Protocol
 
-from radar.domain.models import Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import ExtracaoDaVaga, ResultadoMatch, Usuario, Vaga
 
 
 class ColetorDeVagas(Protocol):
     def coletar(self) -> list[Vaga]: ...
 
 
-class AvaliadorDeVagas(Protocol):
-    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]: ...
+class ExtratorDeVagas(Protocol):
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]: ...
 
 
 class Notificador(Protocol):
@@ -25,6 +25,12 @@ class RepositorioDeAvaliacoes(Protocol):
     ) -> list[ResultadoMatch]: ...
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]: ...
+
+    def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]: ...
+
+    def guardar_extracoes(
+        self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str
+    ) -> None: ...
 
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str

@@ -1,7 +1,15 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import (
+    ExtracaoDaVaga,
+    Modalidade,
+    NivelCompatibilidade,
+    Perfil,
+    ResultadoMatch,
+    Usuario,
+    Vaga,
+)
 from radar.notification.telegram import ErroDeNotificacao
 from radar.pipeline import ParametrosDaExecucao, executar
 from radar.storage.errors import ErroDeArmazenamento
@@ -44,13 +52,31 @@ class ColetorFalso:
         return self._vagas
 
 
-class AvaliadorFalso:
+class ExtratorFalso:
     def __init__(self, notas: dict[str, int]) -> None:
         self._notas = notas
-        self.avaliadas: list[str] = []
+        self.extraidas: list[str] = []
 
-    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
-        self.avaliadas.extend(vaga.id_externo for vaga in vagas)
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
+        self.extraidas.extend(vaga.id_externo for vaga in vagas)
+        return [
+            ExtracaoDaVaga(
+                id_vaga=vaga.id_externo,
+                area_de_tecnologia=NivelCompatibilidade.COMPATIVEL,
+            )
+            for vaga in vagas
+        ]
+
+
+class PontuadorFalso:
+    def __init__(self, notas: dict[str, int]) -> None:
+        self._notas = notas
+        self.pontuadas: list[str] = []
+
+    def __call__(
+        self, vagas: list[Vaga], extracoes: dict[str, ExtracaoDaVaga], perfil: Perfil
+    ) -> list[ResultadoMatch]:
+        self.pontuadas.extend(vaga.id_externo for vaga in vagas)
         return [
             ResultadoMatch(
                 vaga=vaga,
@@ -58,7 +84,7 @@ class AvaliadorFalso:
                 pontos_a_favor=[f"Ponto {vaga.id_externo}"],
             )
             for vaga in vagas
-            if vaga.id_externo in self._notas
+            if vaga.id_externo in self._notas and vaga.id_externo in extracoes
         ]
 
 
@@ -92,6 +118,21 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.falhas_por_usuario: dict[UUID, int] = {}
         self.pausados: list[UUID] = []
         self.avisos_de_silencio: list[UUID] = []
+        self.extracoes_guardadas: dict[str, ExtracaoDaVaga] = {}
+        self.gravacoes_de_extracao = 0
+
+    def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
+        ids = {vaga.id_externo for vaga in vagas}
+        return {
+            id_vaga: extracao
+            for id_vaga, extracao in self.extracoes_guardadas.items()
+            if id_vaga in ids
+        }
+
+    def guardar_extracoes(self, extracoes: list[tuple[Vaga, ExtracaoDaVaga]], modelo: str) -> None:
+        self.gravacoes_de_extracao += 1
+        for vaga_extraida, extracao in extracoes:
+            self.extracoes_guardadas[vaga_extraida.id_externo] = extracao
 
     def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
         ids = {vaga.id_externo for vaga in vagas}
@@ -178,10 +219,10 @@ def rodar(
 ):
     notificador = notificador or NotificadorFalso()
     repositorio = repositorio or RepositorioFalso([usuario()])
-    avaliador = AvaliadorFalso(notas)
+    pontuador = PontuadorFalso(notas)
     resumo = executar(
         ColetorFalso(vagas),
-        avaliador,
+        ExtratorFalso(notas),
         notificador,
         repositorio,
         parametros(
@@ -190,8 +231,9 @@ def rodar(
             falhas_ate_pausar=falhas_ate_pausar,
         ),
         agora,
+        pontuador,
     )
-    return resumo.enviadas_por_usuario.get(ID_USUARIO, []), notificador, avaliador
+    return resumo.enviadas_por_usuario.get(ID_USUARIO, []), notificador, pontuador
 
 
 def test_envia_vagas_ordenadas_por_nota():
@@ -227,7 +269,7 @@ def test_todas_abaixo_da_nota_minima_nao_manda_mensagem():
     assert notificador.textos == []
 
 
-def test_vaga_sem_resultado_do_avaliador_fica_fora_da_mensagem():
+def test_vaga_sem_resultado_do_pontuador_fica_fora_da_mensagem():
     selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {"2": 60})
 
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
@@ -246,9 +288,9 @@ def test_mesma_vaga_em_duas_fontes_e_avaliada_e_enviada_uma_vez():
     da_adzuna = vaga(1)
     da_gupy = vaga(2).model_copy(update={"fonte": "gupy", "empresa": "Empresa 1"})
 
-    selecionadas, notificador, avaliador = rodar([da_adzuna, da_gupy], {"1": 80, "2": 80})
+    selecionadas, notificador, pontuador = rodar([da_adzuna, da_gupy], {"1": 80, "2": 80})
 
-    assert avaliador.avaliadas == ["1"]
+    assert pontuador.pontuadas == ["1"]
     assert len(selecionadas) == 1
     assert notificador.textos[0].count("Empresa 1") == 1
 
@@ -271,11 +313,12 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
 
     resumo = executar(
         ColetorFalso([vaga(1)]),
-        AvaliadorFalso({"1": 70}),
+        ExtratorFalso({"1": 70}),
         notificador,
         repositorio,
         parametros(),
         AGORA_DE_TESTE,
+        PontuadorFalso({"1": 70}),
     )
 
     assert notificador.chats == ["123"]
@@ -292,11 +335,12 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
 
     resumo = executar(
         ColetorFalso([vaga(1)]),
-        AvaliadorFalso({"1": 70}),
+        ExtratorFalso({"1": 70}),
         notificador,
         repositorio,
         parametros(),
         AGORA_DE_TESTE,
+        PontuadorFalso({"1": 70}),
     )
 
     assert notificador.chats == ["123"]
@@ -307,11 +351,11 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
 def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
     repositorio = RepositorioFalso([usuario()], enviadas={("adzuna", "1")})
 
-    selecionadas, notificador, avaliador = rodar(
+    selecionadas, notificador, pontuador = rodar(
         [vaga(1), vaga(2)], {"1": 90, "2": 60}, repositorio=repositorio
     )
 
-    assert avaliador.avaliadas == ["2"]
+    assert pontuador.pontuadas == ["2"]
     assert [resultado.vaga.id_externo for resultado in selecionadas] == ["2"]
     assert "Empresa 1" not in notificador.textos[0]
 
@@ -323,15 +367,15 @@ def test_avaliacao_toda_bloqueada_nao_manda_mensagem_enganosa():
     assert notificador.textos == []
 
 
-def test_vaga_com_nota_guardada_nao_vai_ao_avaliador():
+def test_vaga_com_nota_guardada_nao_e_pontuada_de_novo():
     guardada = ResultadoMatch(vaga=vaga(1), nota=95, pontos_a_favor=["Guardado"])
     repositorio = RepositorioFalso([usuario()], guardadas=[guardada])
 
-    selecionadas, notificador, avaliador = rodar(
+    selecionadas, notificador, pontuador = rodar(
         [vaga(1), vaga(2)], {"1": 10, "2": 60}, repositorio=repositorio
     )
 
-    assert avaliador.avaliadas == ["2"]
+    assert pontuador.pontuadas == ["2"]
     assert [resultado.nota for resultado in selecionadas] == [95, 60]
     assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["2"], "modelo-teste")]
     assert repositorio.envios_gravados == [(ID_USUARIO, ["1", "2"])]
@@ -347,9 +391,9 @@ def test_aplica_regras_objetivas_na_nota_guardada():
     )
     repositorio = RepositorioFalso([usuario()], guardadas=[guardada])
 
-    selecionadas, notificador, avaliador = rodar([sem_modalidade], {}, repositorio=repositorio)
+    selecionadas, notificador, pontuador = rodar([sem_modalidade], {}, repositorio=repositorio)
 
-    assert avaliador.avaliadas == []
+    assert pontuador.pontuadas == []
     assert selecionadas[0].nota == 95
     assert selecionadas[0].pontos_contra == ["SQL não informado"]
     assert "❌ SQL não informado" in notificador.textos[0]
@@ -428,3 +472,58 @@ def test_usuario_recente_sem_vagas_fica_em_silencio():
 
     assert notificador.textos == []
     assert repositorio.avisos_de_silencio == []
+
+
+def executar_com(repositorio: RepositorioFalso, vagas: list[Vaga], notas: dict[str, int]):
+    extrator = ExtratorFalso(notas)
+    executar(
+        ColetorFalso(vagas),
+        extrator,
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso(notas),
+    )
+    return extrator
+
+
+def test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas():
+    vagas = [vaga(1), vaga(2), vaga(3)]
+    notas = {"1": 70, "2": 80, "3": 90}
+
+    um = executar_com(RepositorioFalso([usuario()]), vagas, notas)
+    dois = executar_com(
+        RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")]), vagas, notas
+    )
+
+    assert um.extraidas == ["1", "2", "3"]
+    assert dois.extraidas == um.extraidas
+
+
+def test_extracao_ja_guardada_nao_volta_ao_extrator():
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.extracoes_guardadas["1"] = ExtracaoDaVaga(
+        id_vaga="1", area_de_tecnologia=NivelCompatibilidade.COMPATIVEL
+    )
+
+    extrator = executar_com(repositorio, [vaga(1), vaga(2)], {"1": 70, "2": 80})
+
+    assert extrator.extraidas == ["2"]
+
+
+def test_extracao_nova_e_gravada_uma_vez_por_vaga():
+    repositorio = RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")])
+
+    executar_com(repositorio, [vaga(1), vaga(2)], {"1": 70, "2": 80})
+
+    assert sorted(repositorio.extracoes_guardadas) == ["1", "2"]
+    assert repositorio.gravacoes_de_extracao == 1
+
+
+def test_vaga_reprovada_no_prefiltro_de_todos_os_perfis_nao_e_extraida():
+    fora_da_area = vaga(2, titulo="Estágio em Marketing Digital")
+
+    extrator = executar_com(RepositorioFalso([usuario()]), [vaga(1), fora_da_area], {"1": 70})
+
+    assert extrator.extraidas == ["1"]

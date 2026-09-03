@@ -1,10 +1,10 @@
-from radar.matching.agy import AvaliadorAgy
-from radar.matching.factory import criar_avaliador
-from radar.matching.gemini import AvaliadorGemini
+from radar.matching.agy import ExtratorAgy
+from radar.matching.factory import criar_extrator
+from radar.matching.gemini import ExtratorGemini
 from radar.settings import Settings
 
 
-def test_cria_avaliador_agy_quando_selecionado():
+def test_cria_extrator_agy_quando_selecionado():
     settings = Settings(
         _env_file=None,
         adzuna_app_id="adzuna-id",
@@ -15,10 +15,10 @@ def test_cria_avaliador_agy_quando_selecionado():
         telegram_chat_id="123",
     )
 
-    assert isinstance(criar_avaliador(settings), AvaliadorAgy)
+    assert isinstance(criar_extrator(settings), ExtratorAgy)
 
 
-def test_preserva_avaliador_gemini_api_quando_selecionado():
+def test_preserva_extrator_gemini_api_quando_selecionado():
     settings = Settings(
         _env_file=None,
         adzuna_app_id="adzuna-id",
@@ -29,4 +29,4 @@ def test_preserva_avaliador_gemini_api_quando_selecionado():
         telegram_chat_id="123",
     )
 
-    assert isinstance(criar_avaliador(settings), AvaliadorGemini)
+    assert isinstance(criar_extrator(settings), ExtratorGemini)

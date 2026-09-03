@@ -6,9 +6,9 @@ from tempfile import TemporaryDirectory
 
 from pydantic import ValidationError
 
-from radar.domain.models import Perfil, ResultadoMatch, Vaga
-from radar.matching.avaliacoes import AvaliacoesIA, casar_avaliacoes_com_vagas
+from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.matching.errors import ErroDeAvaliacao
+from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
@@ -23,7 +23,7 @@ VARIAVEIS_SENSIVEIS_DO_RADAR = frozenset(
 )
 
 
-class AvaliadorAgy:
+class ExtratorAgy:
     def __init__(
         self,
         settings: Settings,
@@ -33,11 +33,11 @@ class AvaliadorAgy:
         self._timeout_segundos = settings.agy_timeout_segundos
         self._executor = executor
 
-    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         if not vagas:
             return []
 
-        schema = json.dumps(AvaliacoesIA.model_json_schema(), ensure_ascii=False)
+        schema = json.dumps(ExtracoesDeVagas.model_json_schema(), ensure_ascii=False)
         ambiente = os.environ.copy()
         for variavel in VARIAVEIS_SENSIVEIS_DO_RADAR:
             ambiente.pop(variavel, None)
@@ -47,7 +47,7 @@ class AvaliadorAgy:
                     [
                         "agy",
                         "--print",
-                        montar_prompt(vagas, perfil),
+                        montar_prompt(vagas),
                         "--model",
                         self._modelo,
                         "--output-format",
@@ -87,7 +87,7 @@ class AvaliadorAgy:
         if "structured_output" not in envelope:
             raise ErroDeAvaliacao("AGY devolveu saída estruturada ausente")
         try:
-            avaliacoes = AvaliacoesIA.model_validate(envelope["structured_output"])
+            extracoes = ExtracoesDeVagas.model_validate(envelope["structured_output"])
         except ValidationError as erro:
             raise ErroDeAvaliacao(f"AGY devolveu saída estruturada inválida: {erro}") from None
-        return casar_avaliacoes_com_vagas(avaliacoes, vagas, perfil)
+        return extracoes.extracoes

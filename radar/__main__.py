@@ -13,10 +13,11 @@ from radar.domain.perfil_fixo import perfil_do_mvp
 from radar.domain.ports import ColetorDeVagas, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
-from radar.matching.enriquecimento import AvaliadorComDescricoesCompletas
+from radar.matching.avaliacoes import pontuar_vagas
+from radar.matching.enriquecimento import ExtratorComDescricoesCompletas
 from radar.matching.errors import ErroDeAvaliacao
-from radar.matching.factory import criar_avaliador, nome_do_modelo
-from radar.matching.lotes import AvaliadorEmLotes
+from radar.matching.factory import criar_extrator, nome_do_modelo
+from radar.matching.lotes import ExtratorEmLotes
 from radar.notification.formatador import (
     formatar_falha_da_execucao,
     formatar_resumo_da_execucao,
@@ -89,9 +90,12 @@ def avaliar(settings: Settings) -> None:
         selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
         print(
             f"{len(vagas)} vagas após o pré-filtro; "
-            f"avaliando {len(selecionadas)} com {settings.avaliador}"
+            f"extraindo {len(selecionadas)} com {settings.avaliador}"
         )
-        resultados = montar_avaliador(settings, cliente_http).avaliar(selecionadas, perfil)
+        extracoes = montar_extrator(settings, cliente_http).extrair(selecionadas)
+    resultados = pontuar_vagas(
+        selecionadas, {extracao.id_vaga: extracao for extracao in extracoes}, perfil
+    )
     for resultado in resultados:
         vaga = resultado.vaga
         print(f"- [{resultado.nota:3d}] {vaga.titulo} | {vaga.empresa} | {vaga.localizacao}")
@@ -121,23 +125,23 @@ def montar_coletor(
     return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades)
 
 
-def montar_avaliador(settings: Settings, cliente_http: httpx.Client) -> AvaliadorEmLotes:
-    com_descricoes_completas = AvaliadorComDescricoesCompletas(
-        criar_avaliador(settings), cliente_http
+def montar_extrator(settings: Settings, cliente_http: httpx.Client) -> ExtratorEmLotes:
+    com_descricoes_completas = ExtratorComDescricoesCompletas(
+        criar_extrator(settings), cliente_http
     )
-    return AvaliadorEmLotes(com_descricoes_completas, settings.gemini_vagas_por_lote)
+    return ExtratorEmLotes(com_descricoes_completas, settings.gemini_vagas_por_lote)
 
 
 def executar_fluxo(
     settings: Settings, cliente_http: httpx.Client, repositorio: Repositorio
 ) -> None:
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
-    avaliador = montar_avaliador(settings, cliente_http)
+    extrator = montar_extrator(settings, cliente_http)
     agora = datetime.now(UTC)
     try:
         resumo = executar(
             montar_coletor(settings, cliente_http, repositorio.listar_ativos()),
-            avaliador,
+            extrator,
             notificador,
             repositorio,
             ParametrosDaExecucao(
@@ -154,7 +158,7 @@ def executar_fluxo(
         raise
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
-        f"em {avaliador.requisicoes} requisições ao avaliador"
+        f"em {extrator.requisicoes} requisições ao avaliador"
     )
     avisar_operacao(
         settings,
@@ -165,7 +169,7 @@ def executar_fluxo(
             resumo.atendidos(),
             resumo.vagas_enviadas(),
             resumo.vagas_coletadas,
-            avaliador.requisicoes,
+            extrator.requisicoes,
         ),
     )
 

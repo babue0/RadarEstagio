@@ -4,9 +4,9 @@ from google import genai
 from google.genai import errors, types
 from pydantic import ValidationError
 
-from radar.domain.models import Perfil, ResultadoMatch, Vaga
-from radar.matching.avaliacoes import AvaliacoesIA, casar_avaliacoes_com_vagas
+from radar.domain.models import ExtracaoDaVaga, Vaga
 from radar.matching.errors import CotaDeAvaliacaoExcedida, ErroDeAvaliacao
+from radar.matching.extracao import ExtracoesDeVagas
 from radar.matching.prompt import montar_prompt
 from radar.settings import Settings
 
@@ -15,25 +15,24 @@ HTTP_COTA_EXCEDIDA = 429
 PADRAO_TEMPO_DE_ESPERA = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
 
 
-class AvaliadorGemini:
+class ExtratorGemini:
     def __init__(self, settings: Settings, cliente: genai.Client) -> None:
         self._modelo = settings.gemini_modelo
         self._cliente = cliente
 
-    def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
+    def extrair(self, vagas: list[Vaga]) -> list[ExtracaoDaVaga]:
         if not vagas:
             return []
-        avaliacoes = self._pedir_avaliacoes(montar_prompt(vagas, perfil))
-        return casar_avaliacoes_com_vagas(avaliacoes, vagas, perfil)
+        return self._pedir_extracoes(montar_prompt(vagas)).extracoes
 
-    def _pedir_avaliacoes(self, prompt: str) -> AvaliacoesIA:
+    def _pedir_extracoes(self, prompt: str) -> ExtracoesDeVagas:
         try:
             resposta = self._cliente.models.generate_content(
                 model=self._modelo,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    response_schema=AvaliacoesIA,
+                    response_schema=ExtracoesDeVagas,
                     temperature=TEMPERATURA_DETERMINISTICA,
                 ),
             )
@@ -50,10 +49,10 @@ def tempo_de_espera(mensagem: str | None) -> float | None:
     return float(encontrado.group(1)) if encontrado else None
 
 
-def interpretar_resposta(texto: str | None) -> AvaliacoesIA:
+def interpretar_resposta(texto: str | None) -> ExtracoesDeVagas:
     if not texto:
         raise ErroDeAvaliacao("Gemini devolveu resposta vazia")
     try:
-        return AvaliacoesIA.model_validate_json(texto)
+        return ExtracoesDeVagas.model_validate_json(texto)
     except ValidationError as erro:
         raise ErroDeAvaliacao(f"Gemini devolveu JSON fora do esperado: {erro}") from None

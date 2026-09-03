@@ -1,19 +1,23 @@
 import logging
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from radar.domain.models import ResultadoMatch, Usuario, Vaga
-from radar.domain.ports import AvaliadorDeVagas, ColetorDeVagas, Notificador, Repositorio
+from radar.domain.models import ExtracaoDaVaga, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.ports import ColetorDeVagas, ExtratorDeVagas, Notificador, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
+from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
 from radar.notification.formatador import formatar_aviso_de_silencio, formatar_mensagem
 from radar.notification.telegram import ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
+
+Pontuador = Callable[[list[Vaga], dict[str, ExtracaoDaVaga], Perfil], list[ResultadoMatch]]
 
 
 class ParametrosDaExecucao(BaseModel):
@@ -28,6 +32,8 @@ class ResumoDaExecucao(BaseModel):
     usuarios: int
     vagas_coletadas: int
     vagas_unicas: int
+    vagas_candidatas: int
+    vagas_extraidas_agora: int
     enviadas_por_usuario: dict[UUID, list[ResultadoMatch]]
 
     def atendidos(self) -> int:
@@ -39,28 +45,38 @@ class ResumoDaExecucao(BaseModel):
 
 def executar(
     coletor: ColetorDeVagas,
-    avaliador: AvaliadorDeVagas,
+    extrator: ExtratorDeVagas,
     notificador: Notificador,
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
     agora: datetime,
+    pontuador: Pontuador = pontuar_vagas,
 ) -> ResumoDaExecucao:
     usuarios = repositorio.listar_ativos()
     coletadas = coletor.coletar()
     unicas = remover_duplicatas(coletadas)
+    candidatas = candidatas_de_algum_perfil(unicas, usuarios)
     logger.info(
-        "%d vagas coletadas, %d únicas, %d usuários", len(coletadas), len(unicas), len(usuarios)
+        "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
+        len(coletadas),
+        len(unicas),
+        len(candidatas),
+        len(usuarios),
+    )
+    extracoes, extraidas_agora = obter_extracoes(
+        extrator, repositorio, candidatas, parametros.modelo
     )
     enviadas_por_usuario: dict[UUID, list[ResultadoMatch]] = {}
     for usuario in usuarios:
         selecionadas = atender_usuario(
             usuario,
             unicas,
-            avaliador,
+            extracoes,
             notificador,
             repositorio,
             parametros,
             agora,
+            pontuador,
         )
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
@@ -68,18 +84,55 @@ def executar(
         usuarios=len(usuarios),
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
+        vagas_candidatas=len(candidatas),
+        vagas_extraidas_agora=extraidas_agora,
         enviadas_por_usuario=enviadas_por_usuario,
     )
+
+
+def candidatas_de_algum_perfil(vagas: list[Vaga], usuarios: list[Usuario]) -> list[Vaga]:
+    aprovadas: dict[str, Vaga] = {}
+    for usuario in usuarios:
+        for vaga in filtrar(vagas, usuario.perfil):
+            aprovadas.setdefault(vaga.id_externo, vaga)
+    return list(aprovadas.values())
+
+
+def obter_extracoes(
+    extrator: ExtratorDeVagas, repositorio: Repositorio, candidatas: list[Vaga], modelo: str
+) -> tuple[dict[str, ExtracaoDaVaga], int]:
+    try:
+        extracoes = dict(repositorio.extracoes_existentes(candidatas))
+    except ErroDeArmazenamento as erro:
+        logger.warning("extrações guardadas não puderam ser lidas: %s", erro)
+        extracoes = {}
+    pendentes = [vaga for vaga in candidatas if vaga.id_externo not in extracoes]
+    logger.info("%d extrações reaproveitadas, %d vagas a extrair", len(extracoes), len(pendentes))
+    novas = extrator.extrair(pendentes)
+    vagas_por_id = {vaga.id_externo: vaga for vaga in pendentes}
+    guardadas = []
+    for extracao in novas:
+        vaga = vagas_por_id.get(extracao.id_vaga)
+        if vaga is None or extracao.id_vaga in extracoes:
+            continue
+        extracoes[extracao.id_vaga] = extracao
+        guardadas.append((vaga, extracao))
+    try:
+        repositorio.guardar_extracoes(guardadas, modelo)
+    except ErroDeArmazenamento as erro:
+        logger.warning("extrações não foram gravadas: %s", erro)
+    return extracoes, len(guardadas)
 
 
 def atender_usuario(
     usuario: Usuario,
     vagas: list[Vaga],
-    avaliador: AvaliadorDeVagas,
+    extracoes: dict[str, ExtracaoDaVaga],
     notificador: Notificador,
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
     agora: datetime,
+    pontuador: Pontuador,
 ) -> list[ResultadoMatch] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     candidatas = [
@@ -92,10 +145,12 @@ def atender_usuario(
     )
     ids_guardados = {resultado.vaga.id_externo for resultado in guardadas}
     pendentes = [vaga for vaga in candidatas if vaga.id_externo not in ids_guardados]
-    novas = aplicar_regras_objetivas(avaliador.avaliar(pendentes, usuario.perfil), usuario.perfil)
+    novas = aplicar_regras_objetivas(
+        pontuador(pendentes, extracoes, usuario.perfil), usuario.perfil
+    )
     if pendentes and not novas and not guardadas:
         logger.warning(
-            "usuário %s ficou sem mensagem: nenhuma das %d vagas pendentes pôde ser avaliada",
+            "usuário %s ficou sem mensagem: nenhuma das %d vagas pendentes tem extração",
             usuario.id,
             len(pendentes),
         )

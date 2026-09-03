@@ -1,9 +1,19 @@
 import unicodedata
-from enum import StrEnum
 
-from pydantic import BaseModel, Field
-
-from radar.domain.models import AreaDeInteresse, Modalidade, Perfil, ResultadoMatch, Vaga
+from radar.domain.models import (
+    AreaDeInteresse,
+    ExtracaoDaVaga,
+    Modalidade,
+    NivelCompatibilidade,
+    Perfil,
+    ResultadoMatch,
+    Vaga,
+)
+from radar.matching.compatibilidade import (
+    NiveisDeCompatibilidade,
+    derivar_niveis,
+    montar_pontos,
+)
 
 PESO_HABILIDADES = 45
 PESO_CURSO = 10
@@ -68,110 +78,90 @@ ALIASES_DE_HABILIDADES = {
 }
 
 
-class NivelCompatibilidade(StrEnum):
-    COMPATIVEL = "compativel"
-    PARCIAL = "parcial"
-    INCOMPATIVEL = "incompativel"
-
-
-class AvaliacaoIA(BaseModel):
-    id_vaga: str
-    area: NivelCompatibilidade
-    areas_da_vaga: list[str] = Field(default_factory=list)
-    curso: NivelCompatibilidade
-    periodo_experiencia: NivelCompatibilidade
-    habilidades_obrigatorias: list[str] = Field(default_factory=list)
-    habilidades_principais: list[str] = Field(default_factory=list)
-    habilidades_desejaveis: list[str] = Field(default_factory=list)
-    pontos_a_favor: list[str] = Field(default_factory=list)
-    pontos_contra: list[str] = Field(default_factory=list)
-    alerta_pegadinha: str | None = None
-
-
-class AvaliacoesIA(BaseModel):
-    avaliacoes: list[AvaliacaoIA]
-
-
-def casar_avaliacoes_com_vagas(
-    avaliacoes: AvaliacoesIA, vagas: list[Vaga], perfil: Perfil
+def pontuar_vagas(
+    vagas: list[Vaga], extracoes: dict[str, ExtracaoDaVaga], perfil: Perfil
 ) -> list[ResultadoMatch]:
-    vagas_por_id = {vaga.id_externo: vaga for vaga in vagas}
-    resultados: dict[str, ResultadoMatch] = {}
-    for avaliacao in avaliacoes.avaliacoes:
-        vaga = vagas_por_id.get(avaliacao.id_vaga)
-        if vaga is None or avaliacao.id_vaga in resultados:
+    resultados = []
+    for vaga in vagas:
+        extracao = extracoes.get(vaga.id_externo)
+        if extracao is None:
             continue
-        requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(avaliacao, perfil)
-        requisitos = _juntar_habilidades_da_vaga(avaliacao)
-        resultados[avaliacao.id_vaga] = ResultadoMatch(
-            vaga=vaga,
-            nota=_calcular_nota(avaliacao, vaga, perfil),
-            requisitos_atendidos=requisitos_atendidos,
-            requisitos_nao_atendidos=requisitos_nao_atendidos,
-            requisitos_tecnicos_analisados=True,
-            avisos_objetivos=_avisos_objetivos(avaliacao, perfil),
-            pontos_a_favor=_juntar_sem_repetir(
-                _remover_explicacoes_de_habilidades(avaliacao.pontos_a_favor, requisitos)
-            ),
-            pontos_contra=_juntar_sem_repetir(
-                _remover_explicacoes_de_habilidades(avaliacao.pontos_contra, requisitos)
-            ),
-            alerta_pegadinha=avaliacao.alerta_pegadinha,
-        )
-    return list(resultados.values())
+        resultados.append(pontuar(vaga, extracao, perfil))
+    return resultados
 
 
-def _calcular_nota(avaliacao: AvaliacaoIA, vaga: Vaga, perfil: Perfil) -> int:
-    interesse = _compatibilidade_de_interesse(avaliacao, perfil)
+def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMatch:
+    niveis = derivar_niveis(extracao, perfil)
+    requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(extracao, perfil)
+    pontos_a_favor, pontos_contra = montar_pontos(extracao, niveis)
+    return ResultadoMatch(
+        vaga=vaga,
+        nota=_calcular_nota(extracao, niveis, vaga, perfil),
+        requisitos_atendidos=requisitos_atendidos,
+        requisitos_nao_atendidos=requisitos_nao_atendidos,
+        requisitos_tecnicos_analisados=True,
+        avisos_objetivos=_avisos_objetivos(extracao, niveis, perfil),
+        pontos_a_favor=_juntar_sem_repetir(pontos_a_favor),
+        pontos_contra=_juntar_sem_repetir(pontos_contra),
+        alerta_pegadinha=extracao.alerta_pegadinha,
+    )
+
+
+def _calcular_nota(
+    extracao: ExtracaoDaVaga, niveis: NiveisDeCompatibilidade, vaga: Vaga, perfil: Perfil
+) -> int:
+    interesse = _compatibilidade_de_interesse(extracao, perfil)
     nota = (
-        PESO_HABILIDADES * _compatibilidade_de_habilidades(avaliacao, perfil)
-        + PESO_CURSO * _coeficiente(avaliacao.curso)
-        + PESO_AREA * _coeficiente(avaliacao.area)
-        + PESO_PERIODO_EXPERIENCIA * _coeficiente(avaliacao.periodo_experiencia)
+        PESO_HABILIDADES * _compatibilidade_de_habilidades(extracao, perfil)
+        + PESO_CURSO * _coeficiente(niveis.curso)
+        + PESO_AREA * _coeficiente(niveis.area)
+        + PESO_PERIODO_EXPERIENCIA * _coeficiente(niveis.periodo_experiencia)
         + PESO_LOGISTICA * _compatibilidade_logistica(vaga, perfil)
         + PESO_INTERESSE * interesse
     )
     if interesse < 1.0:
         nota = min(nota, LIMITE_FORA_DAS_AREAS_DE_INTERESSE)
-    nota = min(nota, _limite_por_curso(avaliacao))
+    nota = min(nota, _limite_por_curso(niveis))
     return int(nota + 0.5)
 
 
-def _limite_por_curso(avaliacao: AvaliacaoIA) -> float:
-    if avaliacao.curso is NivelCompatibilidade.INCOMPATIVEL:
+def _limite_por_curso(niveis: NiveisDeCompatibilidade) -> float:
+    if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         return LIMITE_CURSO_INCOMPATIVEL
-    if avaliacao.curso is NivelCompatibilidade.PARCIAL:
+    if niveis.curso is NivelCompatibilidade.PARCIAL:
         return LIMITE_CURSO_PARCIAL
     return 100.0
 
 
-def _compatibilidade_de_interesse(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
+def _compatibilidade_de_interesse(extracao: ExtracaoDaVaga, perfil: Perfil) -> float:
     if not perfil.areas_de_interesse:
         return 1.0
-    areas_da_vaga = _areas_reconhecidas(avaliacao)
+    areas_da_vaga = _areas_reconhecidas(extracao)
     if not areas_da_vaga:
         return 0.5
     interesses = {area.value for area in perfil.areas_de_interesse}
     return 1.0 if areas_da_vaga & interesses else 0.0
 
 
-def _avisos_objetivos(avaliacao: AvaliacaoIA, perfil: Perfil) -> list[str]:
+def _avisos_objetivos(
+    extracao: ExtracaoDaVaga, niveis: NiveisDeCompatibilidade, perfil: Perfil
+) -> list[str]:
     avisos = []
-    if _compatibilidade_de_interesse(avaliacao, perfil) == 0.0:
+    if _compatibilidade_de_interesse(extracao, perfil) == 0.0:
         avisos.append(AVISO_FORA_DAS_AREAS_DE_INTERESSE)
-    if avaliacao.curso is NivelCompatibilidade.INCOMPATIVEL:
+    if niveis.curso is NivelCompatibilidade.INCOMPATIVEL:
         avisos.append(AVISO_CURSO_INCOMPATIVEL)
     return avisos
 
 
-def _areas_reconhecidas(avaliacao: AvaliacaoIA) -> set[str]:
-    return {area.strip().casefold() for area in avaliacao.areas_da_vaga} & AREAS_RECONHECIDAS
+def _areas_reconhecidas(extracao: ExtracaoDaVaga) -> set[str]:
+    return {area.strip().casefold() for area in extracao.areas_da_vaga} & AREAS_RECONHECIDAS
 
 
-def _compatibilidade_de_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> float:
-    obrigatorias = _cobertura(avaliacao.habilidades_obrigatorias, perfil.habilidades)
-    principais = _cobertura(avaliacao.habilidades_principais, perfil.habilidades)
-    desejaveis = _cobertura(avaliacao.habilidades_desejaveis, perfil.habilidades)
+def _compatibilidade_de_habilidades(extracao: ExtracaoDaVaga, perfil: Perfil) -> float:
+    obrigatorias = _cobertura(extracao.habilidades_obrigatorias, perfil.habilidades)
+    principais = _cobertura(extracao.habilidades_principais, perfil.habilidades)
+    desejaveis = _cobertura(extracao.habilidades_desejaveis, perfil.habilidades)
     if obrigatorias is not None and principais is not None and desejaveis is not None:
         return (
             PESO_OBRIGATORIAS_QUANDO_TODAS * obrigatorias
@@ -225,11 +215,13 @@ def _conta_para_a_nota(requisito_normalizado: str) -> bool:
     return not requisito_normalizado.startswith(PREFIXOS_DE_IDIOMA)
 
 
-def _classificar_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> tuple[list[str], list[str]]:
+def _classificar_habilidades(
+    extracao: ExtracaoDaVaga, perfil: Perfil
+) -> tuple[list[str], list[str]]:
     habilidades_do_perfil = {
         _normalizar_habilidade(item) for item in perfil.habilidades if item.strip()
     }
-    requisitos = _juntar_habilidades_da_vaga(avaliacao)
+    requisitos = _juntar_habilidades_da_vaga(extracao)
     requisitos_atendidos = [
         habilidade
         for habilidade in requisitos
@@ -243,11 +235,11 @@ def _classificar_habilidades(avaliacao: AvaliacaoIA, perfil: Perfil) -> tuple[li
     return requisitos_atendidos, requisitos_nao_atendidos
 
 
-def _juntar_habilidades_da_vaga(avaliacao: AvaliacaoIA) -> list[str]:
+def _juntar_habilidades_da_vaga(extracao: ExtracaoDaVaga) -> list[str]:
     habilidades = (
-        avaliacao.habilidades_obrigatorias
-        + avaliacao.habilidades_principais
-        + avaliacao.habilidades_desejaveis
+        extracao.habilidades_obrigatorias
+        + extracao.habilidades_principais
+        + extracao.habilidades_desejaveis
     )
     unicas: dict[str, str] = {}
     for habilidade in habilidades:
@@ -262,19 +254,6 @@ def _juntar_sem_repetir(*grupos: list[str]) -> list[str]:
         if item.strip():
             unicos.setdefault(_normalizar_texto(item), item.strip())
     return list(unicos.values())
-
-
-def _remover_explicacoes_de_habilidades(pontos: list[str], habilidades: list[str]) -> list[str]:
-    rotulos_de_habilidades = {
-        _normalizar_texto(rotulo)
-        for habilidade in habilidades
-        for rotulo in (
-            habilidade,
-            f"{habilidade} informado",
-            f"{habilidade} não informado",
-        )
-    }
-    return [ponto for ponto in pontos if _normalizar_texto(ponto) not in rotulos_de_habilidades]
 
 
 def _normalizar_habilidade(habilidade: str) -> str:
