@@ -65,34 +65,43 @@ from funil
 order by conta_criada_em desc nulls last;
 ```
 
-## Evento de ativação
+## Ativação operacional e ativação de produto
 
-O evento de ativação do Radar é a **primeira entrega bem-sucedida no Telegram contendo ao
-menos uma vaga recomendada para o perfil**.
+O vocabulário canônico está em [`CONTEXT.md`](../CONTEXT.md). O Radar separa dois marcos:
 
-Esse momento representa o primeiro valor percebido: o estudante recebeu uma oportunidade
-selecionada para ele no canal prometido pelo produto. Criar a conta, preencher o perfil,
-confirmar o e-mail e vincular o Telegram são etapas necessárias, mas ainda não são ativação.
-Uma mensagem informando que nenhuma vaga foi encontrada também não conta.
+- **Ativação operacional:** primeira entrega bem-sucedida no Telegram contendo ao menos uma
+  recomendação. Confirma que o fluxo técnico funcionou, mas não que o estudante percebeu valor.
+- **Ativação de produto:** primeira abertura de uma vaga recomendada. É o primeiro sinal
+  observável de interesse e será reforçado depois por feedback positivo ou candidatura.
 
-A fonte de verdade é `perfis.ativado_em`. O pipeline preenche o campo somente depois de o
-Telegram aceitar a entrega e na mesma transação que grava os respectivos registros em
-`envios`. O valor nunca é sobrescrito. Assim, reprocessamentos não geram uma segunda ativação.
+Criar a conta, preencher o perfil, confirmar o e-mail e vincular o Telegram são etapas do funil,
+mas ainda não são ativação. Uma mensagem informando que nenhuma vaga foi encontrada também não
+conta como ativação operacional.
+
+A fonte de verdade da ativação operacional é `perfis.ativado_em`. O nome do campo é mantido por
+compatibilidade com o schema atual. O pipeline o preenche somente depois de o Telegram aceitar a
+entrega e na mesma transação que grava os respectivos registros em `envios`. O valor nunca é
+sobrescrito; reprocessamentos não geram uma segunda ativação operacional.
+
+A ativação de produto ainda não é mensurável: `vaga_aberta` pertence ao contrato, mas não é
+emitido porque os links apontam diretamente para as fontes. Quando o redirecionamento rastreável
+existir, a primeira ocorrência de `vaga_aberta` por usuário será sua fonte de verdade.
 
 A migration `0003_evento_ativacao.sql` também preenche o campo de perfis antigos a partir do
 primeiro `envios.enviada_em` já registrado.
 
-## Métricas derivadas
+## Métricas derivadas atuais
 
-### Taxa de ativação em 7 dias
+### Taxa de ativação operacional em 7 dias
 
-Percentual dos perfis criados em uma coorte que receberam a primeira entrega relevante em até
+Percentual dos perfis criados em uma coorte que receberam a primeira recomendação em até
 7 dias. Perfis com menos de 7 dias devem ficar fora do denominador até completarem a janela.
 
-### Tempo até o valor
+### Tempo até a primeira entrega
 
 Mediana, em horas, entre `criado_em` e `ativado_em` para os perfis ativados dentro da janela de
-7 dias. A mediana evita que poucos casos muito atrasados distorçam a leitura.
+7 dias. Essa métrica mede velocidade operacional, não valor percebido. A mediana evita que poucos
+casos muito atrasados distorçam a leitura.
 
 Esta consulta calcula as duas métricas para a coorte madura dos últimos 30 dias:
 
@@ -111,7 +120,7 @@ select
   round(
     100.0 * (select count(*) from ativados) / nullif((select count(*) from coorte), 0),
     1
-  ) as taxa_ativacao_7d_percentual,
+  ) as taxa_ativacao_operacional_7d_percentual,
   round(
     (
       percentile_cont(0.5) within group (
@@ -119,9 +128,21 @@ select
       )
     )::numeric,
     1
-  ) as tempo_ate_valor_mediano_horas
+  ) as tempo_ate_primeira_entrega_mediano_horas
 from ativados;
 ```
+
+## Métricas pendentes de interação
+
+Quando `vaga_aberta` passar a ser emitido, acompanhar:
+
+- **Taxa de ativação de produto em 7 dias:** percentual dos perfis criados que abrem ao menos uma
+  recomendação em até 7 dias.
+- **Tempo até o valor:** mediana entre `perfis.criado_em` e o primeiro `vaga_aberta`.
+- **Taxa de vagas úteis:** recomendações com feedback positivo ou candidatura atribuída sobre o
+  total entregue.
+- **Candidaturas atribuídas por usuário com ativação operacional por semana:** resultado final de
+  negócio.
 
 Essas métricas devem ser segmentadas por modalidade, cidade ou período do curso apenas quando
 houver volume suficiente para não expor indivíduos nem tirar conclusões de amostras pequenas.

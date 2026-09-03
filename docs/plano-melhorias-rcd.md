@@ -2,7 +2,7 @@
 
 **Projeto:** Radar de Estágio
 
-**Data:** 30/08/2026
+**Data:** 30/08/2026; revisado em 02/09/2026
 
 **Horizonte inicial:** seis semanas
 
@@ -10,9 +10,9 @@
 
 **Fase atual do produto:** Fase 2 — MVP de validação com usuários, parcialmente implementada
 
-**Estado atual:** banco, cadastro web, múltiplos usuários, vínculo com o Telegram e evento de
-ativação já estão implementados; a validação com usuários e os recursos de retenção continuam
-pendentes.
+**Estado atual:** banco, cadastro web, múltiplos usuários, vínculo com o Telegram e ativação
+operacional já estão implementados; a ativação de produto, a validação com usuários e os recursos
+de retenção continuam pendentes.
 
 ## 1. Objetivo
 
@@ -20,7 +20,7 @@ Transformar o Radar de uma demonstração técnica funcional em um produto capaz
 
 1. estudantes concluem o cadastro;
 2. recebem valor rapidamente;
-3. consideram as recomendações úteis;
+3. abrem e consideram as recomendações úteis;
 4. continuam usando o serviço;
 5. candidatam-se por causa do Radar;
 6. uma parcela aceita pagar pelo resultado.
@@ -37,18 +37,22 @@ encurtar o caminho até o valor; depois ativar, converter, expandir e sistematiz
 
 ### 2.1 North Star inicial
 
-> **Percentual de estudantes ativados que encontram pelo menos uma vaga útil por semana.**
+> **Percentual de estudantes com ativação operacional que encontram pelo menos uma vaga útil por
+> semana.**
 
 ### 2.2 Resultado final de negócio
 
-> **Candidaturas qualificadas iniciadas por usuário ativado por semana.**
+> **Candidaturas qualificadas iniciadas por usuário com ativação operacional por semana.**
 
 ### 2.3 Definições
 
-- **Ativação:** primeira entrega aceita pelo Telegram contendo ao menos uma vaga recomendada.
-- **Vaga útil:** recomendação marcada pelo usuário como relevante ou que gera abertura do anúncio.
+- **Ativação operacional:** primeira entrega aceita pelo Telegram contendo ao menos uma recomendação.
+- **Ativação de produto:** primeira abertura de uma vaga recomendada.
+- **Vaga útil:** recomendação marcada como relevante ou que gera uma candidatura atribuída; uma
+  abertura isolada indica interesse, não utilidade.
 - **Candidatura qualificada:** candidatura iniciada a partir de uma recomendação considerada útil.
-- **TTV:** tempo entre a criação do perfil e a primeira entrega relevante.
+- **Tempo até a primeira entrega:** intervalo entre a criação do perfil e a ativação operacional.
+- **TTV:** intervalo entre a criação do perfil e a ativação de produto.
 - **Retenção D7:** usuário que volta a interagir com ao menos uma recomendação na semana seguinte.
 
 ## 3. Fase 0 — Estabilizar para a entrega
@@ -104,7 +108,7 @@ Apresentar separadamente:
 
 - o que foi tecnicamente comprovado;
 - o que ainda é hipótese de produto;
-- o evento de ativação;
+- os marcos de ativação operacional e de produto;
 - o risco relacionado ao tempo até o primeiro valor;
 - o plano de validação com usuários.
 
@@ -135,7 +139,7 @@ Apresentar separadamente:
 - `candidatura_iniciada`
 - `entregas_pausadas`
 
-Os eventos da landing ao primeiro envio são registrados no Supabase. Eventos que dependem de
+Os eventos da landing à ativação operacional são registrados no Supabase. Eventos que dependem de
 interações ainda inexistentes — `vaga_aberta`, `vaga_util`, `vaga_irrelevante` e
 `candidatura_iniciada` — já pertencem ao contrato, mas só serão emitidos quando o link rastreável
 e os botões de feedback forem implementados. Isso evita registrar intenção sem ação real.
@@ -146,13 +150,14 @@ e os botões de feedback forem implementados. Isso evita registrar intenção se
 - Cadastro aberto → perfil salvo.
 - Perfil salvo → Telegram vinculado.
 - Telegram vinculado → primeira recomendação.
-- Taxa de ativação em 24 horas e em 7 dias.
-- TTV mediano.
+- Taxa de ativação operacional em 24 horas e em 7 dias.
+- Tempo mediano até a primeira entrega.
+- Taxa de ativação de produto em 7 dias e TTV mediano, depois de `vaga_aberta` existir.
 - Recomendação → clique.
 - Recomendação → vaga útil.
 - Recomendação → candidatura.
 - Retenção D7 por interação real.
-- Custo de IA por usuário ativado.
+- Custo de IA por usuário com ativação operacional.
 
 Com baixo volume, não serão usados testes A/B. Cinco boas entrevistas e observação de sessões
 produzem mais sinal que um experimento sem amostra suficiente
@@ -160,16 +165,17 @@ produzem mais sinal que um experimento sem amostra suficiente
 
 **Critério de conclusão:** uma consulta consegue reconstruir o funil completo de cada coorte.
 
-## 5. Fase 2 — Reduzir o tempo até o primeiro valor
+## 5. Fase 2 — Reduzir o tempo até a primeira entrega
 
 **Prazo:** semana 2
 
-**Objetivo:** entregar a primeira recomendação em minutos, não no dia seguinte.
+**Objetivo:** entregar a primeira recomendação em minutos, não no dia seguinte, e conduzir à
+primeira abertura.
 
 ### 5.1 Jornada desejada
 
 ```text
-Perfil → conta → Telegram → busca imediata → primeira recomendação
+Perfil → conta → Telegram → busca imediata → recomendação entregue → vaga aberta
 ```
 
 Depois do vínculo:
@@ -179,10 +185,11 @@ Depois do vínculo:
 3. executar uma busca específica para o novo perfil;
 4. entregar uma recomendação real imediatamente;
 5. celebrar o primeiro resultado;
-6. registrar `ativado_em`.
+6. registrar `ativado_em` como ativação operacional;
+7. registrar a primeira `vaga_aberta` como ativação de produto.
 
-O onboarding só termina quando o usuário experimenta o resultado prometido. A prioridade é
-reduzir o TTV, não adicionar mais explicações ou funcionalidades
+O onboarding só termina quando o usuário interage com o resultado prometido. A prioridade é
+reduzir o tempo até a entrega e depois o TTV, não adicionar mais explicações ou funcionalidades
 ([referência RCD](https://x.com/richardrx/status/2059616501544468624)).
 
 ### 5.2 Quando não houver vaga adequada
@@ -195,9 +202,9 @@ reduzir o TTV, não adicionar mais explicações ou funcionalidades
 
 ### 5.3 Metas iniciais
 
-- TTV mediano abaixo de 15 minutos.
-- Evolução posterior para menos de 5 minutos.
-- Pelo menos 80% dos usuários vinculados recebendo valor em 24 horas.
+- tempo mediano até a primeira entrega abaixo de 15 minutos.
+- Evolução posterior do tempo até a primeira entrega para menos de 5 minutos.
+- Pelo menos 80% dos usuários vinculados recebendo uma recomendação em 24 horas.
 
 Esses limites devem ser aprovados antes do piloto e não ajustados posteriormente para justificar
 os resultados observados.
@@ -281,10 +288,10 @@ Realizar pelo menos cinco entrevistas aprofundadas:
 
 Depois do piloto, substituir a faixa de tecnologias por evidências como:
 
-- estudantes ativados;
+- estudantes com ativação operacional e de produto;
 - recomendações consideradas úteis;
 - candidaturas iniciadas;
-- TTV mediano;
+- tempo mediano até a primeira entrega e TTV mediano;
 - depoimento verificável com contexto;
 - captura anonimizada de uma recomendação real.
 
@@ -325,7 +332,7 @@ prematuramente.
 
 - Custo de IA por usuário.
 - Custo por busca.
-- Custo por usuário ativado.
+- Custo por usuário com ativação operacional.
 - Custo de suporte.
 - Vida útil esperada de um usuário procurando estágio.
 - Quantidade de pagantes necessária para sustentar cada usuário gratuito.
@@ -379,7 +386,8 @@ identificar padrões estáveis e evitar que poucos eventos distorçam a recomend
 
 ## 10. Estratégia inicial de distribuição
 
-A distribuição só deve ser ampliada depois de corrigidos os vazamentos de cadastro e ativação.
+A distribuição só deve ser ampliada depois de corrigidos os vazamentos de cadastro e ativação
+operacional.
 Usando o framework Bullseye, o Radar deve concentrar o teste em até três canais:
 
 1. grupos e turmas da própria universidade;
@@ -416,7 +424,7 @@ Pelo filtro **Swiss Knife**, ficam fora do roadmap imediato:
 Cada funcionalidade nova deve responder:
 
 1. Encurta o TTV?
-2. Aumenta ativação?
+2. Aumenta ativação operacional ou de produto?
 3. Melhora a qualidade medida das vagas?
 4. Aumenta retenção ou receita?
 5. Qual custo permanente adiciona?
@@ -431,8 +439,9 @@ Se não passar por esses critérios, não entra no produto
 | P0 | Validar corretamente a etapa 3 | 0 |
 | P0 | Alinhar landing, documentação e entrega real | 0 |
 | P0 | Adicionar fonte, data, localização e modalidade à mensagem | 0 |
-| P0 | Instrumentar o funil completo | 1 |
+| P0 | Instrumentar o funil até a ativação operacional | 1 |
 | P0 | Entregar a primeira recomendação imediatamente após o vínculo | 2 |
+| P1 | Instrumentar ativação de produto, utilidade e candidatura | 3 |
 | P1 | Permitir editar, pausar e excluir o perfil | 3 |
 | P1 | Adicionar feedback e candidatura no Telegram | 3 |
 | P1 | Transformar o token de vínculo em uso único | 3 |
@@ -453,19 +462,19 @@ Avançar quando:
 - landing, documentação e mensagem fizerem a mesma promessa;
 - o funil puder ser medido de ponta a ponta.
 
-### Portão B — Ativação comprovada
+### Portão B — Ativação operacional comprovada
 
 Avançar quando:
 
-- a maioria dos usuários vinculados receber uma vaga relevante em até 24 horas;
-- o TTV mediano estiver dentro do limite aprovado;
+- a maioria dos usuários vinculados receber uma recomendação em até 24 horas;
+- o tempo mediano até a primeira entrega estiver dentro do limite aprovado;
 - as perdas entre perfil e Telegram forem conhecidas.
 
-### Portão C — Retenção comprovada
+### Portão C — Ativação de produto e retenção comprovadas
 
 Avançar quando:
 
-- houver interação útil em D7;
+- houver abertura e interação útil em D7;
 - os motivos de rejeição das vagas forem conhecidos;
 - o usuário conseguir editar, pausar e excluir seus dados.
 
@@ -473,7 +482,7 @@ Avançar quando:
 
 Avançar quando:
 
-- o custo por usuário ativado estiver calculado;
+- o custo por usuário com ativação operacional estiver calculado;
 - usuários reais aceitarem um pagamento definido previamente;
 - o modelo escolhido cobrir o custo de atender usuários gratuitos e pagantes.
 
