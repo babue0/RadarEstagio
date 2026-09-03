@@ -1,6 +1,8 @@
 import logging
-from datetime import date
+from datetime import datetime
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from radar.domain.models import ResultadoMatch, Usuario, Vaga
 from radar.domain.ports import AvaliadorDeVagas, ColetorDeVagas, Notificador, Repositorio
@@ -14,16 +16,20 @@ from radar.storage.errors import ErroDeArmazenamento
 logger = logging.getLogger(__name__)
 
 
+class ParametrosDaExecucao(BaseModel):
+    modelo: str
+    quantidade: int = Field(ge=1)
+    nota_minima: int = Field(ge=0, le=100)
+    falhas_ate_pausar: int = Field(ge=1)
+
+
 def executar(
     coletor: ColetorDeVagas,
     avaliador: AvaliadorDeVagas,
     notificador: Notificador,
     repositorio: Repositorio,
-    modelo: str,
-    quantidade: int,
-    nota_minima: int,
-    falhas_ate_pausar: int,
-    data: date,
+    parametros: ParametrosDaExecucao,
+    agora: datetime,
 ) -> dict[UUID, list[ResultadoMatch]]:
     usuarios = repositorio.listar_ativos()
     coletadas = coletor.coletar()
@@ -39,11 +45,8 @@ def executar(
             avaliador,
             notificador,
             repositorio,
-            modelo,
-            quantidade,
-            nota_minima,
-            falhas_ate_pausar,
-            data,
+            parametros,
+            agora,
         )
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
@@ -56,11 +59,8 @@ def atender_usuario(
     avaliador: AvaliadorDeVagas,
     notificador: Notificador,
     repositorio: Repositorio,
-    modelo: str,
-    quantidade: int,
-    nota_minima: int,
-    falhas_ate_pausar: int,
-    data: date,
+    parametros: ParametrosDaExecucao,
+    agora: datetime,
 ) -> list[ResultadoMatch] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     candidatas = [
@@ -81,7 +81,7 @@ def atender_usuario(
             len(pendentes),
         )
         return None
-    selecionadas = selecionar(guardadas + novas, quantidade, nota_minima)
+    selecionadas = selecionar(guardadas + novas, parametros.quantidade, parametros.nota_minima)
     logger.info(
         "usuário %s: %d candidatas, %d com nota guardada, %d avaliadas agora, %d enviadas",
         usuario.id,
@@ -90,12 +90,12 @@ def atender_usuario(
         len(novas),
         len(selecionadas),
     )
-    gravar_avaliacoes(repositorio, usuario, novas, modelo)
+    gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
     try:
-        notificador.enviar(usuario.chat_id, formatar_mensagem(selecionadas, data))
+        notificador.enviar(usuario.chat_id, formatar_mensagem(selecionadas, agora.date()))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
-        pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar)
+        pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
         return None
     try:
         repositorio.registrar_envios(usuario, selecionadas)

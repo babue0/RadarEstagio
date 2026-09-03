@@ -1,7 +1,7 @@
 import argparse
 import logging
 import sys
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
 import httpx
 from pydantic import ValidationError
@@ -18,7 +18,7 @@ from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.factory import criar_avaliador, nome_do_modelo
 from radar.matching.lotes import AvaliadorEmLotes
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
-from radar.pipeline import executar
+from radar.pipeline import ParametrosDaExecucao, executar
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.factory import abrir_repositorio, abrir_repositorio_em_memoria
@@ -133,11 +133,13 @@ def executar_fluxo(
         montar_avaliador(settings, cliente_http),
         NotificadorTelegram(settings.telegram_bot_token, cliente_http),
         repositorio,
-        nome_do_modelo(settings),
-        settings.quantidade_vagas_enviadas,
-        settings.nota_minima,
-        settings.falhas_de_envio_ate_pausar,
-        date.today(),
+        ParametrosDaExecucao(
+            modelo=nome_do_modelo(settings),
+            quantidade=settings.quantidade_vagas_enviadas,
+            nota_minima=settings.nota_minima,
+            falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
+        ),
+        datetime.now(UTC),
     )
     total = sum(len(selecionadas) for selecionadas in enviadas.values())
     print(f"{total} vagas enviadas para {len(enviadas)} usuários")

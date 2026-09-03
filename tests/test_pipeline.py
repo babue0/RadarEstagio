@@ -1,13 +1,13 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
 from radar.notification.telegram import ErroDeNotificacao
-from radar.pipeline import executar
+from radar.pipeline import ParametrosDaExecucao, executar
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
 
-DATA_DE_TESTE = date(2026, 8, 26)
+AGORA_DE_TESTE = datetime(2026, 8, 26, 10, 23, tzinfo=UTC)
 ID_USUARIO = UUID(int=1)
 ID_OUTRO_USUARIO = UUID(int=2)
 
@@ -124,6 +124,17 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.pausados.append(usuario.id)
 
 
+def parametros(
+    quantidade: int = 5, nota_minima: int = 0, falhas_ate_pausar: int = 3
+) -> ParametrosDaExecucao:
+    return ParametrosDaExecucao(
+        modelo="modelo-teste",
+        quantidade=quantidade,
+        nota_minima=nota_minima,
+        falhas_ate_pausar=falhas_ate_pausar,
+    )
+
+
 def usuario(id_usuario: UUID = ID_USUARIO, chat_id: str = "123") -> Usuario:
     return Usuario(id=id_usuario, perfil=perfil_exemplo(), chat_id=chat_id)
 
@@ -145,11 +156,12 @@ def rodar(
         avaliador,
         notificador,
         repositorio,
-        "modelo-teste",
-        quantidade,
-        nota_minima,
-        falhas_ate_pausar,
-        DATA_DE_TESTE,
+        parametros(
+            quantidade=quantidade,
+            nota_minima=nota_minima,
+            falhas_ate_pausar=falhas_ate_pausar,
+        ),
+        AGORA_DE_TESTE,
     )
     return enviadas.get(ID_USUARIO, []), notificador, avaliador
 
@@ -235,11 +247,8 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
         AvaliadorFalso({"1": 70}),
         notificador,
         repositorio,
-        "modelo-teste",
-        5,
-        0,
-        3,
-        DATA_DE_TESTE,
+        parametros(),
+        AGORA_DE_TESTE,
     )
 
     assert notificador.chats == ["123", "456"]
@@ -256,11 +265,8 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
         AvaliadorFalso({"1": 70}),
         notificador,
         repositorio,
-        "modelo-teste",
-        5,
-        0,
-        3,
-        DATA_DE_TESTE,
+        parametros(),
+        AGORA_DE_TESTE,
     )
 
     assert notificador.chats == ["123"]
