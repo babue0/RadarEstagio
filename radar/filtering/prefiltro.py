@@ -13,9 +13,10 @@ PADRAO_OUTRA_AREA = re.compile(
     r"\b(?:eletronic[ao]|eletrotecnic[ao]|mecanic[ao]|civil|quimic[ao]|ambiental"
     r"|fisioterapia|enfermagem|nutricao|psicologia|pedagogia|juridic[ao]|direito"
     r"|financeir[ao]|contabil|contabilidade|recursos humanos|rh|manufatura|producao"
-    r"|marketing|endomarketing|comercial|vendas|pre-?vendas?|logistica|arquitetura"
-    r"|design de interiores|comercio exterior|farmacia|turismo|hotelaria|gastronomia"
-    r"|embalagens|treinamento e desenvolvimento|recrutamento|r&s|people|compliance"
+    r"|marketing|endomarketing|comercial|vendas|pre-?vendas?|logistica"
+    r"|arquitetura e urbanismo|design de interiores|comercio exterior|farmacia|turismo"
+    r"|hotelaria|gastronomia|embalagens|treinamento e desenvolvimento"
+    r"|recrutamento e selecao|r&s|people|compliance"
     r"|atuari\w*|auditoria|comunicacao|imprensa|crm|laboratorio|inteligencia de mercado"
     r"|backoffice|processos administrativos)\b"
 )

@@ -136,6 +136,8 @@ def test_mantem_vaga_sem_exigencia_de_experiencia(descricao: str):
         "Estagiário(a) de People & Culture (People Analytics)",
         "Estágio em CRM | Digital",
         "Estágio em Turismo - 619",
+        "Estágio em Arquitetura e Urbanismo",
+        "Estagiário de Recrutamento e Seleção",
     ],
 )
 def test_descarta_titulo_de_outra_area(titulo: str):
@@ -164,6 +166,8 @@ def test_mantem_titulo_de_computacao(titulo: str):
         "Estagiário DevOps",
         "Estágio | Redes de Computadores, Sistemas de Informação",
         "Estágio Python",
+        "Estágio Em Desenvolvimento Java - Recrutamento Aberto",
+        "Estagiário - Arquitetura de Ti Vaga Afirmativa",
     ],
 )
 def test_reconhece_area_de_tecnologia_no_titulo(titulo: str):
