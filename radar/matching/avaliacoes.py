@@ -45,6 +45,9 @@ COEFICIENTES = {
 }
 REQUISITOS_FORA_DO_PERFIL_TECNICO = frozenset(
     {
+        "apresentacoes",
+        "documentos",
+        "drive",
         "excel",
         "libreoffice",
         "microsoft365",
@@ -61,7 +64,25 @@ REQUISITOS_FORA_DO_PERFIL_TECNICO = frozenset(
 )
 PREFIXOS_DE_IDIOMA = ("alemao", "espanhol", "frances", "ingles", "italiano", "mandarim")
 ALIASES_DE_HABILIDADES = {
+    "apresentacoesgoogle": "apresentacoes",
     "cplusplus": "c++",
+    "documentosgoogle": "documentos",
+    "googleapresentacoes": "apresentacoes",
+    "googledocs": "documentos",
+    "googledocumentos": "documentos",
+    "googledrive": "drive",
+    "googleplanilhas": "planilhas",
+    "googlesheets": "planilhas",
+    "googleslides": "apresentacoes",
+    "googleworkspace": "office",
+    "gsuite": "office",
+    "msexcel": "excel",
+    "microsoftexcel": "excel",
+    "microsoftoutlook": "outlook",
+    "microsoftpowerpoint": "powerpoint",
+    "microsoftteams": "teams",
+    "microsoftword": "word",
+    "planilhasgoogle": "planilhas",
     "cpp": "c++",
     "csharp": "c#",
     "css3": "css",

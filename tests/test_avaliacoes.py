@@ -316,3 +316,31 @@ def test_experiencia_exigida_vira_ponto_contra_no_lugar_do_periodo():
     resultado = resultado_da(extracao(periodo_minimo=8, experiencia_minima_anos=2))
 
     assert resultado.pontos_contra == ["Exige experiência prévia"]
+
+
+def test_variantes_de_office_e_google_nao_contam_na_nota():
+    ferramentas = ["Microsoft Excel", "Documentos", "Drive", "Google Sheets"]
+
+    so_ferramentas = resultado_da(extracao(habilidades_obrigatorias=ferramentas))
+    sem_stack = resultado_da(extracao(habilidades_obrigatorias=[]))
+
+    assert so_ferramentas.nota == sem_stack.nota
+    assert so_ferramentas.requisitos_nao_atendidos == ferramentas
+
+
+def test_ferramenta_de_escritorio_nao_penaliza_vaga_que_declara_stack():
+    com_ferramentas = resultado_da(
+        extracao(habilidades_obrigatorias=["Python", "Microsoft Excel", "Documentos", "Drive"])
+    )
+    so_a_stack = resultado_da(extracao(habilidades_obrigatorias=["Python"]))
+
+    assert com_ferramentas.nota == so_a_stack.nota
+
+
+def test_excel_do_perfil_corresponde_a_microsoft_excel_da_vaga():
+    resultado = resultado_da(
+        extracao(habilidades_obrigatorias=["Microsoft Excel"]),
+        perfil(habilidades=["Excel"]),
+    )
+
+    assert resultado.requisitos_atendidos == ["Microsoft Excel"]
