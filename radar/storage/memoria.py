@@ -14,11 +14,16 @@ class RepositorioEmMemoria:
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set()
 
-    def registrar(
-        self,
-        usuario: Usuario,
-        avaliadas: list[ResultadoMatch],
-        enviadas: list[ResultadoMatch],
-        modelo: str,
+    def guardar_avaliacoes(
+        self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
     ) -> None:
+        return None
+
+    def registrar_envios(self, usuario: Usuario, enviadas: list[ResultadoMatch]) -> None:
+        return None
+
+    def registrar_falha_de_envio(self, usuario: Usuario) -> int:
+        return 0
+
+    def pausar(self, usuario: Usuario) -> None:
         return None

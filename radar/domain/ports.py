@@ -26,13 +26,15 @@ class RepositorioDeAvaliacoes(Protocol):
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]: ...
 
-    def registrar(
-        self,
-        usuario: Usuario,
-        avaliadas: list[ResultadoMatch],
-        enviadas: list[ResultadoMatch],
-        modelo: str,
+    def guardar_avaliacoes(
+        self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
     ) -> None: ...
+
+    def registrar_envios(self, usuario: Usuario, enviadas: list[ResultadoMatch]) -> None: ...
+
+    def registrar_falha_de_envio(self, usuario: Usuario) -> int: ...
+
+    def pausar(self, usuario: Usuario) -> None: ...
 
 
 class Repositorio(RepositorioDeUsuarios, RepositorioDeAvaliacoes, Protocol): ...

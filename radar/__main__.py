@@ -136,6 +136,7 @@ def executar_fluxo(
         nome_do_modelo(settings),
         settings.quantidade_vagas_enviadas,
         settings.nota_minima,
+        settings.falhas_de_envio_ate_pausar,
         date.today(),
     )
     total = sum(len(selecionadas) for selecionadas in enviadas.values())

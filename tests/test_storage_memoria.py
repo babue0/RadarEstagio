@@ -34,7 +34,9 @@ def test_nao_guarda_nada_entre_chamadas():
     repositorio = RepositorioEmMemoria([usuario])
     resultado = ResultadoMatch(vaga=vaga_exemplo(), nota=80)
 
-    repositorio.registrar(usuario, [resultado], [resultado], "modelo")
+    repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
+    repositorio.registrar_envios(usuario, [resultado])
 
     assert repositorio.avaliacoes_existentes(usuario, [vaga_exemplo()]) == []
     assert repositorio.ids_ja_enviadas(usuario) == set()
+    assert repositorio.registrar_falha_de_envio(usuario) == 0

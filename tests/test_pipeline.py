@@ -87,7 +87,10 @@ class RepositorioFalso(RepositorioEmMemoria):
         self._guardadas = list(guardadas)
         self._enviadas = set(enviadas)
         self._falha_ao_gravar = falha_ao_gravar
-        self.registros: list[tuple[UUID, list[str], list[str], str]] = []
+        self.avaliacoes_gravadas: list[tuple[UUID, list[str], str]] = []
+        self.envios_gravados: list[tuple[UUID, list[str]]] = []
+        self.falhas_por_usuario: dict[UUID, int] = {}
+        self.pausados: list[UUID] = []
 
     def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
         ids = {vaga.id_externo for vaga in vagas}
@@ -96,17 +99,29 @@ class RepositorioFalso(RepositorioEmMemoria):
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set(self._enviadas)
 
-    def registrar(self, usuario, avaliadas, enviadas, modelo) -> None:
+    def guardar_avaliacoes(self, usuario, avaliadas, modelo) -> None:
         if self._falha_ao_gravar:
             raise ErroDeArmazenamento("banco caiu")
-        self.registros.append(
-            (
-                usuario.id,
-                [resultado.vaga.id_externo for resultado in avaliadas],
-                [resultado.vaga.id_externo for resultado in enviadas],
-                modelo,
-            )
+        self.avaliacoes_gravadas.append(
+            (usuario.id, [resultado.vaga.id_externo for resultado in avaliadas], modelo)
         )
+
+    def registrar_envios(self, usuario, enviadas) -> None:
+        if self._falha_ao_gravar:
+            raise ErroDeArmazenamento("banco caiu")
+        self.falhas_por_usuario[usuario.id] = 0
+        self.envios_gravados.append(
+            (usuario.id, [resultado.vaga.id_externo for resultado in enviadas])
+        )
+
+    def registrar_falha_de_envio(self, usuario) -> int:
+        if self._falha_ao_gravar:
+            raise ErroDeArmazenamento("banco caiu")
+        self.falhas_por_usuario[usuario.id] = self.falhas_por_usuario.get(usuario.id, 0) + 1
+        return self.falhas_por_usuario[usuario.id]
+
+    def pausar(self, usuario) -> None:
+        self.pausados.append(usuario.id)
 
 
 def usuario(id_usuario: UUID = ID_USUARIO, chat_id: str = "123") -> Usuario:
@@ -120,6 +135,7 @@ def rodar(
     nota_minima: int = 0,
     repositorio: RepositorioFalso | None = None,
     notificador: NotificadorFalso | None = None,
+    falhas_ate_pausar: int = 3,
 ):
     notificador = notificador or NotificadorFalso()
     repositorio = repositorio or RepositorioFalso([usuario()])
@@ -132,6 +148,7 @@ def rodar(
         "modelo-teste",
         quantidade,
         nota_minima,
+        falhas_ate_pausar,
         DATA_DE_TESTE,
     )
     return enviadas.get(ID_USUARIO, []), notificador, avaliador
@@ -221,6 +238,7 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
         "modelo-teste",
         5,
         0,
+        3,
         DATA_DE_TESTE,
     )
 
@@ -241,12 +259,13 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
         "modelo-teste",
         5,
         0,
+        3,
         DATA_DE_TESTE,
     )
 
     assert notificador.chats == ["123"]
     assert list(enviadas) == [ID_OUTRO_USUARIO]
-    assert [registro[0] for registro in repositorio.registros] == [ID_OUTRO_USUARIO]
+    assert [registro[0] for registro in repositorio.envios_gravados] == [ID_OUTRO_USUARIO]
 
 
 def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
@@ -278,7 +297,8 @@ def test_vaga_com_nota_guardada_nao_vai_ao_avaliador():
 
     assert avaliador.avaliadas == ["2"]
     assert [resultado.nota for resultado in selecionadas] == [95, 60]
-    assert repositorio.registros == [(ID_USUARIO, ["2"], ["1", "2"], "modelo-teste")]
+    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["2"], "modelo-teste")]
+    assert repositorio.envios_gravados == [(ID_USUARIO, ["1", "2"])]
 
 
 def test_aplica_regras_objetivas_na_nota_guardada():
@@ -298,6 +318,43 @@ def test_aplica_regras_objetivas_na_nota_guardada():
     assert selecionadas[0].pontos_contra == ["SQL não informado"]
     assert "❌ SQL não informado" in notificador.textos[0]
     assert "⚠️" not in notificador.textos[0]
+
+
+def test_avaliacao_e_gravada_mesmo_quando_o_telegram_falha():
+    repositorio = RepositorioFalso([usuario(chat_id="bloqueado")])
+    notificador = NotificadorFalso(chats_com_erro={"bloqueado"})
+
+    rodar([vaga(1)], {"1": 70}, repositorio=repositorio, notificador=notificador)
+
+    assert repositorio.avaliacoes_gravadas == [(ID_USUARIO, ["1"], "modelo-teste")]
+    assert repositorio.envios_gravados == []
+
+
+def test_falhas_seguidas_de_envio_pausam_o_perfil():
+    repositorio = RepositorioFalso([usuario(chat_id="bloqueado")])
+    notificador = NotificadorFalso(chats_com_erro={"bloqueado"})
+
+    for _ in range(3):
+        rodar(
+            [vaga(1)],
+            {"1": 70},
+            repositorio=repositorio,
+            notificador=notificador,
+            falhas_ate_pausar=3,
+        )
+
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 3}
+    assert repositorio.pausados == [ID_USUARIO]
+
+
+def test_envio_bem_sucedido_zera_as_falhas_acumuladas():
+    repositorio = RepositorioFalso([usuario()])
+    repositorio.falhas_por_usuario[ID_USUARIO] = 2
+
+    rodar([vaga(1)], {"1": 70}, repositorio=repositorio)
+
+    assert repositorio.falhas_por_usuario == {ID_USUARIO: 0}
+    assert repositorio.pausados == []
 
 
 def test_falha_ao_gravar_nao_derruba_o_envio():

@@ -22,6 +22,7 @@ def executar(
     modelo: str,
     quantidade: int,
     nota_minima: int,
+    falhas_ate_pausar: int,
     data: date,
 ) -> dict[UUID, list[ResultadoMatch]]:
     usuarios = repositorio.listar_ativos()
@@ -41,6 +42,7 @@ def executar(
             modelo,
             quantidade,
             nota_minima,
+            falhas_ate_pausar,
             data,
         )
         if selecionadas is not None:
@@ -57,6 +59,7 @@ def atender_usuario(
     modelo: str,
     quantidade: int,
     nota_minima: int,
+    falhas_ate_pausar: int,
     data: date,
 ) -> list[ResultadoMatch] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
@@ -87,16 +90,43 @@ def atender_usuario(
         len(novas),
         len(selecionadas),
     )
+    gravar_avaliacoes(repositorio, usuario, novas, modelo)
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem(selecionadas, data))
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
+        pausar_apos_falhas_seguidas(repositorio, usuario, falhas_ate_pausar)
         return None
     try:
-        repositorio.registrar(usuario, novas, selecionadas, modelo)
+        repositorio.registrar_envios(usuario, selecionadas)
     except ErroDeArmazenamento as erro:
-        logger.warning("usuário %s: mensagem enviada, mas nada foi gravado: %s", usuario.id, erro)
+        logger.warning(
+            "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
+        )
     return selecionadas
+
+
+def gravar_avaliacoes(
+    repositorio: Repositorio, usuario: Usuario, novas: list[ResultadoMatch], modelo: str
+) -> None:
+    try:
+        repositorio.guardar_avaliacoes(usuario, novas, modelo)
+    except ErroDeArmazenamento as erro:
+        logger.warning("usuário %s: avaliações não foram gravadas: %s", usuario.id, erro)
+
+
+def pausar_apos_falhas_seguidas(
+    repositorio: Repositorio, usuario: Usuario, falhas_ate_pausar: int
+) -> None:
+    try:
+        falhas = repositorio.registrar_falha_de_envio(usuario)
+        if falhas < falhas_ate_pausar:
+            return
+        repositorio.pausar(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning("usuário %s: falha de envio não registrada: %s", usuario.id, erro)
+        return
+    logger.warning("usuário %s pausado após %d falhas seguidas de envio", usuario.id, falhas)
 
 
 def selecionar(

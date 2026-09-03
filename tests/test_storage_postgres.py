@@ -75,7 +75,8 @@ def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, us
     ]
     enviadas = avaliadas
 
-    repositorio.registrar(usuario, avaliadas, enviadas, "modelo-teste")
+    repositorio.guardar_avaliacoes(usuario, avaliadas, "modelo-teste")
+    repositorio.registrar_envios(usuario, enviadas)
 
     existentes = repositorio.avaliacoes_existentes(usuario, [vaga(1), vaga(2)])
     assert [resultado.nota for resultado in existentes] == [80]
@@ -101,11 +102,13 @@ def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: 
     repositorio = RepositorioPostgres(conexao)
     resultado = ResultadoMatch(vaga=vaga(1), nota=80)
 
-    repositorio.registrar(usuario, [resultado], [resultado], "modelo")
+    repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
+    repositorio.registrar_envios(usuario, [resultado])
     primeira_ativacao = conexao.execute(
         "select ativado_em from perfis where id = %s", (usuario.id,)
     ).fetchone()[0]
-    repositorio.registrar(usuario, [resultado], [resultado], "modelo")
+    repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
+    repositorio.registrar_envios(usuario, [resultado])
 
     assert len(repositorio.avaliacoes_existentes(usuario, [vaga(1)])) == 1
     assert (
@@ -129,9 +132,46 @@ def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: 
 def test_nao_ativa_sem_vaga_enviada(conexao: psycopg.Connection, usuario: Usuario):
     resultado = ResultadoMatch(vaga=vaga(1), nota=40)
 
-    RepositorioPostgres(conexao).registrar(usuario, [resultado], [], "modelo")
+    RepositorioPostgres(conexao).guardar_avaliacoes(usuario, [resultado], "modelo")
 
     assert (
         conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[0]
         is None
+    )
+
+
+def test_falhas_seguidas_sao_contadas_e_zeradas_pelo_envio(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+
+    assert repositorio.registrar_falha_de_envio(usuario) == 1
+    assert repositorio.registrar_falha_de_envio(usuario) == 2
+
+    repositorio.registrar_envios(usuario, [ResultadoMatch(vaga=vaga(1), nota=80)])
+
+    assert (
+        conexao.execute(
+            "select falhas_de_envio from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        == 0
+    )
+
+
+def test_pausar_desativa_o_perfil_e_registra_o_evento(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    RepositorioPostgres(conexao).pausar(usuario)
+
+    assert (
+        conexao.execute("select ativo from perfis where id = %s", (usuario.id,)).fetchone()[0]
+        is False
+    )
+    assert (
+        conexao.execute(
+            "select count(*) from eventos_produto "
+            "where perfil_id = %s and nome = 'entregas_pausadas'",
+            (usuario.id,),
+        ).fetchone()[0]
+        == 1
     )

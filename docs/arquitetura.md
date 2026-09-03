@@ -198,7 +198,14 @@ Regras para não afetar quem já usa:
 
 - **Ler usuários é a única falha fatal.** Erro ao enviar para um usuário ou ao gravar depois
   do envio vira `warning` e o job segue para o próximo. Enviar é o produto; gravar é otimização.
-- **Transação por usuário**: vagas, notas e envios daquele usuário entram juntos ou não entram.
+- **Avaliação gravada antes do envio.** `guardar_avaliacoes` roda antes de chamar o Telegram e
+  `registrar_envios` roda depois: uma falha de entrega não descarta o que a IA já custou, e o
+  dia seguinte não reavalia as mesmas vagas.
+- **Falhas seguidas pausam o perfil.** Cada erro de envio incrementa `perfis.falhas_de_envio`;
+  ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de `ativo`, emitindo `entregas_pausadas`.
+  Um envio bem-sucedido zera a contagem. Sem isso, quem bloqueia o bot vira custo diário eterno.
+- **Transação por operação**: as avaliações de um usuário entram juntas ou não entram, e o mesmo
+  vale para os envios e a ativação.
 - **Schema versionado** em `supabase/migrations/`, aplicado com `supabase db push`. É o
   contrato com o site: ninguém altera tabela pelo painel.
 - **RLS** em todas as tabelas. Só `perfis` tem policy (cada usuário lê e edita a própria

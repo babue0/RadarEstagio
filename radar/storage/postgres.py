@@ -78,6 +78,25 @@ SQL_REGISTRAR_ATIVACAO = """
     returning ativado_em
 """
 
+SQL_ZERAR_FALHAS_DE_ENVIO = """
+    update perfis
+    set falhas_de_envio = 0
+    where id = %(perfil_id)s and falhas_de_envio > 0
+"""
+
+SQL_CONTAR_FALHA_DE_ENVIO = """
+    update perfis
+    set falhas_de_envio = falhas_de_envio + 1
+    where id = %(perfil_id)s
+    returning falhas_de_envio
+"""
+
+SQL_PAUSAR = """
+    update perfis
+    set ativo = false, atualizado_em = now()
+    where id = %(perfil_id)s and ativo
+"""
+
 
 class RepositorioPostgres:
     def __init__(self, conexao: psycopg.Connection) -> None:
@@ -130,38 +149,51 @@ class RepositorioPostgres:
             raise ErroDeArmazenamento(f"Falha ao ler os envios: {descrever(erro)}") from erro
         return {(fonte, id_externo) for fonte, id_externo in linhas}
 
-    def registrar(
-        self,
-        usuario: Usuario,
-        avaliadas: list[ResultadoMatch],
-        enviadas: list[ResultadoMatch],
-        modelo: str,
+    def guardar_avaliacoes(
+        self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
     ) -> None:
-        ativado_agora = False
+        if not avaliadas:
+            return
         try:
             with self._conexao.transaction(), self._conexao.cursor() as cursor:
-                ids_das_vagas = {
-                    chave(resultado.vaga): guardar_vaga(cursor, resultado.vaga)
-                    for resultado in avaliadas + enviadas
-                }
                 for resultado in avaliadas:
-                    guardar_avaliacao(
-                        cursor, usuario.id, ids_das_vagas[chave(resultado.vaga)], resultado, modelo
-                    )
-                for resultado in enviadas:
-                    guardar_envio(cursor, usuario.id, ids_das_vagas[chave(resultado.vaga)])
-                if enviadas:
-                    ativado_agora = registrar_ativacao(cursor, usuario.id)
+                    vaga_id = guardar_vaga(cursor, resultado.vaga)
+                    guardar_avaliacao(cursor, usuario.id, vaga_id, resultado, modelo)
         except psycopg.Error as erro:
-            raise ErroDeArmazenamento(
-                f"Falha ao gravar avaliações e envios: {descrever(erro)}"
-            ) from erro
+            raise ErroDeArmazenamento(f"Falha ao gravar avaliações: {descrever(erro)}") from erro
+
+    def registrar_envios(self, usuario: Usuario, enviadas: list[ResultadoMatch]) -> None:
+        if not enviadas:
+            return
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                for resultado in enviadas:
+                    vaga_id = guardar_vaga(cursor, resultado.vaga)
+                    guardar_envio(cursor, usuario.id, vaga_id)
+                ativado_agora = registrar_ativacao(cursor, usuario.id)
+                cursor.execute(SQL_ZERAR_FALHAS_DE_ENVIO, {"perfil_id": usuario.id})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao gravar envios: {descrever(erro)}") from erro
         if ativado_agora:
             logger.info("Perfil %s ativado pela primeira entrega relevante", usuario.id)
 
+    def registrar_falha_de_envio(self, usuario: Usuario) -> int:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    SQL_CONTAR_FALHA_DE_ENVIO, {"perfil_id": usuario.id}
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao contar a falha de envio: {descrever(erro)}"
+            ) from erro
 
-def chave(vaga: Vaga) -> tuple[str, str]:
-    return (vaga.fonte, vaga.id_externo)
+    def pausar(self, usuario: Usuario) -> None:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_PAUSAR, {"perfil_id": usuario.id})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao pausar o perfil: {descrever(erro)}") from erro
 
 
 def guardar_vaga(cursor: psycopg.Cursor, vaga: Vaga) -> int:
