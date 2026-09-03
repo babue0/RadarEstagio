@@ -1,6 +1,6 @@
 # Roteiro da apresentação — Radar de Estágio
 
-**Status:** preparado em 30/08/2026  
+**Status:** preparado em 30/08/2026 e revisado em 02/09/2026
 **Uso:** alinhamento técnico e de produto do MVP  
 **Público assumido:** equipe, professor e avaliadores do projeto
 
@@ -9,7 +9,7 @@
 O Radar já comprova tecnicamente o fluxo de coleta, filtragem, avaliação e entrega de vagas.
 Ainda não comprova que estudantes confiam nas recomendações, aceitam o Telegram ou recebem
 valor rápido o suficiente para continuar usando o produto. A próxima decisão deve ser tomada
-com base em ativação, tempo até o primeiro valor e um piloto com usuários.
+com base em ativação operacional, ativação de produto e um piloto com usuários.
 
 ## Sequência sugerida
 
@@ -18,10 +18,10 @@ com base em ativação, tempo até o primeiro valor e um piloto com usuários.
 | 1. Contexto | A busca manual consome tempo e espalha a atenção por vários portais. | O problema é recorrente e tem um custo concreto para o estudante. |
 | 2. Prova técnica | O fluxo principal funciona de ponta a ponta. | A implementação existe; isso não é ainda prova de utilidade. |
 | 3. Hipóteses | A aceitação do produto ainda precisa ser observada. | Confiança, canal, cobertura, ação e custo continuam em aberto. |
-| 4. Ativação | Ativação acontece quando chega a primeira recomendação relevante. | Cadastro e vínculo são etapas do funil, não o valor final. |
-| 5. TTV | O maior risco de produto é o usuário esperar demais pelo primeiro resultado. | A primeira recomendação precisa acontecer em minutos. |
+| 4. Ativação | A entrega confirma o fluxo; a abertura confirma o primeiro interesse. | Ativação operacional e ativação de produto são marcos diferentes. |
+| 5. Tempo até o valor | O maior risco de produto é o usuário esperar demais pelo primeiro resultado. | A primeira entrega precisa acontecer em minutos e gerar interação. |
 | 6. Validação | Cada incerteza terá um teste curto e um sinal de decisão. | O próximo passo é medir comportamento real, não adicionar escopo. |
-| 7. Decisão | Avançar depende de ativação e utilidade observadas. | Resultados negativos orientam correção ou redução de escopo. |
+| 7. Decisão | Avançar depende de ativação de produto e utilidade observadas. | Resultados negativos orientam correção ou redução de escopo. |
 
 ## 1. Contexto e promessa
 
@@ -53,7 +53,7 @@ Adzuna + Gupy
 ```
 
 O sistema também possui cadastro web, persistência do perfil no Supabase, múltiplos usuários,
-vínculo seguro entre perfil e chat do Telegram e registro do evento de ativação.
+vínculo por token aleatório entre perfil e chat do Telegram e registro da ativação operacional.
 
 ### Evidências disponíveis
 
@@ -63,7 +63,7 @@ vínculo seguro entre perfil e chat do Telegram e registro do evento de ativaç�
   para avaliação, contra 2 antes do ajuste de cobertura.
 - A mensagem real do Telegram contém localização, modalidade, fonte, data, nota, justificativa,
   pontos a favor e contra, alerta opcional e link original.
-- A suíte local possui **268 testes passando**; 4 testes de integração dependem de um PostgreSQL
+- A suíte local possui **318 testes passando**; 4 testes de integração dependem de um PostgreSQL
   de teste.
 
 ### O que ainda é uma verificação técnica pendente
@@ -84,7 +84,7 @@ Fontes: [`docs/pre-prd.md`](pre-prd.md), [`docs/passos-realizados.md`](passos-re
 | H3 — Há cobertura suficiente | Adzuna e Gupy produzem oportunidades úteis para o nicho inicial? | Coleta diária durante 7 dias. |
 | H4 — Telegram é aceitável | O canal facilita a rotina ou cria uma barreira? | Entrevistas e teste da entrega. |
 | H5 — A entrega gera ação | Uma recomendação faz o estudante abrir, salvar ou iniciar candidatura? | Piloto com recomendações durante 2 semanas. |
-| H6 — A operação cabe no limite | A frequência de coleta e avaliação cabe na cota e no custo disponíveis? | Medição por execução e por usuário ativado. |
+| H6 — A operação cabe no limite | A frequência de coleta e avaliação cabe na cota e no custo disponíveis? | Medição por execução e por usuário com ativação operacional. |
 
 Ainda não há resultado de usuários para declarar essas hipóteses como confirmadas. Feedback,
 edição e pausa de entregas são recursos posteriores; portanto, não devem aparecer como prova da
@@ -92,12 +92,13 @@ experiência atual.
 
 Fonte: [`docs/pre-prd.md`](pre-prd.md), seção “Hipóteses e testes de baixo custo”.
 
-## 4. Evento de ativação
+## 4. Marcos de ativação
 
 ### Definição
 
-> **Ativação = primeira entrega bem-sucedida no Telegram contendo ao menos uma vaga recomendada
-> para o perfil.**
+> **Ativação operacional = primeira recomendação entregue com sucesso no Telegram.**
+>
+> **Ativação de produto = primeira abertura de uma vaga recomendada.**
 
 ### O que não conta como ativação
 
@@ -107,14 +108,17 @@ Fonte: [`docs/pre-prd.md`](pre-prd.md), seção “Hipóteses e testes de baixo 
 - vincular o Telegram;
 - receber uma mensagem dizendo que nenhuma vaga foi encontrada.
 
-A fonte de verdade é `perfis.ativado_em`. O campo é preenchido somente depois que o Telegram
-aceita a entrega e junto do registro em `envios`; ele não é sobrescrito em reprocessamentos.
+A fonte de verdade da ativação operacional é `perfis.ativado_em`. O campo é preenchido somente
+depois que o Telegram aceita a entrega e junto do registro em `envios`; ele não é sobrescrito em
+reprocessamentos. A ativação de produto ainda depende da emissão de `vaga_aberta`.
 
 ### Métricas para acompanhar
 
-- **Taxa de ativação em 7 dias:** perfis que receberam a primeira entrega relevante dentro da
+- **Taxa de ativação operacional em 7 dias:** perfis que receberam a primeira recomendação dentro da
   janela, entre as coortes maduras.
-- **TTV:** mediana de horas entre `criado_em` e `ativado_em`.
+- **Tempo até a primeira entrega:** mediana de horas entre `criado_em` e `ativado_em`.
+- **Tempo até o valor:** mediana entre `criado_em` e o primeiro `vaga_aberta`, quando o evento
+  estiver implementado.
 - **Funil:** perfil salvo → Telegram vinculado → primeira recomendação → vaga aberta → ação útil
   ou candidatura iniciada.
 
@@ -132,14 +136,14 @@ Telegram e a primeira recomendação.
 Após o vínculo, a jornada desejada é:
 
 ```text
-Telegram vinculado → busca específica para o perfil → primeira recomendação → ativado_em
+Telegram vinculado → busca específica → recomendação entregue → vaga aberta → ação útil
 ```
 
 ### Metas iniciais — ainda não são resultados
 
-- TTV mediano abaixo de **15 minutos**;
+- tempo mediano até a primeira entrega abaixo de **15 minutos**;
 - evolução posterior para menos de **5 minutos**;
-- pelo menos **80% dos usuários vinculados** recebendo valor em até 24 horas.
+- pelo menos **80% dos usuários vinculados** recebendo uma recomendação em até 24 horas.
 
 Quando não houver uma vaga adequada, o perfil não deve ser ativado. A mensagem precisa explicar
 que nenhuma oportunidade segura foi encontrada e informar a próxima busca, sem empurrar uma vaga
@@ -163,7 +167,7 @@ registrar quantidade, falhas e tempo decorrido.
 | 1. Entrevistas | 15–20 estudantes | Como procuram, o que consideram relevante e se aceitam Telegram. | Pelo menos 60% relatam intenção de uso recorrente e não veem o canal como barreira. |
 | 2. Matching | 20 vagas reais, avaliadas por 3 pessoas sem ver a nota da IA | Concordância entre a classificação humana e o sistema. | Pelo menos 75% de concordância. |
 | 3. Cobertura | Adzuna e Gupy por 7 dias | Vagas coletadas, únicas, filtradas, relevantes e falhas por fonte. | Vagas relevantes na maioria dos dias úteis; o limite numérico deve ser definido antes do teste. |
-| 4. Primeiro valor | Usuários vinculados no piloto | TTV, ativação em 24h/7d e perdas entre perfil e Telegram. | Maioria ativada em 24h e TTV dentro da meta aprovada. |
+| 4. Primeira entrega | Usuários vinculados no piloto | Tempo até a entrega, ativação operacional em 24h/7d e perdas entre perfil e Telegram. | Maioria com recomendação em 24h e tempo dentro da meta aprovada. |
 | 5. Utilidade | Grupo piloto por 2 semanas | Aberturas, salvamentos, “faz sentido”, problemas e candidaturas iniciadas. | Ações úteis observáveis; o limite numérico deve ser definido antes do teste. |
 | 6. Operação | Cada execução | Chamadas de IA, cota, custo, duração e erros de coleta/envio. | Permanecer dentro do limite operacional definido. |
 
@@ -176,13 +180,14 @@ landing até a primeira candidatura ou até o motivo de abandono ficar registrad
 Avançar para retenção e monetização somente se houver evidência conjunta de:
 
 - funil sem falhas bloqueantes;
-- entrega relevante em até 24 horas para a maioria dos usuários vinculados;
-- TTV mediano dentro do limite aprovado;
+- recomendação entregue em até 24 horas para a maioria dos usuários vinculados;
+- tempo mediano até a primeira entrega dentro do limite aprovado;
 - recomendações consideradas úteis ou capazes de gerar ação;
 - operação dentro das cotas e com falhas observáveis.
 
-Se a ativação falhar, a prioridade é reduzir TTV, corrigir o vínculo ou melhorar cobertura. Se o
-TTV estiver bom, mas a utilidade falhar, a prioridade é revisar pré-filtro, matching e explicação.
+Se a ativação operacional falhar, a prioridade é reduzir o tempo até a entrega, corrigir o vínculo
+ou melhorar cobertura. Se a entrega estiver rápida, mas a ativação de produto ou a utilidade
+falhar, a prioridade é revisar pré-filtro, matching e explicação.
 Novos recursos não devem entrar antes de responder a essas incertezas.
 
 ## Demonstração ao vivo
@@ -191,5 +196,5 @@ Novos recursos não devem entrar antes de responder a essas incertezas.
 2. Preencher um perfil de teste válido.
 3. Confirmar o vínculo com o Telegram.
 4. Mostrar uma mensagem real com fonte, data, modalidade, localização, nota e justificativa.
-5. Explicar que a mensagem demonstra o funcionamento técnico, enquanto ativação, utilidade e
-   retenção dependem do piloto.
+5. Explicar que a mensagem demonstra o funcionamento técnico, enquanto ativação de produto,
+   utilidade e retenção dependem do piloto.

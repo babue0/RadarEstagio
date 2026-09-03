@@ -2,7 +2,7 @@
 
 **Status:** base técnica viável; Fase 2 em validação de produto e operação
 
-**Atualizado em:** 31/08/2026
+**Atualizado em:** 02/09/2026
 
 **Entrega prevista:** 02/09/2026
 
@@ -38,9 +38,9 @@ Ele deve servir para:
 | **Decisão aberta** | O grupo precisa escolher uma regra antes de medir ou desenvolver. |
 
 O princípio central é **prova antes de promessa**: cadastro, quantidade de funcionalidades e
-volume coletado não demonstram valor sozinhos. O valor inicial ocorre quando o estudante recebe
-uma recomendação relevante; a utilidade só se confirma quando ele abre, aprova ou se candidata à
-vaga.
+volume coletado não demonstram valor sozinhos. A entrega comprova o fluxo técnico; o primeiro
+sinal observável de valor ocorre quando o estudante abre uma recomendação, e a utilidade só se
+confirma com feedback positivo ou candidatura.
 
 ## 2. Resumo executivo e veredito
 
@@ -52,8 +52,9 @@ ranqueada e explicada.
 A prova técnica funciona de ponta a ponta. O projeto possui cadastro web, múltiplos usuários,
 vínculo com Telegram, persistência no Supabase, histórico entre execuções, matching estruturado,
 nota determinística, entrega e instrumentação do funil até a primeira recomendação. Em
-31/08/2026, a suíte possui **284 testes passando e 4 integrações ignoradas** sem um PostgreSQL de
-teste. As cinco migrações estão aplicadas no banco remoto.
+02/09/2026, a suíte possui **318 testes passando e 4 integrações ignoradas** sem um PostgreSQL de
+teste. O repositório possui sete migrações; há registro da aplicação de `0001` a `0006` no banco
+remoto, e a aplicação de `0007` ainda precisa ser confirmada.
 
 Uma coleta real em 30/08/2026, usando Adzuna e Gupy para dois perfis presenciais no Rio de
 Janeiro, produziu **703 vagas únicas e 55 candidatas após o pré-filtro**. O agendamento externo
@@ -71,8 +72,9 @@ completo deve depender de quatro provas ainda ausentes:
 
 1. cobertura útil das fontes durante vários dias;
 2. concordância aceitável entre o ranking e avaliações humanas;
-3. ativação de usuários externos até a primeira recomendação;
-4. ação útil após a entrega, como abertura da vaga ou candidatura.
+3. ativação operacional de usuários externos até a primeira recomendação;
+4. ativação de produto e ação útil após a entrega, como abertura, feedback positivo ou
+   candidatura.
 
 ## 3. Problema, público e limite da proposta
 
@@ -145,14 +147,21 @@ O padrão atual envia até **5 vagas** com nota mínima **40**, ambos configurá
 
 ```text
 landing → cadastro → perfil → confirmação de e-mail → Telegram vinculado
-        → primeira recomendação entregue → vaga aberta → ação útil
+        → recomendação entregue → vaga aberta → vaga útil ou candidatura atribuída
 ```
 
-A ativação é a **primeira entrega bem-sucedida no Telegram contendo ao menos uma vaga
-recomendada**. Conta criada, formulário concluído e Telegram vinculado são etapas necessárias,
-mas não representam valor entregue.
+O Radar distingue dois marcos, conforme o vocabulário de [`CONTEXT.md`](../CONTEXT.md):
 
-O funil está instrumentado até a ativação. Os eventos `vaga_aberta`, `vaga_util`,
+- **ativação operacional:** primeira entrega bem-sucedida no Telegram contendo ao menos uma
+  recomendação; comprova o fluxo técnico, não valor percebido;
+- **ativação de produto:** primeira abertura de uma vaga recomendada; é o primeiro sinal
+  observável de interesse, ainda abaixo de feedback positivo ou candidatura.
+
+Conta criada, formulário concluído e Telegram vinculado são etapas necessárias, mas não
+representam nenhum dos dois marcos. O campo atual `perfis.ativado_em` registra a ativação
+operacional.
+
+O funil está instrumentado até a ativação operacional. Os eventos `vaga_aberta`, `vaga_util`,
 `vaga_irrelevante` e `candidatura_iniciada` estão reservados no banco, mas ainda não são emitidos
 porque o produto não possui link rastreado nem feedback. A definição e as consultas estão em
 [`metricas.md`](metricas.md).
@@ -166,10 +175,10 @@ porque o produto não possui link rastreado nem feedback. A definição e as con
 - fatores estruturados extraídos pela IA e nota calculada no Python;
 - avaliação em lotes, reaproveitamento de avaliações e tratamento de cota;
 - mensagem ranqueada no Telegram;
-- cadastro web, autenticação, perfil e vínculo seguro com Telegram;
+- cadastro web, autenticação, perfil e vínculo com Telegram por token aleatório;
 - Supabase com perfis, vagas, avaliações, envios e eventos de produto;
 - múltiplos usuários;
-- evento de ativação e funil da landing à primeira recomendação;
+- ativação operacional e funil da landing à primeira recomendação;
 - execução diária disparada externamente no GitHub Actions.
 
 ### 5.4 Ainda não disponível
@@ -187,7 +196,7 @@ Gemini ou AGY interpreta a descrição e devolve fatores estruturados. A IA não
 a nota final. O Python aplica a seguinte fórmula:
 
 \[
-N = 50H + 15C + 10A + 15P + 10L
+N = 45H + 10C + 10A + 15P + 10L + 10I
 \]
 
 Em que cada fator varia de 0 a 1:
@@ -196,7 +205,8 @@ Em que cada fator varia de 0 a 1:
 - **C — curso:** incompatível, parcial ou compatível;
 - **A — área:** incompatível, parcial ou compatível;
 - **P — período/experiência:** incompatível, parcial ou compatível;
-- **L — logística:** média de localização e modalidade.
+- **L — logística:** média de localização e modalidade;
+- **I — interesse:** compatibilidade com as áreas de interesse selecionadas no perfil.
 
 Regras atuais:
 
@@ -235,10 +245,10 @@ para 0,35; no reteste das vinte vagas, as detalhadas e parcialmente compatíveis
 | Gemini API | Extração de fatores no Actions | Funciona, sujeito a cota variável |
 | AGY | Extração local para desenvolvimento | Não está disponível no Actions |
 | Telegram Bot API | Entrega proativa | Envios reais comprovados |
-| PostgreSQL/Supabase | Perfis, vagas, avaliações, envios e eventos | Migrações `0001` a `0005` aplicadas |
+| PostgreSQL/Supabase | Perfis, vagas, avaliações, envios e eventos | `0001` a `0006` registradas como aplicadas; confirmar `0007` |
 | GitHub Actions | Execução do pipeline | Workflow apenas com `workflow_dispatch` |
 | cron-job.org | Disparo diário às 07:23 BRT | Sucesso observado; dependência externa |
-| pytest e Ruff | Regressão e qualidade | 284 testes passando, 4 ignorados |
+| pytest e Ruff | Regressão e qualidade | 318 testes passando, 4 ignorados |
 
 O workflow tem limite de quinze minutos. O disparo automático é externo porque o agendamento
 nativo do GitHub deixou de executar durante dois dias. Isso resolve o disparo inicial, mas aumenta
@@ -258,8 +268,8 @@ a dependência operacional e precisa de observação contínua.
 - o pipeline já enviou uma lista real com cinco vagas;
 - uma execução automática ocorreu em 29/08 e outra em 30/08 às 07:23 BRT;
 - cadastro, vínculo Telegram e múltiplos usuários estão implementados;
-- eventos de ativação e funil foram implantados no banco;
-- 284 testes passam e 4 integrações dependem de PostgreSQL de teste.
+- eventos de ativação operacional e funil foram implantados no banco;
+- 318 testes passam e 4 integrações dependem de PostgreSQL de teste.
 
 ### 8.2 Parcialmente comprovado
 
@@ -304,8 +314,9 @@ qualitativos devem registrar comportamento observado e justificativa, não apena
 | --- | --- |
 | Quantas vagas são entregues? | Até 5 por execução. |
 | Existe nota mínima? | Sim, 40 por padrão e configurável. |
-| Como a nota é calculada? | Fórmula determinística 50/15/10/15/10. |
-| Qual é a ativação? | Primeira recomendação relevante entregue no Telegram. |
+| Como a nota é calculada? | Fórmula determinística 45/10/10/15/10/10. |
+| Qual é a ativação operacional? | Primeira recomendação entregue no Telegram. |
+| Qual é a ativação de produto? | Primeira abertura de uma vaga recomendada; ainda não mensurável. |
 | Como evitar repetição entre dias? | Histórico de envios no Supabase. |
 | Qual é o horário atual? | 07:23 BRT, disparado externamente. |
 | O cadastro suporta vários usuários? | Sim. |
@@ -337,7 +348,7 @@ qualitativos devem registrar comportamento observado e justificativa, não apena
 | Falha silenciosa de coleta | Alto | Parcialmente tratada | Logs, job vermelho e alerta operacional |
 | Não medir ação após a mensagem | Alto | Eventos reservados, sem emissão | Link rastreado ou feedback manual antes de H5 |
 | Telegram não ser aceito | Médio | Conveniente para o grupo, não validado | Testar vínculo e entrega com usuários externos |
-| Abandono entre site e Telegram | Alto | Funil instrumentado | Medir cada etapa e observar 5 sessões reais |
+| Abandono entre site e Telegram | Alto | Funil instrumentado até a entrega | Medir cada etapa e observar 5 sessões reais |
 | Vagas falsas, expiradas ou enganosas | Alto | Não medido | Mostrar fonte/data, alertar inconsistência e receber reporte |
 | Token reutilizável ou dados sem exclusão | Alto | Token aleatório; expiração e exclusão pendentes | Uso único/expiração e política de exclusão |
 | Dependência de serviços gratuitos | Médio | Adequado ao piloto | Memória de cálculo com data e cenário pago |
@@ -382,7 +393,7 @@ Para cada linha abaixo, o grupo deve escolher **aprovar agora**, **simular manua
 | Operacional | **Favorável com ressalvas** | Automação e persistência existem | Observar 7 dias, duração, cota e alertas |
 | Prazo | **Favorável para a entrega técnica** | Núcleo e parte da Fase 2 concluídos | Não incluir novas expansões antes de 02/09 |
 | Privacidade | **Parcialmente favorável** | Coleta mínima, RLS e token aleatório | Expiração, uso único e exclusão dos dados |
-| Produto | **Inconclusiva** | Proposta coerente e prova técnica real | Entrevistas, matching humano, ativação e ação útil |
+| Produto | **Inconclusiva** | Proposta coerente e prova técnica real | Entrevistas, matching humano, ativação de produto e ação útil |
 
 ### 13.1 Decisão de continuidade
 
@@ -405,8 +416,8 @@ O grupo pode avançar ao PRD quando:
 - a memória de cálculo de custo for registrada;
 - os critérios acadêmicos forem confirmados.
 
-Se cobertura, confiança ou ativação falharem, o resultado não é “construir tudo”: o grupo deve
-identificar a causa, testar a menor correção possível e reavaliar a viabilidade.
+Se cobertura, confiança ou um dos marcos de ativação falhar, o resultado não é “construir tudo”:
+o grupo deve identificar a causa, testar a menor correção possível e reavaliar a viabilidade.
 
 ## 14. Próximos passos até a entrega
 
@@ -418,7 +429,7 @@ identificar a causa, testar a menor correção possível e reavaliar a viabilida
 5. **Até 01/09:** decidir se clique e feedback serão implementados ou simulados manualmente.
 6. **Em 01/09:** congelar escopo, selecionar evidências e ensaiar demonstração.
 7. **Em 02/09:** entregar a prova técnica e declarar explicitamente as hipóteses não validadas.
-8. **Depois da entrega:** entrevistar e observar cinco estudantes, medir ativação e ação útil e
+8. **Depois da entrega:** entrevistar e observar cinco estudantes, medir as duas ativações e ação útil e
    elaborar o PRD apenas para a fase aprovada.
 
 ## 15. Perguntas prioritárias para a próxima reunião
@@ -436,4 +447,5 @@ identificar a causa, testar a menor correção possível e reavaliar a viabilida
 
 **Síntese final:** a implementação demonstra viabilidade técnica e de prazo para um MVP acadêmico.
 A decisão de produto permanece condicionada à cobertura recorrente, à confiança no matching, à
-ativação de usuários externos e à observação de uma ação útil após a recomendação.
+ativação operacional de usuários externos, ativação de produto e observação de uma ação útil após
+a recomendação.
