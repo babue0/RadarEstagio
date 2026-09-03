@@ -11,7 +11,7 @@ from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
-from radar.notification.formatador import formatar_aviso_de_silencio, formatar_mensagem
+from radar.notification.formatador import formatar_mensagem, formatar_mensagem_sem_vagas
 from radar.notification.telegram import ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
 
@@ -166,7 +166,7 @@ def atender_usuario(
     )
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
     if not selecionadas:
-        avisar_silencio(notificador, repositorio, usuario, parametros, agora)
+        avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora)
         return None
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem(selecionadas, agora.date()))
@@ -192,27 +192,33 @@ def gravar_avaliacoes(
         logger.warning("usuário %s: avaliações não foram gravadas: %s", usuario.id, erro)
 
 
-def avisar_silencio(
+def avisar_que_nao_houve_vaga(
     notificador: Notificador,
     repositorio: Repositorio,
     usuario: Usuario,
     parametros: ParametrosDaExecucao,
     agora: datetime,
 ) -> None:
-    dias = parametros.dias_de_silencio_ate_avisar
-    if not silencio_prolongado(usuario, agora, dias):
-        return
+    dias = dias_de_silencio_a_relatar(usuario, agora, parametros.dias_de_silencio_ate_avisar)
     try:
-        notificador.enviar(usuario.chat_id, formatar_aviso_de_silencio(dias, agora.date()))
+        notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora.date(), dias))
     except ErroDeNotificacao as erro:
-        logger.warning("usuário %s ficou sem o aviso de silêncio: %s", usuario.id, erro)
+        logger.warning("usuário %s ficou sem a mensagem do dia: %s", usuario.id, erro)
         pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
+        return
+    if dias is None:
         return
     logger.info("usuário %s avisado de %d dias sem recomendação", usuario.id, dias)
     try:
         repositorio.registrar_aviso_de_silencio(usuario)
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s: aviso de silêncio não foi gravado: %s", usuario.id, erro)
+
+
+def dias_de_silencio_a_relatar(usuario: Usuario, agora: datetime, limite: int) -> int | None:
+    if not silencio_prolongado(usuario, agora, limite):
+        return None
+    return (agora - usuario.sem_recomendacao_desde).days
 
 
 def silencio_prolongado(usuario: Usuario, agora: datetime, dias: int) -> bool:

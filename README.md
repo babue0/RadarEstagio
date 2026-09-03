@@ -187,7 +187,7 @@ Adzuna e Telegram são sempre obrigatórios. `GEMINI_API_KEY` só é obrigatóri
 | `QUANTIDADE_VAGAS_ENVIADAS` | `5` | quantas vagas vão na mensagem |
 | `NOTA_MINIMA` | `40` | vaga com nota abaixo disso não entra na mensagem |
 | `FALHAS_DE_ENVIO_ATE_PAUSAR` | `3` | falhas seguidas no Telegram que pausam o perfil |
-| `DIAS_DE_SILENCIO_ATE_AVISAR` | `7` | dias sem recomendação até o aviso de silêncio |
+| `DIAS_DE_SILENCIO_ATE_AVISAR` | `7` | dias sem recomendação até sugerir ampliar o perfil |
 | `DATABASE_URL` | vazio | string do Supabase; vazio = perfil fixo, sem histórico (seção 6) |
 
 O `.env` está no `.gitignore` e nunca vai para o GitHub.

@@ -262,11 +262,12 @@ def test_vaga_abaixo_da_nota_minima_fica_fora_da_mensagem():
     assert "Empresa 1" not in notificador.textos[0]
 
 
-def test_todas_abaixo_da_nota_minima_nao_manda_mensagem():
+def test_todas_abaixo_da_nota_minima_avisam_que_a_busca_continua():
     selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {"1": 35, "2": 20}, nota_minima=60)
 
     assert selecionadas == []
-    assert notificador.textos == []
+    assert "Nenhuma vaga nova compatível" in notificador.textos[0]
+    assert "volta a procurar amanhã" in notificador.textos[0]
 
 
 def test_vaga_sem_resultado_do_pontuador_fica_fora_da_mensagem():
@@ -295,11 +296,11 @@ def test_mesma_vaga_em_duas_fontes_e_avaliada_e_enviada_uma_vez():
     assert notificador.textos[0].count("Empresa 1") == 1
 
 
-def test_sem_vagas_nao_manda_mensagem():
+def test_sem_vagas_avisa_que_a_busca_continua_amanha():
     selecionadas, notificador, _ = rodar([], {})
 
     assert selecionadas == []
-    assert notificador.textos == []
+    assert "volta a procurar amanhã" in notificador.textos[0]
 
 
 def test_envia_para_cada_usuario_com_o_proprio_perfil():
@@ -321,7 +322,8 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
         PontuadorFalso({"1": 70}),
     )
 
-    assert notificador.chats == ["123"]
+    assert notificador.chats == ["123", "456"]
+    assert "Nenhuma vaga nova compatível" in notificador.textos[1]
     assert [resultado.nota for resultado in resumo.enviadas_por_usuario[ID_USUARIO]] == [70]
     assert ID_OUTRO_USUARIO not in resumo.enviadas_por_usuario
     assert resumo.usuarios == 2
@@ -446,31 +448,35 @@ def test_falha_ao_gravar_nao_derruba_o_envio():
     assert [resultado.nota for resultado in selecionadas] == [70]
 
 
-def test_silencio_prolongado_gera_um_aviso_semanal():
+def test_silencio_prolongado_acrescenta_a_sugestao_a_mensagem_do_dia():
     repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=8)])
 
     selecionadas, notificador, _ = rodar([], {}, repositorio=repositorio)
 
     assert selecionadas == []
-    assert "nos últimos 7 dias" in notificador.textos[0]
+    assert "volta a procurar amanhã" in notificador.textos[0]
+    assert "Já são 8 dias sem nenhuma recomendação" in notificador.textos[0]
+    assert "remoto ou híbrido" in notificador.textos[0]
     assert repositorio.avisos_de_silencio == [ID_USUARIO]
 
 
-def test_aviso_de_silencio_nao_se_repete_todo_dia():
+def test_sugestao_por_silencio_nao_se_repete_todo_dia():
     repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=20, dias_desde_o_aviso=2)])
 
     _, notificador, _ = rodar([], {}, repositorio=repositorio)
 
-    assert notificador.textos == []
+    assert "volta a procurar amanhã" in notificador.textos[0]
+    assert "sem nenhuma recomendação" not in notificador.textos[0]
     assert repositorio.avisos_de_silencio == []
 
 
-def test_usuario_recente_sem_vagas_fica_em_silencio():
+def test_usuario_recente_recebe_a_mensagem_do_dia_sem_a_sugestao():
     repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=2)])
 
     _, notificador, _ = rodar([], {}, repositorio=repositorio)
 
-    assert notificador.textos == []
+    assert "volta a procurar amanhã" in notificador.textos[0]
+    assert "sem nenhuma recomendação" not in notificador.textos[0]
     assert repositorio.avisos_de_silencio == []
 
 

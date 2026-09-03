@@ -4,9 +4,9 @@ from radar.domain.models import Modalidade, ResultadoMatch, Vaga
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     dividir_em_mensagens,
-    formatar_aviso_de_silencio,
     formatar_falha_da_execucao,
     formatar_mensagem,
+    formatar_mensagem_sem_vagas,
     formatar_resumo_da_execucao,
 )
 
@@ -59,12 +59,20 @@ def test_cabecalho_contem_a_data():
     assert texto.startswith("📡 <b>Radar de Estágio</b> — 26/08/2026")
 
 
-def test_aviso_de_silencio_diz_o_periodo_e_o_que_pode_ampliar_o_alcance():
-    texto = formatar_aviso_de_silencio(7, DATA_DE_TESTE)
+def test_dia_sem_vaga_avisa_que_a_busca_continua_amanha():
+    texto = formatar_mensagem_sem_vagas(DATA_DE_TESTE)
 
     assert "26/08/2026" in texto
-    assert "nos últimos 7 dias" in texto
-    assert "continua procurando todos os dias" in texto
+    assert "Nenhuma vaga nova compatível com o seu perfil hoje." in texto
+    assert "O Radar volta a procurar amanhã de manhã." in texto
+    assert "sem nenhuma recomendação" not in texto
+
+
+def test_silencio_prolongado_acrescenta_a_sugestao_sem_tirar_o_aviso_do_dia():
+    texto = formatar_mensagem_sem_vagas(DATA_DE_TESTE, 12)
+
+    assert "O Radar volta a procurar amanhã de manhã." in texto
+    assert "Já são 12 dias sem nenhuma recomendação" in texto
     assert "remoto ou híbrido" in texto
 
 

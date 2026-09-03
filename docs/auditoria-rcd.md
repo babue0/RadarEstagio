@@ -240,14 +240,19 @@ usuários. Verificado por `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas`
 
 **Critério:** nenhum dia de silêncio passa despercebido durante o piloto.
 
-**4. Sem mensagem vazia**
+**4. Nenhuma mensagem vazia, mas nenhum dia mudo**
 
-- Sem vagas aprovadas, não enviar nada. Um resumo semanal informa o silêncio e sugere ajustar
-  cidade ou modalidade.
+- A mensagem "nenhuma vaga compatível hoje" não dizia o que aconteceria em seguida. Agora o dia
+  sem vaga informa que a busca volta amanhã, para o estudante não concluir que o serviço morreu.
+- Depois de `DIAS_DE_SILENCIO_ATE_AVISAR` dias sem nenhuma recomendação, a mesma mensagem ganha
+  um parágrafo sugerindo ampliar cidade ou modalidade, no máximo uma vez por período.
 
-**Critério:** o estudante só recebe mensagem quando há algo para ver. O aviso de silêncio
-ainda não aponta para uma tela de edição de perfil, que só chega no sprint 3 — a redação
-informa sem prometer um botão que não existe.
+**Critério:** nenhuma notificação sem informação, e nunca duas no mesmo dia. A sugestão ainda
+não aponta para uma tela de edição de perfil, que só chega no sprint 3 — a redação informa sem
+prometer um botão que não existe.
+
+**Risco aceito:** uma notificação diária em dia vazio pode cansar. O piloto mede: se aparecer
+bloqueio do bot concentrado em perfis com muitos dias vazios, a cadência volta à discussão.
 
 **5. Telemetria que falha visível**
 

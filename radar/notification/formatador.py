@@ -22,11 +22,17 @@ def formatar_mensagem(resultados: list[ResultadoMatch], data: date) -> str:
     return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
 
 
-def formatar_aviso_de_silencio(dias: int, data: date) -> str:
-    return (
+def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None) -> str:
+    mensagem = (
         f"{cabecalho(data)}\n\n"
-        f"Nenhuma vaga compatível com o seu perfil apareceu nos últimos {dias} dias.\n\n"
-        "O Radar continua procurando todos os dias e avisa assim que encontrar. "
+        "Nenhuma vaga nova compatível com o seu perfil hoje.\n"
+        "O Radar volta a procurar amanhã de manhã."
+    )
+    if dias_de_silencio is None:
+        return mensagem
+    return (
+        f"{mensagem}\n\n"
+        f"Já são {dias_de_silencio} dias sem nenhuma recomendação. "
         "Perfis presenciais restritos a uma cidade recebem menos vagas do que perfis "
         "que também aceitam remoto ou híbrido."
     )
