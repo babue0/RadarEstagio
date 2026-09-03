@@ -4,6 +4,7 @@ from radar.domain.models import Modalidade, ResultadoMatch, Vaga
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     dividir_em_mensagens,
+    formatar_aviso_de_silencio,
     formatar_mensagem,
 )
 
@@ -56,11 +57,13 @@ def test_cabecalho_contem_a_data():
     assert texto.startswith("📡 <b>Radar de Estágio</b> — 26/08/2026")
 
 
-def test_lista_vazia_gera_mensagem_de_nenhuma_vaga():
-    texto = formatar_mensagem([], DATA_DE_TESTE)
+def test_aviso_de_silencio_diz_o_periodo_e_o_que_pode_ampliar_o_alcance():
+    texto = formatar_aviso_de_silencio(7, DATA_DE_TESTE)
 
     assert "26/08/2026" in texto
-    assert "Nenhuma vaga compatível" in texto
+    assert "nos últimos 7 dias" in texto
+    assert "continua procurando todos os dias" in texto
+    assert "remoto ou híbrido" in texto
 
 
 def test_ordena_por_nota_decrescente_e_numera():

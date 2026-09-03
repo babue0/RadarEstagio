@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     quantidade_vagas_enviadas: int = 5
     nota_minima: int = Field(default=40, ge=0, le=100)
     falhas_de_envio_ate_pausar: int = Field(default=3, ge=1)
+    dias_de_silencio_ate_avisar: int = Field(default=7, ge=1)
 
     @field_validator("fontes")
     @classmethod

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
@@ -91,6 +91,7 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.envios_gravados: list[tuple[UUID, list[str]]] = []
         self.falhas_por_usuario: dict[UUID, int] = {}
         self.pausados: list[UUID] = []
+        self.avisos_de_silencio: list[UUID] = []
 
     def avaliacoes_existentes(self, usuario: Usuario, vagas: list[Vaga]) -> list[ResultadoMatch]:
         ids = {vaga.id_externo for vaga in vagas}
@@ -120,23 +121,49 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.falhas_por_usuario[usuario.id] = self.falhas_por_usuario.get(usuario.id, 0) + 1
         return self.falhas_por_usuario[usuario.id]
 
+    def registrar_aviso_de_silencio(self, usuario) -> None:
+        self.avisos_de_silencio.append(usuario.id)
+
     def pausar(self, usuario) -> None:
         self.pausados.append(usuario.id)
 
 
 def parametros(
-    quantidade: int = 5, nota_minima: int = 0, falhas_ate_pausar: int = 3
+    quantidade: int = 5,
+    nota_minima: int = 0,
+    falhas_ate_pausar: int = 3,
+    dias_de_silencio_ate_avisar: int = 7,
 ) -> ParametrosDaExecucao:
     return ParametrosDaExecucao(
         modelo="modelo-teste",
         quantidade=quantidade,
         nota_minima=nota_minima,
         falhas_ate_pausar=falhas_ate_pausar,
+        dias_de_silencio_ate_avisar=dias_de_silencio_ate_avisar,
     )
 
 
-def usuario(id_usuario: UUID = ID_USUARIO, chat_id: str = "123") -> Usuario:
-    return Usuario(id=id_usuario, perfil=perfil_exemplo(), chat_id=chat_id)
+def usuario(
+    id_usuario: UUID = ID_USUARIO,
+    chat_id: str = "123",
+    dias_sem_recomendacao: int | None = None,
+    dias_desde_o_aviso: int | None = None,
+) -> Usuario:
+    return Usuario(
+        id=id_usuario,
+        perfil=perfil_exemplo(),
+        chat_id=chat_id,
+        sem_recomendacao_desde=(
+            None
+            if dias_sem_recomendacao is None
+            else AGORA_DE_TESTE - timedelta(days=dias_sem_recomendacao)
+        ),
+        silencio_avisado_em=(
+            None
+            if dias_desde_o_aviso is None
+            else AGORA_DE_TESTE - timedelta(days=dias_desde_o_aviso)
+        ),
+    )
 
 
 def rodar(
@@ -147,6 +174,7 @@ def rodar(
     repositorio: RepositorioFalso | None = None,
     notificador: NotificadorFalso | None = None,
     falhas_ate_pausar: int = 3,
+    agora: datetime = AGORA_DE_TESTE,
 ):
     notificador = notificador or NotificadorFalso()
     repositorio = repositorio or RepositorioFalso([usuario()])
@@ -161,7 +189,7 @@ def rodar(
             nota_minima=nota_minima,
             falhas_ate_pausar=falhas_ate_pausar,
         ),
-        AGORA_DE_TESTE,
+        agora,
     )
     return enviadas.get(ID_USUARIO, []), notificador, avaliador
 
@@ -192,11 +220,11 @@ def test_vaga_abaixo_da_nota_minima_fica_fora_da_mensagem():
     assert "Empresa 1" not in notificador.textos[0]
 
 
-def test_todas_abaixo_da_nota_minima_envia_mensagem_de_nenhuma_vaga():
+def test_todas_abaixo_da_nota_minima_nao_manda_mensagem():
     selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {"1": 35, "2": 20}, nota_minima=60)
 
     assert selecionadas == []
-    assert "Nenhuma vaga compatível" in notificador.textos[0]
+    assert notificador.textos == []
 
 
 def test_vaga_sem_resultado_do_avaliador_fica_fora_da_mensagem():
@@ -225,12 +253,11 @@ def test_mesma_vaga_em_duas_fontes_e_avaliada_e_enviada_uma_vez():
     assert notificador.textos[0].count("Empresa 1") == 1
 
 
-def test_sem_vagas_envia_mensagem_de_nenhuma_vaga():
+def test_sem_vagas_nao_manda_mensagem():
     selecionadas, notificador, _ = rodar([], {})
 
     assert selecionadas == []
-    assert len(notificador.textos) == 1
-    assert "Nenhuma vaga compatível" in notificador.textos[0]
+    assert notificador.textos == []
 
 
 def test_envia_para_cada_usuario_com_o_proprio_perfil():
@@ -251,9 +278,9 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
         AGORA_DE_TESTE,
     )
 
-    assert notificador.chats == ["123", "456"]
+    assert notificador.chats == ["123"]
     assert [resultado.nota for resultado in enviadas[ID_USUARIO]] == [70]
-    assert enviadas[ID_OUTRO_USUARIO] == []
+    assert ID_OUTRO_USUARIO not in enviadas
 
 
 def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
@@ -370,3 +397,31 @@ def test_falha_ao_gravar_nao_derruba_o_envio():
 
     assert len(notificador.textos) == 1
     assert [resultado.nota for resultado in selecionadas] == [70]
+
+
+def test_silencio_prolongado_gera_um_aviso_semanal():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=8)])
+
+    selecionadas, notificador, _ = rodar([], {}, repositorio=repositorio)
+
+    assert selecionadas == []
+    assert "nos últimos 7 dias" in notificador.textos[0]
+    assert repositorio.avisos_de_silencio == [ID_USUARIO]
+
+
+def test_aviso_de_silencio_nao_se_repete_todo_dia():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=20, dias_desde_o_aviso=2)])
+
+    _, notificador, _ = rodar([], {}, repositorio=repositorio)
+
+    assert notificador.textos == []
+    assert repositorio.avisos_de_silencio == []
+
+
+def test_usuario_recente_sem_vagas_fica_em_silencio():
+    repositorio = RepositorioFalso([usuario(dias_sem_recomendacao=2)])
+
+    _, notificador, _ = rodar([], {}, repositorio=repositorio)
+
+    assert notificador.textos == []
+    assert repositorio.avisos_de_silencio == []

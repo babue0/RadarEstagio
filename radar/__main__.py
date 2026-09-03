@@ -138,6 +138,7 @@ def executar_fluxo(
             quantidade=settings.quantidade_vagas_enviadas,
             nota_minima=settings.nota_minima,
             falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
+            dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
         ),
         datetime.now(UTC),
     )

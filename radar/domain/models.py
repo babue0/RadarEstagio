@@ -51,6 +51,8 @@ class Usuario(BaseModel):
     id: UUID
     perfil: Perfil
     chat_id: str = Field(min_length=1)
+    sem_recomendacao_desde: datetime | None = None
+    silencio_avisado_em: datetime | None = None
 
 
 class ResultadoMatch(BaseModel):

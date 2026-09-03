@@ -175,3 +175,23 @@ def test_pausar_desativa_o_perfil_e_registra_o_evento(
         ).fetchone()[0]
         == 1
     )
+
+
+def test_usuario_ativo_traz_desde_quando_esta_sem_recomendacao(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    criado_em = conexao.execute(
+        "select criado_em from perfis where id = %s", (usuario.id,)
+    ).fetchone()[0]
+
+    antes = next(item for item in repositorio.listar_ativos() if item.id == usuario.id)
+    assert antes.sem_recomendacao_desde == criado_em
+    assert antes.silencio_avisado_em is None
+
+    repositorio.registrar_envios(usuario, [ResultadoMatch(vaga=vaga(1), nota=80)])
+    repositorio.registrar_aviso_de_silencio(usuario)
+
+    depois = next(item for item in repositorio.listar_ativos() if item.id == usuario.id)
+    assert depois.sem_recomendacao_desde > criado_em
+    assert depois.silencio_avisado_em is not None

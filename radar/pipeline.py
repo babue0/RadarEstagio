@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -9,7 +9,7 @@ from radar.domain.ports import AvaliadorDeVagas, ColetorDeVagas, Notificador, Re
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.regras import aplicar_regras_objetivas
-from radar.notification.formatador import formatar_mensagem
+from radar.notification.formatador import formatar_aviso_de_silencio, formatar_mensagem
 from radar.notification.telegram import ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
 
@@ -21,6 +21,7 @@ class ParametrosDaExecucao(BaseModel):
     quantidade: int = Field(ge=1)
     nota_minima: int = Field(ge=0, le=100)
     falhas_ate_pausar: int = Field(ge=1)
+    dias_de_silencio_ate_avisar: int = Field(ge=1)
 
 
 def executar(
@@ -91,6 +92,9 @@ def atender_usuario(
         len(selecionadas),
     )
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
+    if not selecionadas:
+        avisar_silencio(notificador, repositorio, usuario, parametros, agora)
+        return None
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem(selecionadas, agora.date()))
     except ErroDeNotificacao as erro:
@@ -113,6 +117,38 @@ def gravar_avaliacoes(
         repositorio.guardar_avaliacoes(usuario, novas, modelo)
     except ErroDeArmazenamento as erro:
         logger.warning("usuário %s: avaliações não foram gravadas: %s", usuario.id, erro)
+
+
+def avisar_silencio(
+    notificador: Notificador,
+    repositorio: Repositorio,
+    usuario: Usuario,
+    parametros: ParametrosDaExecucao,
+    agora: datetime,
+) -> None:
+    dias = parametros.dias_de_silencio_ate_avisar
+    if not silencio_prolongado(usuario, agora, dias):
+        return
+    try:
+        notificador.enviar(usuario.chat_id, formatar_aviso_de_silencio(dias, agora.date()))
+    except ErroDeNotificacao as erro:
+        logger.warning("usuário %s ficou sem o aviso de silêncio: %s", usuario.id, erro)
+        pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
+        return
+    logger.info("usuário %s avisado de %d dias sem recomendação", usuario.id, dias)
+    try:
+        repositorio.registrar_aviso_de_silencio(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning("usuário %s: aviso de silêncio não foi gravado: %s", usuario.id, erro)
+
+
+def silencio_prolongado(usuario: Usuario, agora: datetime, dias: int) -> bool:
+    if usuario.sem_recomendacao_desde is None:
+        return False
+    limite = agora - timedelta(days=dias)
+    if usuario.sem_recomendacao_desde > limite:
+        return False
+    return usuario.silencio_avisado_em is None or usuario.silencio_avisado_em <= limite
 
 
 def pausar_apos_falhas_seguidas(

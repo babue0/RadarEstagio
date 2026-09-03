@@ -10,11 +10,16 @@ from radar.storage.errors import ErroDeArmazenamento
 logger = logging.getLogger(__name__)
 
 SQL_USUARIOS_ATIVOS = """
-    select id, curso, periodo, habilidades, cidade, modalidade, telegram_chat_id,
-           coalesce(areas_de_interesse, '{}'::text[]) as areas_de_interesse
-    from perfis
-    where ativo and telegram_chat_id is not null
-    order by criado_em
+    select p.id, p.curso, p.periodo, p.habilidades, p.cidade, p.modalidade, p.telegram_chat_id,
+           coalesce(p.areas_de_interesse, '{}'::text[]) as areas_de_interesse,
+           coalesce(
+             (select max(e.enviada_em) from envios e where e.perfil_id = p.id),
+             p.criado_em
+           ) as sem_recomendacao_desde,
+           p.silencio_avisado_em
+    from perfis p
+    where p.ativo and p.telegram_chat_id is not null
+    order by p.criado_em
 """
 
 SQL_PERFIS_SEM_VINCULO = "select count(*) from perfis where ativo and telegram_chat_id is null"
@@ -95,6 +100,12 @@ SQL_PAUSAR = """
     update perfis
     set ativo = false, atualizado_em = now()
     where id = %(perfil_id)s and ativo
+"""
+
+SQL_REGISTRAR_AVISO_DE_SILENCIO = """
+    update perfis
+    set silencio_avisado_em = now()
+    where id = %(perfil_id)s
 """
 
 
@@ -188,6 +199,15 @@ class RepositorioPostgres:
                 f"Falha ao contar a falha de envio: {descrever(erro)}"
             ) from erro
 
+    def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                cursor.execute(SQL_REGISTRAR_AVISO_DE_SILENCIO, {"perfil_id": usuario.id})
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao gravar o aviso de silêncio: {descrever(erro)}"
+            ) from erro
+
     def pausar(self, usuario: Usuario) -> None:
         try:
             with self._conexao.transaction(), self._conexao.cursor() as cursor:
@@ -243,6 +263,8 @@ def converter_em_usuario(linha: dict) -> Usuario:
             areas_de_interesse=[AreaDeInteresse(area) for area in linha["areas_de_interesse"]],
         ),
         chat_id=linha["telegram_chat_id"],
+        sem_recomendacao_desde=linha["sem_recomendacao_desde"],
+        silencio_avisado_em=linha["silencio_avisado_em"],
     )
 
 

@@ -15,14 +15,25 @@ ROTULOS_MODALIDADE = {
 
 
 def formatar_mensagem(resultados: list[ResultadoMatch], data: date) -> str:
-    cabecalho = f"📡 <b>Radar de Estágio</b> — {data.strftime('%d/%m/%Y')}"
-    if not resultados:
-        return f"{cabecalho}\n\nNenhuma vaga compatível com o seu perfil hoje."
     ranqueados = sorted(resultados, key=lambda resultado: resultado.nota, reverse=True)
     blocos = [
         formatar_vaga(posicao, resultado) for posicao, resultado in enumerate(ranqueados, start=1)
     ]
-    return cabecalho + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
+    return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
+
+
+def formatar_aviso_de_silencio(dias: int, data: date) -> str:
+    return (
+        f"{cabecalho(data)}\n\n"
+        f"Nenhuma vaga compatível com o seu perfil apareceu nos últimos {dias} dias.\n\n"
+        "O Radar continua procurando todos os dias e avisa assim que encontrar. "
+        "Perfis presenciais restritos a uma cidade recebem menos vagas do que perfis "
+        "que também aceitam remoto ou híbrido."
+    )
+
+
+def cabecalho(data: date) -> str:
+    return f"📡 <b>Radar de Estágio</b> — {data.strftime('%d/%m/%Y')}"
 
 
 def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:

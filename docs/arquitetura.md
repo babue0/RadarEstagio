@@ -201,6 +201,10 @@ Regras para não afetar quem já usa:
 - **Avaliação gravada antes do envio.** `guardar_avaliacoes` roda antes de chamar o Telegram e
   `registrar_envios` roda depois: uma falha de entrega não descarta o que a IA já custou, e o
   dia seguinte não reavalia as mesmas vagas.
+- **Nada de mensagem vazia.** Sem vaga aprovada o job não envia nada. Depois de
+  `DIAS_DE_SILENCIO_ATE_AVISAR` dias sem recomendação, e no máximo uma vez por período, sai um
+  aviso de silêncio explicando que a busca continua. A notificação diária inútil era o caminho
+  mais curto para o estudante bloquear o bot.
 - **Falhas seguidas pausam o perfil.** Cada erro de envio incrementa `perfis.falhas_de_envio`;
   ao atingir `FALHAS_DE_ENVIO_ATE_PAUSAR` o perfil sai de `ativo`, emitindo `entregas_pausadas`.
   Um envio bem-sucedido zera a contagem. Sem isso, quem bloqueia o bot vira custo diário eterno.
