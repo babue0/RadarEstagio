@@ -44,7 +44,7 @@ Uma linha por usuário. `user_id` é o `id` do usuário no Auth (`auth.users.id`
 | `token_vinculo`    | uuid     | banco          | gerado; só leitura, usado no link do Telegram              |
 | `ativo`            | boolean  | sistema        | `true` recebe mensagens, `false` pausa; controle do site previsto para a Fase 3 |
 | `criado_em`        | timestamptz | banco       | gerado                                                     |
-| `atualizado_em`    | timestamptz | site        | usado quando a edição do perfil estiver disponível         |
+| `atualizado_em`    | timestamptz | site        | atualizado quando um perfil existente é salvo novamente    |
 
 O que o radar usa para escolher vagas: `curso`, `periodo`, `habilidades`, `cidade`,
 `modalidade`. Quanto mais específicas as habilidades, melhor o ranqueamento.

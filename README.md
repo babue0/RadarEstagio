@@ -7,7 +7,8 @@ usuário e entrega no Telegram só as compatíveis — ranqueadas e com os ponto
 - Plano do MVP, passo a passo: [`docs/plano-mvp.md`](docs/plano-mvp.md)
 - O que foi feito em cada passo: [`docs/passos-realizados.md`](docs/passos-realizados.md)
 - Arquitetura e decisões: [`docs/arquitetura.md`](docs/arquitetura.md)
-- Evento de ativação e métricas: [`docs/metricas.md`](docs/metricas.md)
+- Ativação operacional, ativação de produto e métricas: [`docs/metricas.md`](docs/metricas.md)
+- Vocabulário do produto: [`CONTEXT.md`](CONTEXT.md)
 - Roteiro da apresentação: [`docs/apresentacao.md`](docs/apresentacao.md)
 - Regras do projeto e estado atual: [`CLAUDE.md`](CLAUDE.md)
 - Landing page e decisões de frontend: [`web/README.md`](web/README.md)
@@ -19,7 +20,8 @@ Adzuna + Gupy (vagas dos últimos 3 dias)
   → remove duplicatas entre as fontes (título + empresa)
   → pré-filtro por regras (descarta o que não é estágio, exige sênior etc.)
   → Gemini extrai fatores e justificativas em lotes
-  → Python calcula a nota 0–100 com habilidades valendo 50% do resultado
+  → Python calcula a nota 0–100: habilidades 45%, curso 10%, área 10%,
+    período/experiência 15%, logística 10% e áreas de interesse 10%
   → ranqueia e pega as 5 melhores
   → envia a mensagem no Telegram
 ```
@@ -47,7 +49,7 @@ Decisões atuais:
 - conta por e-mail e senha com Supabase Auth;
 - formulário com curso, período, habilidades, cidade e modalidade preferida, salvo diretamente
   na tabela `perfis` sob RLS;
-- vínculo com o Telegram por link do bot contendo token temporário, sem pedir `@username` ou
+- vínculo com o Telegram por link do bot contendo token aleatório, sem pedir `@username` ou
   `chat_id` no formulário;
 - eventos do funil registrados no Supabase com uma sessão anônima que é ligada à conta após o
   perfil ser salvo;

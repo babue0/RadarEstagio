@@ -17,7 +17,7 @@ Estado atual:
 - Entrega da mensagem ranqueada no Telegram
 - Agendamento diário via GitHub Actions
 - Deduplicação e histórico entre execuções quando o banco está configurado
-- Evento de ativação registrado na primeira entrega relevante
+- Ativação operacional registrada na primeira recomendação entregue
 - Funil instrumentado da landing à primeira recomendação, com eventos web sob RLS e marcos
   autoritativos registrados por gatilhos do banco
 
@@ -30,12 +30,13 @@ novas fontes além de Adzuna e Gupy.
 - **Coleta de vagas**: Adzuna API (oficial) e Gupy (API interna
   `employability-portal.gupy.io/api/v1/jobs`, sem chave, campo `workplaceType`). As fontes
   ativas vêm de `FONTES` (padrão `adzuna,gupy`) e são somadas por `ColetorComposto`, que
-  ignora uma fonte fora do ar e só falha se nenhuma responder. Vagas.com/InfoJobs (scraping)
-  entram nas fases seguintes. LinkedIn está fora de escopo (bloqueia coleta automatizada).
+  ignora uma fonte fora do ar e só falha se nenhuma responder. Novas fontes só entram se a
+  validação comprovar cobertura insuficiente. LinkedIn está fora de escopo (bloqueia coleta
+  automatizada).
 - **IA de matching**: Google Gemini (modelos Flash), com dois adapters: Gemini Developer
   API para CI/produção e Antigravity CLI (`agy`) para testes locais.
 - **Notificação**: Telegram Bot API. Bot: `RadarEstagio_bot`.
-- **Agendamento**: GitHub Actions (cron diário), repositório público.
+- **Agendamento**: workflow manual do GitHub Actions disparado diariamente por cron-job.org.
 - **Persistência**: PostgreSQL gerenciado (Supabase), opcional: com `DATABASE_URL` o job
   lê os usuários do banco e guarda vagas, notas e envios; sem ela roda com o perfil fixo e
   sem histórico. Acesso por `psycopg` com SQL puro; schema em `supabase/migrations/`.
@@ -278,9 +279,10 @@ Fase 2 em andamento, após a conclusão da base técnica da Fase 1:
   restringe a escrita dos campos de vínculo ao webhook. Projeto atual:
   `xrhvjwemmylwbqgluebc` (`sa-east-1`). A `DATABASE_URL` do Actions já usa esse banco;
   pendência externa: configurar o redirect do Auth para `http://localhost:8000`.
-- Passo 12 (Fase 2): ativação definida como a primeira entrega bem-sucedida com ao menos uma
-  vaga recomendada. `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`;
-  `docs/metricas.md` define taxa de ativação em 7 dias e tempo mediano até o valor. A migration
+- Passo 12 (Fase 2): ativação operacional definida como a primeira entrega bem-sucedida com ao
+  menos uma recomendação. `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`;
+  `docs/metricas.md` separa esse marco da ativação de produto, que começará em `vaga_aberta`, e
+  define a taxa operacional em 7 dias e o tempo mediano até a primeira entrega. A migration
   `0003_evento_ativacao.sql` foi aplicada ao projeto Supabase atual em 29/08/2026.
 - O projeto `bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano e não deve ser usado.
   Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.

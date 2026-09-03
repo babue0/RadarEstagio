@@ -102,12 +102,12 @@ opções gratuitas piores). Ver a decisão 10.
 
 - **Por que Gemini**: camada gratuita, suficiente para validar o produto.
 - **Saída estruturada** (`response_schema` + Pydantic): a IA é obrigada a devolver JSON no
-  formato `{id_vaga, area, curso, periodo_experiencia, habilidades_obrigatorias,
-  habilidades_desejaveis, pontos_a_favor, pontos_contra, alerta_pegadinha}`. Sem parsing de
-  texto livre nem nota escolhida pela IA.
-- **Pontuação no Python**: habilidades valem 50 pontos, curso 15, área 10,
-  período/experiência 15 e logística 10. A cobertura das habilidades é comparada por
-  tecnologias normalizadas e exatas; `Java` não corresponde a `JavaScript`.
+  formato `{id_vaga, area, areas_da_vaga, curso, periodo_experiencia,
+  habilidades_obrigatorias, habilidades_principais, habilidades_desejaveis, pontos_a_favor,
+  pontos_contra, alerta_pegadinha}`. Sem parsing de texto livre nem nota escolhida pela IA.
+- **Pontuação no Python**: habilidades valem 45 pontos, curso 10, área 10,
+  período/experiência 15, logística 10 e áreas de interesse 10. A cobertura das habilidades é
+  comparada por tecnologias normalizadas e exatas; `Java` não corresponde a `JavaScript`.
 - **Temperatura 0**: os mesmos dados tendem a produzir a mesma extração de fatores.
 - **Trocar de modelo** é uma variável de ambiente (`GEMINI_MODELO`). Trocar de provedor é
   um adapter novo em `matching/`.
@@ -123,8 +123,8 @@ antes de gastar cota e tempo de IA. A IA fica para o julgamento fino.
 
 ### 5. Avaliação em lotes com tolerância a falhas
 
-O problema: a camada gratuita do Gemini permite ~20 requisições por **dia**. Uma chamada por
-vaga estourava a cota em um único run.
+O problema: a cota do Gemini varia por modelo e plano. Uma chamada por vaga multiplica custo,
+latência e risco de limite, além de poder interromper uma execução com volume alto.
 
 A solução é em duas camadas, separadas de propósito:
 
@@ -230,7 +230,8 @@ interações reais no Telegram; o contrato não fabrica comportamento futuro.
 | `pydantic-settings` | `.env` → objeto tipado | erro claro quando falta variável |
 | `httpx` | Adzuna e Telegram | simples, moderno, fácil de simular |
 | `google-genai` | Gemini | SDK oficial com saída estruturada |
-| GitHub Actions | cron diário | grátis em repo público, sem servidor |
+| GitHub Actions | executa o workflow manual | repositório público, sem servidor dedicado |
+| cron-job.org | dispara o workflow diariamente | substitui o `schedule` nativo que falhou em testes |
 
 ## Regras do repositório
 
@@ -256,6 +257,7 @@ trabalho futuro:
   troca o token pelo `chat_id` e grava no perfil. A função fica fora do `radar/` (Deno é a
   plataforma das Edge Functions) e só tem uma regra pura testada (`vinculo.ts`). O bot
   continua só enviando mensagens; nada de `python-telegram-bot` nem processo escutando.
-- **Mais fontes**: Vagas.com/InfoJobs (scraping) — cada uma é uma classe em `collectors/`
-  cumprindo `ColetorDeVagas`, registrada na factory e em `FONTES`.
-- **Cota da IA**: billing no Gemini (centavos por mês) ou `AvaliadorClaude` em `matching/`.
+- **Mais fontes**: só depois de a validação comprovar cobertura insuficiente. Cada nova fonte deve
+  cumprir `ColetorDeVagas` e ser registrada na factory e em `FONTES`.
+- **Cota da IA**: medir chamadas e custo por usuário com ativação operacional antes de contratar
+  capacidade ou implementar outro adapter em `matching/`.
