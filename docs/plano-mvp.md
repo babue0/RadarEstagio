@@ -1,5 +1,9 @@
 # Plano do MVP — Radar de Estágio (Fase 1)
 
+> **Documento histórico.** Este plano registra o estado inicial da Fase 1. O estado vigente está
+> em [`pre-prd.md`](pre-prd.md) e no [`README.md`](../README.md). O cron nativo descrito abaixo foi
+> posteriormente substituído por um disparo externo do workflow manual.
+
 ## Contexto
 
 O projeto está no zero: só existem `CLAUDE.md` (regras, stack e arquitetura) e `docs/proposta.md`.

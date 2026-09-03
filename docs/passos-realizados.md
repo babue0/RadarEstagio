@@ -412,7 +412,7 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ---
 
-## Passo 11 — Cadastro web e ativação no Telegram (Fase 2)
+## Passo 11 — Cadastro web e vínculo com o Telegram (Fase 2)
 
 **O que foi feito**
 
@@ -439,7 +439,8 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 - `tests/test_frontend_activation.py` verifica a ordem de carregamento, a presença do fluxo de
   Auth, a persistência em `perfis`, o deep link e a proteção dos campos de vínculo.
 - Na verificação de 29/08/2026, 192 testes passaram e 4 testes de integração foram ignorados sem
-  banco de teste configurado. A suíte atual tem 268 testes passando e 4 integrações ignoradas.
+  banco de teste configurado. Em 02/09/2026, a suíte tem 318 testes passando e 4 integrações
+  ignoradas.
 
 **Pendências operacionais**
 
@@ -455,24 +456,25 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ---
 
-## Passo 12 — Evento de ativação e métricas (Fase 2)
+## Passo 12 — Ativação operacional e métricas (Fase 2)
 
 **O que foi feito**
 
-- Ativação definida como a primeira entrega aceita pelo Telegram contendo ao menos uma vaga
-  recomendada. Cadastro, confirmação de e-mail, vínculo do Telegram e mensagem sem vagas não
-  contam como ativação.
+- Ativação operacional definida como a primeira entrega aceita pelo Telegram contendo ao menos
+  uma recomendação. Cadastro, confirmação de e-mail, vínculo do Telegram e mensagem sem vagas não
+  contam como ativação operacional. A ativação de produto começa na primeira abertura de vaga e
+  ainda não é emitida.
 - `perfis.ativado_em` registra o evento uma única vez. O pipeline atualiza o campo na mesma
   transação dos registros em `envios`, somente depois do envio bem-sucedido.
 - A migration `0003_evento_ativacao.sql` cria o campo, retropreenche perfis com histórico e
-  adiciona um índice parcial para consultas dos ativados.
-- `docs/metricas.md` documenta a taxa de ativação em 7 dias, o tempo mediano até o valor e uma
-  consulta de referência para a coorte madura dos últimos 30 dias.
+  adiciona um índice parcial para consultas dos perfis com ativação operacional.
+- `docs/metricas.md` documenta a taxa de ativação operacional em 7 dias, o tempo mediano até a
+  primeira entrega e uma consulta de referência para a coorte madura dos últimos 30 dias.
 
 **Como foi testado**
 
-- O teste de integração verifica que uma entrega com vaga ativa o perfil, uma execução sem
-  vaga não ativa e reprocessar a mesma entrega preserva o primeiro timestamp.
+- O teste de integração verifica que uma entrega com vaga ativa operacionalmente o perfil, uma
+  execução sem vaga não ativa e reprocessar a mesma entrega preserva o primeiro timestamp.
 - A suíte local mantém os testes de PostgreSQL condicionados a `DATABASE_URL_TESTE`.
 - A migration foi aplicada no projeto Supabase de produção `xrhvjwemmylwbqgluebc` em
   29/08/2026 e retropreencheu qualquer perfil que já tivesse histórico de envio.
@@ -540,12 +542,13 @@ bot é `RadarEstagio_bot`, corrigido nos docs.
 
 ## Números atuais do MVP
 
-- 14 passos, ~40 commits atômicos em Conventional Commits.
-- 286 testes coletados: 282 passam localmente e 4 integrações exigem um PostgreSQL de teste.
-- 1 execução diária automática; as requisições ao Gemini variam conforme usuários e lotes.
+- 14 passos documentados, seguidos por ajustes de matching e documentação.
+- 322 testes coletados: 318 passam localmente e 4 integrações exigem um PostgreSQL de teste.
+- 1 workflow configurado para disparo diário externo; as requisições ao Gemini variam conforme
+  usuários e lotes.
 
 ## Pendências para o grupo decidir
 
-- **Cota do Gemini para vários usuários**: ativar billing (centavos/mês) ou migrar para
-  Claude Haiku (novo `AvaliadorClaude` em `matching/`, sem tocar no resto).
+- **Cota do Gemini para vários usuários**: medir chamadas e custo por usuário antes de ativar
+  billing ou implementar outro adapter.
 - **`.agents/skills`** no repositório público: manter ou remover.

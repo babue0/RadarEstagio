@@ -81,35 +81,27 @@ para uma fase posterior. O projeto já suporta um perfil por conta.
 
 ### 6.1 Coleta de vagas — quais APIs?
 
-Gupy, Vagas.com e afins não oferecem API pública oficial para desenvolvedores
-externos. Usaremos três caminhos, todos gratuitos:
+O MVP usa duas fontes com contratos diferentes:
 
-- **Adzuna (API oficial e gratuita):** agregador internacional de vagas que cobre o
-  Brasil. Cadastro instantâneo em developer.adzuna.com gera App ID e App Key; o plano
-  grátis dá cerca de 1.000 chamadas/mês — precisamos de ~30 (uma busca por dia).
-  Limitação: descrição resumida, com link para a vaga completa.
+- **Adzuna (API oficial):** agregador internacional de vagas que cobre o Brasil. Exige App ID e
+  App Key e pode devolver descrições resumidas, posteriormente enriquecidas quando possível.
 - **Gupy (API interna do portal):** o portal de vagas da Gupy carrega tudo por uma API
-  interna em JSON — grátis e sem cadastro, porém não oficial (pode mudar sem aviso). A
-  chamada é descoberta pela aba Network do DevTools.
-- **Vagas.com / InfoJobs:** leitura direta das páginas com Python (requests +
-  BeautifulSoup).
+  interna em JSON, sem chave, porém não oficial e sujeita a mudança sem aviso.
+
+Novas fontes só devem entrar se a validação de sete dias comprovar cobertura insuficiente nas
+fontes atuais.
 
 LinkedIn fica de fora: bloqueia coleta automatizada e a proíbe nos termos de uso.
 Excluí-lo é uma decisão de escopo consciente e declarada.
 
 ### 6.2 Inteligência Artificial — qual IA usar?
 
-- **Opção custo zero — Google Gemini (modelos Flash):** camada gratuita sem cartão de
-  crédito, com limites de centenas a ~1.500 requisições por dia — folgado para nossas
-  dezenas de análises diárias. Os limites mudam com o tempo e, no plano grátis, o
-  Google pode usar os dados enviados para treino (irrelevante aqui: vaga de emprego é
-  dado público).
-- **Opção premium — Claude Haiku 4.5 (Anthropic):** pago por uso, sem mensalidade:
-  US$ 1 por milhão de tokens de entrada e US$ 5 por milhão de saída. No nosso volume
-  (~50 vagas/dia), a conta fecha em US$ 3–5/mês (~R$ 20–30).
+- **GitHub Actions:** Gemini Developer API com modelo Flash configurável.
+- **Desenvolvimento local:** Gemini Developer API ou AGY, ambos atrás da mesma interface.
 
-Estratégia: começar no Gemini grátis; se a qualidade da análise pedir, migrar para o
-Claude é trocar meia dúzia de linhas de código.
+O projeto usa lotes, pré-filtro e reaproveitamento de avaliações para reduzir chamadas. Cotas e
+preços mudam por modelo e plano; por isso o custo deve ser medido por execução e por usuário, sem
+assumir que a camada gratuita sustentará crescimento.
 
 ### 6.3 Bot do Telegram — a entrega
 
@@ -120,11 +112,9 @@ conversa e exige empresa verificada — inviável para projeto acadêmico.
 
 ### 6.4 Roda sozinho — o agendamento
 
-GitHub Actions, o agendador do próprio GitHub, executa o sistema todo dia no horário
-marcado. Gratuito em repositório público (e o plano grátis dá 2.000 minutos/mês em
-privado; usaremos ~150). Sem servidor, sem deploy, sem cartão. O gatilho manual do
-Actions é o botão da demonstração ao vivo: um clique e a mensagem chega no Telegram na
-frente da banca.
+O GitHub Actions executa um workflow com `workflow_dispatch`. O disparo diário às 07:23 BRT é
+feito pelo cron-job.org porque o `schedule` nativo deixou de disparar durante a validação. O
+gatilho manual continua disponível para testes e demonstrações.
 
 ### 6.5 Memória do sistema — o banco de dados
 
@@ -136,15 +126,15 @@ preferências e tendências continuam fora do escopo atual.
 
 | Peça                    | Ferramenta / API                          | Custo                               |
 | ------------------------ | ------------------------------------------ | ------------------------------------ |
-| Coleta de vagas          | Adzuna (oficial) + Gupy + Vagas.com        | R$ 0                                 |
-| Inteligência artificial  | Gemini Flash (ou Claude Haiku 4.5)         | R$ 0 (ou ~R$ 25/mês)                 |
-| Notificação              | Bot API do Telegram                        | R$ 0                                 |
-| Agendamento              | GitHub Actions (cron diário)               | R$ 0                                 |
-| Banco e contas           | Supabase (PostgreSQL + Auth, plano gratuito) | R$ 0                               |
-| **TOTAL**                |                                             | **R$ 0,00/mês (premium: ~R$ 25)**    |
+| Coleta de vagas          | Adzuna + Gupy                               | camada gratuita no piloto; medir limites |
+| Inteligência artificial  | Gemini Flash                               | variável por chamadas e tokens            |
+| Notificação              | Bot API do Telegram                        | sem custo observado no piloto              |
+| Agendamento              | GitHub Actions + cron-job.org              | sem custo observado no piloto              |
+| Banco e contas           | Supabase (PostgreSQL + Auth)               | camada gratuita no piloto; medir limites   |
 
-A única cobrança possível do sistema inteiro é a IA — e mesmo ela tem alternativa
-gratuita que atende o projeto.
+O piloto opera nas camadas gratuitas, mas isso não constitui unit economics. Antes de monetizar,
+é necessário registrar chamadas de IA, duração, armazenamento, suporte e custo por usuário com
+ativação operacional.
 
 ## 7. Roadmap em 3 Fases
 
@@ -152,6 +142,7 @@ gratuita que atende o projeto.
   diário. Concluída.
 - **Fase 2 — MVP de validação com usuários:** mais fontes, banco com histórico e dedupe, site
   com conta e cadastro do perfil, vínculo com o Telegram por botão, suporte a vários usuários e
-  métricas de ativação. Parcialmente implementada; falta validar o uso com estudantes.
+  métricas de ativação operacional. Parcialmente implementada; faltam a ativação de produto e a
+  validação de uso com estudantes.
 - **Fase 3 — Retenção e controle:** editar, pausar e retomar o perfil, feedback simples e
   personalização baseada em volume suficiente de interações.

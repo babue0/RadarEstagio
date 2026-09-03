@@ -13,7 +13,7 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - coleta curso e período, habilidades e preferências em três etapas curtas;
 - sugere cursos e habilidades comuns, mas mantém entrada livre para outros perfis;
 - pede e-mail e senha somente depois que o usuário configura o radar;
-- persiste o perfil no Supabase e abre o vínculo seguro com o Telegram;
+- persiste o perfil no Supabase e abre o vínculo com o Telegram por token aleatório;
 - reconhece quando o webhook concluiu o vínculo;
 - registra os eventos do funil sem bloquear o cadastro quando a telemetria falha.
 - ainda não oferece edição, pausa ou retomada do perfil; essas ações ficam para a Fase 3.
@@ -31,8 +31,9 @@ RLS e pelas permissões de coluna das migrations. Nunca use a chave `service_rol
 No Supabase Auth, adicione a URL publicada do site e `http://localhost:8000` à lista de Redirect
 URLs. A confirmação de e-mail retorna ao site, que conclui a criação do perfil automaticamente.
 
-Antes de publicar, aplique todas as migrations, incluindo
-`supabase/migrations/0005_eventos_produto.sql` para a instrumentação do funil.
+Antes de publicar, aplique em ordem todas as migrations de `0001` a `0007`. A `0005` instrumenta
+o funil, a `0006` adiciona áreas de interesse ao perfil e a `0007` persiste os requisitos técnicos
+extraídos das vagas.
 
 ## Como abrir
 
