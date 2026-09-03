@@ -200,6 +200,9 @@ coletadas.
 
 ### Sprint 0 — Destravar o piloto (semana de 03/09 a 09/09)
 
+**Status:** implementado em 03/09/2026 no branch `worktree-sprint-0-rcd`, pendente de
+verificação manual de ponta a ponta e das migrations `0008`, `0009` e `0010`.
+
 **Hipótese:** o piloto é impossível hoje por custo e por falha silenciosa, não por falta de
 funcionalidade.
 
@@ -217,7 +220,7 @@ funcionalidade.
 - `AvaliadorEmLotes` continua responsável pela cota, agora sobre um volume fixo por dia.
 
 **Critério:** o número de requisições ao Gemini por execução não muda ao dobrar o número de
-usuários. Teste que prova isso com um avaliador falso contando chamadas.
+usuários. Verificado por `test_dobrar_os_usuarios_nao_dobra_as_vagas_extraidas`.
 
 **2. Nunca perder avaliação paga**
 
@@ -226,7 +229,8 @@ usuários. Teste que prova isso com um avaliador falso contando chamadas.
 - Contador de falhas consecutivas de envio no perfil; ao atingir o limite, `ativo = false` com o
   evento `entregas_pausadas`, que o gatilho de `0005` já registra.
 
-**Critério:** falha no Telegram não aumenta o custo do dia seguinte.
+**Critério:** falha no Telegram não aumenta o custo do dia seguinte. Verificado por
+`test_avaliacao_e_gravada_mesmo_quando_o_telegram_falha`.
 
 **3. Aviso de execução**
 
@@ -241,7 +245,9 @@ usuários. Teste que prova isso com um avaliador falso contando chamadas.
 - Sem vagas aprovadas, não enviar nada. Um resumo semanal informa o silêncio e sugere ajustar
   cidade ou modalidade.
 
-**Critério:** o estudante só recebe mensagem quando há algo para ver.
+**Critério:** o estudante só recebe mensagem quando há algo para ver. O aviso de silêncio
+ainda não aponta para uma tela de edição de perfil, que só chega no sprint 3 — a redação
+informa sem prometer um botão que não existe.
 
 **5. Telemetria que falha visível**
 

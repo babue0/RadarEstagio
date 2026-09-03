@@ -67,8 +67,8 @@ muda (infraestrutura) fica na borda; a parte que não muda (domínio) fica no ce
 def executar(coletor, extrator, notificador, repositorio, parametros, agora):
     unicas = remover_duplicatas(coletor.coletar())
     candidatas = candidatas_de_algum_perfil(unicas, usuarios)
-    extracoes = obter_extracoes(extrator, repositorio, candidatas)   # uma vez, para todos
-    for usuario in usuarios:                                        # por usuário, sem IA
+    extracoes = obter_extracoes(extrator, repositorio, candidatas)  # uma vez, para todos
+    for usuario in usuarios:  # por usuário, sem IA
         resultados = pontuar_vagas(filtrar(unicas, usuario.perfil), extracoes, usuario.perfil)
         notificador.enviar(usuario.chat_id, formatar_mensagem(ranquear(resultados), agora))
 ```
