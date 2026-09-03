@@ -337,6 +337,8 @@ mensurável de qualidade.
   semanas de uso.
 - Cada canal com origem identificada — turma, comunidade, coordenação.
 - Cinco entrevistas com o roteiro da seção 7.2 de `plano-melhorias-rcd.md`.
+- **Acompanhar o viés de anúncio raso** descrito na seção 7, comparando as recomendações
+  marcadas como irrelevantes com quantas tecnologias a vaga declarava.
 - Ao fim: substituir a faixa de tecnologias da landing por evidência real; a promessa comercial só
   cresce na proporção da prova.
 
@@ -358,10 +360,44 @@ Além da lista da seção 11 de `plano-melhorias-rcd.md`, ficam explicitamente f
   recomendação. Registrar agora, usar depois.
 - **Billing do Gemini.** O item 1 elimina a necessidade para a escala do piloto.
 - **Novos pesos ou travas de pontuação.** A pontuação já está bem ajustada para o perfil nº 1; o
-  próximo ajuste deve vir de `vaga_irrelevante` real, não de intuição.
+  próximo ajuste deve vir de `vaga_irrelevante` real, não de intuição. Ver a seção 7.
 - **Painel web de métricas.** Consulta SQL resolve na escala de 20 usuários.
 
-## 7. Regra de execução
+## 7. Viés conhecido do ranking: anúncio raso ganha de anúncio detalhado
+
+Observado em execução real de 03/09/2026, com o perfil nº 1:
+
+```
+uma tecnologia declarada, atendida  -> nota 100
+cinco declaradas, três atendidas    -> nota  85
+```
+
+Na mensagem daquele dia, "Estágio em Automação", que cita apenas `Python`, ficou em primeiro com
+100 e passou na frente de "Estagiário de Dados", que declara Python, SQL e Data Quality e ficou
+com 86. Quanto mais honesto o anúncio sobre o que exige, pior a nota que recebe.
+
+A causa é a cobertura suavizada `(1+atendidas)/(1+exigidas)`, criada em 31/08/2026 para resolver
+o problema oposto — vagas boas afundando por uma habilidade ausente. Ela resolveu aquele e abriu
+este: com 1 requisito de 1 atendido, a cobertura dá 1.0 cravado.
+
+**Decisão de 03/09/2026: não corrigir antes do piloto.** Ajustar peso de ranking sem
+comportamento observado é a intuição que o resto deste documento recusa. As duas correções
+possíveis continuam sobre a mesa e nenhuma foi implementada:
+
+1. **Teto para vaga rasa** — vaga com uma ou duas tecnologias declaradas não passa de ~85, como
+   já existe teto para curso parcial. Reversível e barato.
+2. **Cobertura sensível à densidade** — a nota passa a considerar quantas tecnologias a vaga
+   declara. Mexe na fórmula calibrada; mais arriscado.
+
+**O que reverte a decisão:** `vaga_irrelevante` concentrado em recomendações de vagas com uma ou
+duas tecnologias declaradas. O evento passa a existir no sprint 1 e a comparação é direta,
+porque a extração guarda as habilidades declaradas de cada vaga em `vagas.extracao`.
+
+Não confundir este viés com o bug corrigido no mesmo dia, em que variantes como
+"Microsoft Excel", "Documentos" e "Drive" pesavam na nota enquanto "Excel" e "Planilhas" eram
+ignorados. Aquilo era defeito e foi consertado; isto é calibração e espera dado.
+
+## 8. Regra de execução
 
 Mantida da seção 14 de `plano-melhorias-rcd.md`: cada entrega declara hipótese, métrica afetada,
 implementação mínima, teste proporcional ao risco, verificação manual de ponta a ponta, evento de
