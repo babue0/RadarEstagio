@@ -26,6 +26,7 @@ class AvaliadorEmLotes:
         self._avaliador = avaliador
         self._tamanho_do_lote = tamanho_do_lote
         self._esperar = esperar
+        self.requisicoes = 0
 
     def avaliar(self, vagas: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
         resultados: list[ResultadoMatch] = []
@@ -62,6 +63,7 @@ class AvaliadorEmLotes:
 
     def _avaliar_com_tolerancia(self, lote: list[Vaga], perfil: Perfil) -> list[ResultadoMatch]:
         try:
+            self.requisicoes += 1
             resultados = self._avaliador.avaliar(lote, perfil)
         except CotaDeAvaliacaoExcedida:
             raise

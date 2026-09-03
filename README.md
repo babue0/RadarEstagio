@@ -228,6 +228,12 @@ Actions), com exatamente os mesmos nomes do `.env`: `ADZUNA_APP_ID`, `ADZUNA_APP
 Sem `DATABASE_URL`, a mensagem diária vai para o Telegram de quem cadastrou o
 `TELEGRAM_CHAT_ID`; com ele, vai para cada usuário do banco.
 
+Com banco, o `TELEGRAM_CHAT_ID` passa a ser o **chat de operação**: ao fim de cada execução ele
+recebe um resumo com usuários ativos, quantos receberam recomendação, vagas enviadas e
+requisições ao avaliador. Se o job falhar antes disso — inclusive por estourar o timeout, quando
+o Python nem chega a reportar — um passo do workflow avisa no mesmo chat com o link do run.
+Deixe o `TELEGRAM_CHAT_ID` vazio para não receber esses resumos.
+
 Para disparar na hora (teste ou demo):
 
 1. Abra <https://github.com/babue0/RadarEstagio/actions>.

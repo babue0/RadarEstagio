@@ -36,6 +36,28 @@ def cabecalho(data: date) -> str:
     return f"📡 <b>Radar de Estágio</b> — {data.strftime('%d/%m/%Y')}"
 
 
+def formatar_resumo_da_execucao(
+    data: date,
+    usuarios: int,
+    atendidos: int,
+    vagas_enviadas: int,
+    vagas_coletadas: int,
+    requisicoes: int,
+) -> str:
+    return (
+        f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')}</b>\n"
+        f"Usuários ativos: {usuarios}\n"
+        f"Receberam recomendação: {atendidos}\n"
+        f"Vagas enviadas: {vagas_enviadas}\n"
+        f"Vagas coletadas: {vagas_coletadas}\n"
+        f"Requisições ao avaliador: {requisicoes}"
+    )
+
+
+def formatar_falha_da_execucao(data: date, erro: str) -> str:
+    return f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')} falhou</b>\n{escape(erro)}"
+
+
 def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
     vaga = resultado.vaga
     linhas = [

@@ -189,3 +189,13 @@ def test_cota_excedida_nao_e_dividida_ao_meio():
 def test_tamanho_de_lote_invalido_e_rejeitado():
     with pytest.raises(ValueError):
         AvaliadorEmLotes(AvaliadorDeLoteFalso(), 0)
+
+
+def test_conta_uma_requisicao_por_lote_enviado_ao_avaliador():
+    avaliador = AvaliadorDeLoteFalso()
+    em_lotes = AvaliadorEmLotes(avaliador, tamanho_do_lote=10)
+
+    em_lotes.avaliar(vagas(25), perfil_exemplo())
+
+    assert em_lotes.requisicoes == 3
+    assert len(avaliador.lotes_recebidos) == 3

@@ -217,6 +217,12 @@ Regras para não afetar quem já usa:
   permitidos para a sessão ou usuário atual. O job usa a string de conexão do Postgres, que
   ignora RLS, e ela só existe no `.env` e nos secrets.
 - **Conexão pelo Session pooler** do Supabase: o runner do Actions só tem IPv4.
+- **Toda execução se reporta.** Ao terminar, o job manda ao chat de operação
+  (`TELEGRAM_CHAT_ID`) quantos usuários estavam ativos, quantos receberam recomendação, quantas
+  vagas saíram e quantas requisições o avaliador consumiu. Um erro conhecido vira aviso de falha
+  antes de derrubar o processo; um kill por timeout, que o Python não consegue reportar, é
+  coberto pelo passo `if: failure()` do workflow, que manda o link do run. O disparo é externo
+  (cron-job.org): sem esse retorno, dois dias parados passam despercebidos, como já aconteceu.
 
 ### 11. Eventos de produto com fonte autoritativa
 

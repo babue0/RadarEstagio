@@ -17,6 +17,10 @@ from radar.matching.enriquecimento import AvaliadorComDescricoesCompletas
 from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.factory import criar_avaliador, nome_do_modelo
 from radar.matching.lotes import AvaliadorEmLotes
+from radar.notification.formatador import (
+    formatar_falha_da_execucao,
+    formatar_resumo_da_execucao,
+)
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import ParametrosDaExecucao, executar
 from radar.settings import Settings
@@ -127,23 +131,52 @@ def montar_avaliador(settings: Settings, cliente_http: httpx.Client) -> Avaliado
 def executar_fluxo(
     settings: Settings, cliente_http: httpx.Client, repositorio: Repositorio
 ) -> None:
-    coletor = montar_coletor(settings, cliente_http, repositorio.listar_ativos())
-    enviadas = executar(
-        coletor,
-        montar_avaliador(settings, cliente_http),
-        NotificadorTelegram(settings.telegram_bot_token, cliente_http),
-        repositorio,
-        ParametrosDaExecucao(
-            modelo=nome_do_modelo(settings),
-            quantidade=settings.quantidade_vagas_enviadas,
-            nota_minima=settings.nota_minima,
-            falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
-            dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
-        ),
-        datetime.now(UTC),
+    notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
+    avaliador = montar_avaliador(settings, cliente_http)
+    agora = datetime.now(UTC)
+    try:
+        resumo = executar(
+            montar_coletor(settings, cliente_http, repositorio.listar_ativos()),
+            avaliador,
+            notificador,
+            repositorio,
+            ParametrosDaExecucao(
+                modelo=nome_do_modelo(settings),
+                quantidade=settings.quantidade_vagas_enviadas,
+                nota_minima=settings.nota_minima,
+                falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
+                dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
+            ),
+            agora,
+        )
+    except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
+        avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora.date(), str(erro)))
+        raise
+    print(
+        f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
+        f"em {avaliador.requisicoes} requisições ao avaliador"
     )
-    total = sum(len(selecionadas) for selecionadas in enviadas.values())
-    print(f"{total} vagas enviadas para {len(enviadas)} usuários")
+    avisar_operacao(
+        settings,
+        notificador,
+        formatar_resumo_da_execucao(
+            agora.date(),
+            resumo.usuarios,
+            resumo.atendidos(),
+            resumo.vagas_enviadas(),
+            resumo.vagas_coletadas,
+            avaliador.requisicoes,
+        ),
+    )
+
+
+def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto: str) -> None:
+    if not settings.telegram_chat_id.strip():
+        return
+    try:
+        notificador.enviar(settings.telegram_chat_id, texto)
+    except ErroDeNotificacao as erro:
+        print(f"Resumo da execução não foi entregue: {erro}", file=sys.stderr)
 
 
 def rodar(settings: Settings) -> None:

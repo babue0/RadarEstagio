@@ -5,7 +5,9 @@ from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     dividir_em_mensagens,
     formatar_aviso_de_silencio,
+    formatar_falha_da_execucao,
     formatar_mensagem,
+    formatar_resumo_da_execucao,
 )
 
 DATA_DE_TESTE = date(2026, 8, 26)
@@ -257,3 +259,21 @@ def test_mensagem_longa_e_dividida_sem_quebrar_vagas():
     assert all(len(parte) <= LIMITE_DE_CARACTERES_DO_TELEGRAM for parte in partes)
     assert all(parte.count("<b>") == parte.count("</b>") for parte in partes)
     assert "\n\n───────────────\n\n".join(partes) == texto
+
+
+def test_resumo_da_execucao_traz_os_numeros_da_operacao():
+    texto = formatar_resumo_da_execucao(DATA_DE_TESTE, 12, 9, 31, 480, 18)
+
+    assert "execução de 26/08/2026" in texto
+    assert "Usuários ativos: 12" in texto
+    assert "Receberam recomendação: 9" in texto
+    assert "Vagas enviadas: 31" in texto
+    assert "Vagas coletadas: 480" in texto
+    assert "Requisições ao avaliador: 18" in texto
+
+
+def test_falha_da_execucao_escapa_a_mensagem_do_erro():
+    texto = formatar_falha_da_execucao(DATA_DE_TESTE, "Gemini <429> & cota")
+
+    assert "26/08/2026 falhou" in texto
+    assert "Gemini &lt;429&gt; &amp; cota" in texto

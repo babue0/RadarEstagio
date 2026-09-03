@@ -179,7 +179,7 @@ def rodar(
     notificador = notificador or NotificadorFalso()
     repositorio = repositorio or RepositorioFalso([usuario()])
     avaliador = AvaliadorFalso(notas)
-    enviadas = executar(
+    resumo = executar(
         ColetorFalso(vagas),
         avaliador,
         notificador,
@@ -191,7 +191,7 @@ def rodar(
         ),
         agora,
     )
-    return enviadas.get(ID_USUARIO, []), notificador, avaliador
+    return resumo.enviadas_por_usuario.get(ID_USUARIO, []), notificador, avaliador
 
 
 def test_envia_vagas_ordenadas_por_nota():
@@ -269,7 +269,7 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
     )
     notificador = NotificadorFalso()
 
-    enviadas = executar(
+    resumo = executar(
         ColetorFalso([vaga(1)]),
         AvaliadorFalso({"1": 70}),
         notificador,
@@ -279,15 +279,18 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
     )
 
     assert notificador.chats == ["123"]
-    assert [resultado.nota for resultado in enviadas[ID_USUARIO]] == [70]
-    assert ID_OUTRO_USUARIO not in enviadas
+    assert [resultado.nota for resultado in resumo.enviadas_por_usuario[ID_USUARIO]] == [70]
+    assert ID_OUTRO_USUARIO not in resumo.enviadas_por_usuario
+    assert resumo.usuarios == 2
+    assert resumo.atendidos() == 1
+    assert resumo.vagas_enviadas() == 1
 
 
 def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
     repositorio = RepositorioFalso([usuario(chat_id="bloqueado"), usuario(ID_OUTRO_USUARIO)])
     notificador = NotificadorFalso(chats_com_erro={"bloqueado"})
 
-    enviadas = executar(
+    resumo = executar(
         ColetorFalso([vaga(1)]),
         AvaliadorFalso({"1": 70}),
         notificador,
@@ -297,7 +300,7 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
     )
 
     assert notificador.chats == ["123"]
-    assert list(enviadas) == [ID_OUTRO_USUARIO]
+    assert list(resumo.enviadas_por_usuario) == [ID_OUTRO_USUARIO]
     assert [registro[0] for registro in repositorio.envios_gravados] == [ID_OUTRO_USUARIO]
 
 

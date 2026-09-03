@@ -24,6 +24,19 @@ class ParametrosDaExecucao(BaseModel):
     dias_de_silencio_ate_avisar: int = Field(ge=1)
 
 
+class ResumoDaExecucao(BaseModel):
+    usuarios: int
+    vagas_coletadas: int
+    vagas_unicas: int
+    enviadas_por_usuario: dict[UUID, list[ResultadoMatch]]
+
+    def atendidos(self) -> int:
+        return len(self.enviadas_por_usuario)
+
+    def vagas_enviadas(self) -> int:
+        return sum(len(selecionadas) for selecionadas in self.enviadas_por_usuario.values())
+
+
 def executar(
     coletor: ColetorDeVagas,
     avaliador: AvaliadorDeVagas,
@@ -31,7 +44,7 @@ def executar(
     repositorio: Repositorio,
     parametros: ParametrosDaExecucao,
     agora: datetime,
-) -> dict[UUID, list[ResultadoMatch]]:
+) -> ResumoDaExecucao:
     usuarios = repositorio.listar_ativos()
     coletadas = coletor.coletar()
     unicas = remover_duplicatas(coletadas)
@@ -51,7 +64,12 @@ def executar(
         )
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
-    return enviadas_por_usuario
+    return ResumoDaExecucao(
+        usuarios=len(usuarios),
+        vagas_coletadas=len(coletadas),
+        vagas_unicas=len(unicas),
+        enviadas_por_usuario=enviadas_por_usuario,
+    )
 
 
 def atender_usuario(
