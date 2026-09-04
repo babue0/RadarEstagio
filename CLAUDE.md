@@ -14,8 +14,8 @@ com o Telegram, matching de compatibilidade por IA, entrega da mensagem ranquead
 agendamento diário, deduplicação e histórico entre execuções, ativação operacional registrada
 na primeira recomendação entregue e funil instrumentado da landing à primeira recomendação.
 
-Ainda não disponível: edição, pausa e retomada do perfil, feedback para ranking, painel web e
-novas fontes além de Adzuna e Gupy.
+Ainda não disponível: feedback influenciando o ranking, painel web de métricas e novas fontes
+além de Adzuna e Gupy.
 
 Pendências da Fase 2: validar o produto com estudantes. A cota do Gemini deixou de ser pendência
 em 03/09/2026: a extração passou a ser por vaga e reaproveitada entre usuários, então o custo não
@@ -252,6 +252,11 @@ modalidade e, em empate, a de descrição mais longa.
   esse banco.
 - O projeto **`bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano e não deve ser usado.**
   Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.
+- **Controle do próprio perfil** (04/09/2026): editar, pausar e retomar são `update` em `perfis`
+  pelas colunas já liberadas no `grant`. Desvincular o Telegram e excluir a conta não cabem em
+  `grant` — `telegram_chat_id` é do webhook e `auth.users` o cliente não apaga — então são funções
+  `security definer` filtrando por `auth.uid()`, na migration `0013`. Desvincular rotaciona o
+  `token_vinculo` junto, senão o link antigo continuaria valendo.
 - **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
 - **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
