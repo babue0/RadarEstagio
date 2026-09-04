@@ -46,10 +46,15 @@ export function extrairPedidoDeVinculo(
   if (!mensagem?.text) return null;
   const encontrado = FORMATO_DO_TOKEN.exec(mensagem.text);
   if (!encontrado) return null;
-  return { chatId: String(mensagem.chat.id), token: encontrado[1].toLowerCase() };
+  return {
+    chatId: String(mensagem.chat.id),
+    token: encontrado[1].toLowerCase(),
+  };
 }
 
-export function chatIdDaMensagem(atualizacao: AtualizacaoDoTelegram): string | null {
+export function chatIdDaMensagem(
+  atualizacao: AtualizacaoDoTelegram,
+): string | null {
   const id = atualizacao.message?.chat.id;
   return id === undefined ? null : String(id);
 }

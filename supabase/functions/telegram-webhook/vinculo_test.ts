@@ -23,18 +23,26 @@ Deno.test("normaliza token em maiúsculas", () => {
 });
 
 Deno.test("ignora /start sem token", () => {
-  assertEquals(extrairPedidoDeVinculo({ message: { chat: { id: 1 }, text: "/start" } }), null);
+  assertEquals(
+    extrairPedidoDeVinculo({ message: { chat: { id: 1 }, text: "/start" } }),
+    null,
+  );
 });
 
 Deno.test("ignora token que não é uuid", () => {
   assertEquals(
-    extrairPedidoDeVinculo({ message: { chat: { id: 1 }, text: "/start abc123" } }),
+    extrairPedidoDeVinculo({
+      message: { chat: { id: 1 }, text: "/start abc123" },
+    }),
     null,
   );
 });
 
 Deno.test("ignora texto comum", () => {
-  assertEquals(extrairPedidoDeVinculo({ message: { chat: { id: 1 }, text: "oi" } }), null);
+  assertEquals(
+    extrairPedidoDeVinculo({ message: { chat: { id: 1 }, text: "oi" } }),
+    null,
+  );
 });
 
 Deno.test("ignora atualização sem mensagem", () => {
@@ -53,12 +61,17 @@ Deno.test("cada resultado do vínculo tem uma resposta própria", () => {
     "chat_de_outra_conta",
     "chat_ja_vinculado",
   ];
-  const respostas = resultados.map((resultado) => RESPOSTAS_DO_VINCULO[resultado]);
+  const respostas = resultados.map((resultado) =>
+    RESPOSTAS_DO_VINCULO[resultado]
+  );
 
   assertEquals(new Set(respostas).size, resultados.length);
   assertEquals(respostas.filter((resposta) => !resposta).length, 0);
 });
 
 Deno.test("o link usado uma vez não promete vínculo", () => {
-  assertEquals(RESPOSTAS_DO_VINCULO.token_ja_usado.includes("já foi usado"), true);
+  assertEquals(
+    RESPOSTAS_DO_VINCULO.token_ja_usado.includes("já foi usado"),
+    true,
+  );
 });
