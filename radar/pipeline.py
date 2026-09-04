@@ -18,6 +18,11 @@ from radar.storage.errors import ErroDeArmazenamento
 logger = logging.getLogger(__name__)
 
 Pontuador = Callable[[list[Vaga], dict[str, ExtracaoDaVaga], Perfil], list[ResultadoMatch]]
+Enriquecedor = Callable[[list[Vaga]], list[Vaga]]
+
+
+def manter_descricoes_como_estao(vagas: list[Vaga]) -> list[Vaga]:
+    return vagas
 
 
 class ParametrosDaExecucao(BaseModel):
@@ -51,11 +56,13 @@ def executar(
     parametros: ParametrosDaExecucao,
     agora: datetime,
     pontuador: Pontuador = pontuar_vagas,
+    enriquecer: Enriquecedor = manter_descricoes_como_estao,
 ) -> ResumoDaExecucao:
     usuarios = repositorio.listar_ativos()
     coletadas = coletor.coletar()
     unicas = remover_duplicatas(coletadas)
-    candidatas = candidatas_de_algum_perfil(unicas, usuarios)
+    candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios))
+    unicas = substituir_enriquecidas(unicas, candidatas)
     logger.info(
         "%d vagas coletadas, %d únicas, %d candidatas de algum perfil, %d usuários",
         len(coletadas),
@@ -88,6 +95,11 @@ def executar(
         vagas_extraidas_agora=extraidas_agora,
         enviadas_por_usuario=enviadas_por_usuario,
     )
+
+
+def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[Vaga]:
+    por_id = {vaga.id_externo: vaga for vaga in candidatas}
+    return [por_id.get(vaga.id_externo, vaga) for vaga in unicas]
 
 
 def candidatas_de_algum_perfil(vagas: list[Vaga], usuarios: list[Usuario]) -> list[Vaga]:

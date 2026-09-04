@@ -14,7 +14,7 @@ from radar.domain.ports import ColetorDeVagas, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
-from radar.matching.enriquecimento import ExtratorComDescricoesCompletas
+from radar.matching.enriquecimento import EnriquecedorDeDescricoes
 from radar.matching.errors import ErroDeAvaliacao
 from radar.matching.factory import criar_extrator, nome_do_modelo
 from radar.matching.lotes import ExtratorEmLotes
@@ -87,12 +87,14 @@ def avaliar(settings: Settings) -> None:
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
         vagas = filtrar(remover_duplicatas(coletadas), perfil)
-        selecionadas = vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
+        selecionadas = EnriquecedorDeDescricoes(cliente_http).enriquecer(
+            vagas[:LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL]
+        )
         print(
             f"{len(vagas)} vagas após o pré-filtro; "
             f"extraindo {len(selecionadas)} com {settings.avaliador}"
         )
-        extracoes = montar_extrator(settings, cliente_http).extrair(selecionadas)
+        extracoes = montar_extrator(settings).extrair(selecionadas)
     resultados = pontuar_vagas(
         selecionadas, {extracao.id_vaga: extracao for extracao in extracoes}, perfil
     )
@@ -129,18 +131,15 @@ def montar_coletor(
     return criar_coletor(settings, cliente_http, datetime.now(UTC), cidades)
 
 
-def montar_extrator(settings: Settings, cliente_http: httpx.Client) -> ExtratorEmLotes:
-    com_descricoes_completas = ExtratorComDescricoesCompletas(
-        criar_extrator(settings), cliente_http
-    )
-    return ExtratorEmLotes(com_descricoes_completas, settings.gemini_vagas_por_lote)
+def montar_extrator(settings: Settings) -> ExtratorEmLotes:
+    return ExtratorEmLotes(criar_extrator(settings), settings.gemini_vagas_por_lote)
 
 
 def executar_fluxo(
     settings: Settings, cliente_http: httpx.Client, repositorio: Repositorio
 ) -> None:
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
-    extrator = montar_extrator(settings, cliente_http)
+    extrator = montar_extrator(settings)
     agora = datetime.now(UTC)
     try:
         resumo = executar(
@@ -156,6 +155,7 @@ def executar_fluxo(
                 dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
             ),
             agora,
+            enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora.date(), str(erro)))

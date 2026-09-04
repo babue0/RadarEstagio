@@ -207,6 +207,30 @@ def usuario(
     )
 
 
+def test_vaga_enriquecida_e_pontuada_com_a_descricao_completa():
+    truncada = vaga(1).model_copy(update={"descricao_completa": False})
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso([usuario()])
+
+    def completar_descricoes(vagas: list[Vaga]) -> list[Vaga]:
+        return [item.model_copy(update={"descricao_completa": True}) for item in vagas]
+
+    resumo = executar(
+        ColetorFalso([truncada]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+        enriquecer=completar_descricoes,
+    )
+
+    selecionadas = resumo.enviadas_por_usuario[ID_USUARIO]
+    assert selecionadas[0].nota == 90
+    assert selecionadas[0].avisos_objetivos == []
+
+
 def rodar(
     vagas: list[Vaga],
     notas: dict[str, int],
