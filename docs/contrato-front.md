@@ -22,8 +22,17 @@ permite. Desvincular e excluir **não são**: `telegram_chat_id` é escrito só 
 
 ```js
 await supabase.rpc("desvincular_meu_telegram");
-await supabase.rpc("excluir_minha_conta");
+await supabase.rpc("excluir_minha_conta");            // devolve a data da marcação
+await supabase.rpc("cancelar_exclusao_da_minha_conta");
 ```
+
+**Excluir não apaga na hora.** Marca `perfis.excluida_em`, zera o `telegram_chat_id` e põe `ativo`
+em `false`, então a entrega para imediatamente. O apagamento definitivo acontece 60 dias depois,
+no job diário. Enquanto isso o perfil continua legível e a sessão continua válida — sem ela a
+pessoa não teria como voltar para cancelar.
+
+O front deve ler `excluida_em` junto do resto do perfil e mostrar o estado; um perfil marcado não
+deve oferecer pausar, desvincular nem excluir de novo.
 
 Desvincular também rotaciona o `token_vinculo`, então um link de vínculo lido antes deixa de
 valer — releia o perfil depois de chamar.
