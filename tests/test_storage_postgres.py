@@ -276,3 +276,78 @@ def test_funil_da_coorte_conta_perfis_envios_e_eventos(
     assert funil.vagas_enviadas >= 1
     assert funil.vagas_abertas >= 1
     assert funil.recusas_por_motivo["motivo_area"] >= 1
+
+
+def como_dono(conexao: psycopg.Connection, usuario: Usuario) -> None:
+    dono = conexao.execute(
+        "select user_id from perfis where id = %s", (usuario.id,)
+    ).fetchone()[0]
+    conexao.execute("select set_config('role', 'authenticated', true)")
+    conexao.execute(
+        "select set_config('request.jwt.claims', %s, true)",
+        (f'{{"sub": "{dono}", "role": "authenticated"}}',),
+    )
+
+
+def test_desvincular_limpa_o_chat_e_rotaciona_o_token(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    antes = conexao.execute(
+        "select token_vinculo from perfis where id = %s", (usuario.id,)
+    ).fetchone()[0]
+    como_dono(conexao, usuario)
+
+    conexao.execute("select public.desvincular_meu_telegram()")
+
+    chat, token = conexao.execute(
+        "select telegram_chat_id, token_vinculo from perfis where id = %s", (usuario.id,)
+    ).fetchone()
+    assert chat is None
+    assert token != antes
+
+
+def test_desvincular_nao_alcanca_o_perfil_de_outra_pessoa(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    outro = uuid4()
+    conexao.execute(
+        "insert into auth.users (id, instance_id, aud, role, email) "
+        "values (%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
+        (outro, f"{outro}@teste.local"),
+    )
+    conexao.execute("select set_config('role', 'authenticated', true)")
+    conexao.execute(
+        "select set_config('request.jwt.claims', %s, true)",
+        (f'{{"sub": "{outro}", "role": "authenticated"}}',),
+    )
+
+    conexao.execute("select public.desvincular_meu_telegram()")
+
+    conexao.execute("select set_config('role', 'postgres', true)")
+    chat = conexao.execute(
+        "select telegram_chat_id from perfis where id = %s", (usuario.id,)
+    ).fetchone()[0]
+    assert chat is not None
+
+
+def test_excluir_conta_apaga_o_usuario_e_o_perfil_em_cascata(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    como_dono(conexao, usuario)
+
+    conexao.execute("select public.excluir_minha_conta()")
+
+    conexao.execute("select set_config('role', 'postgres', true)")
+    assert (
+        conexao.execute("select count(*) from perfis where id = %s", (usuario.id,)).fetchone()[0]
+        == 0
+    )
+
+
+def test_excluir_conta_sem_sessao_falha_em_vez_de_apagar_qualquer_coisa(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    conexao.execute("select set_config('request.jwt.claims', '', true)")
+
+    with pytest.raises(psycopg.errors.RaiseException):
+        conexao.execute("select public.excluir_minha_conta()")
