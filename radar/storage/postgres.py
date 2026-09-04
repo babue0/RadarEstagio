@@ -152,6 +152,7 @@ SQL_SESSOES_DAS_CONTAS_EXCLUIDAS = """
 SQL_APAGAR_EVENTOS_ANONIMOS = """
     delete from eventos_produto
     where sessao_id = any(%(sessoes)s::uuid[])
+      and user_id is null
 """
 
 SQL_APAGAR_CONTAS_EXCLUIDAS = """

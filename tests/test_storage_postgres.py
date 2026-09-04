@@ -338,12 +338,21 @@ def test_excluir_marca_e_para_de_entregar_sem_apagar_ainda(
     conexao.execute("select public.excluir_minha_conta()")
 
     conexao.execute("select set_config('role', 'postgres', true)")
-    assert (
-        conexao.execute(
-            "select excluida_em from perfis where id = %s", (usuario.id,)
-        ).fetchone()[0]
-        is not None
+    ativo, excluida = conexao.execute(
+        "select ativo, excluida_em from perfis where id = %s", (usuario.id,)
+    ).fetchone()
+    assert excluida is not None
+    assert ativo is True
+    assert RepositorioPostgres(conexao).listar_ativos() == []
+
+
+def test_a_marca_de_exclusao_sozinha_tira_o_perfil_da_entrega(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    conexao.execute(
+        "update perfis set excluida_em = now() where id = %s", (usuario.id,)
     )
+
     assert RepositorioPostgres(conexao).listar_ativos() == []
 
 
@@ -429,6 +438,48 @@ def test_vencida_a_carencia_a_conta_e_apagada_em_cascata(
     assert (
         conexao.execute("select count(*) from perfis where id = %s", (usuario.id,)).fetchone()[0]
         == 0
+    )
+
+
+def test_apagar_conta_nao_leva_junto_o_evento_de_quem_dividiu_o_navegador(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    sessao = uuid4()
+    outro = uuid4()
+    conexao.execute(
+        "insert into auth.users (id, instance_id, aud, role, email) "
+        "values (%s, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', %s)",
+        (outro, f"{outro}@teste.local"),
+    )
+    dono = conexao.execute(
+        "select user_id from perfis where id = %s", (usuario.id,)
+    ).fetchone()[0]
+    conexao.execute(
+        "insert into eventos_produto (nome, origem, sessao_id, user_id) values "
+        "('landing_vista', 'site', %s, null), "
+        "('landing_vista', 'site', %s, %s), "
+        "('landing_vista', 'site', %s, %s)",
+        (sessao, sessao, dono, sessao, outro),
+    )
+    conexao.execute(
+        "update perfis set excluida_em = now() - interval '61 days' where id = %s",
+        (usuario.id,),
+    )
+
+    repositorio.apagar_contas_excluidas(60)
+
+    assert (
+        conexao.execute(
+            "select count(*) from eventos_produto where sessao_id = %s", (sessao,)
+        ).fetchone()[0]
+        == 1
+    )
+    assert (
+        conexao.execute(
+            "select user_id from eventos_produto where sessao_id = %s", (sessao,)
+        ).fetchone()[0]
+        == outro
     )
 
 
