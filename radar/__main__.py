@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from radar.collectors.errors import ErroDeColeta
 from radar.collectors.factory import cidades_de_interesse, criar_coletor
-from radar.domain.models import Usuario
+from radar.domain.models import Perfil, Usuario
 from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import ColetorDeVagas, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
@@ -87,9 +87,16 @@ def coletar(settings: Settings) -> None:
         print(f"  {vaga.url}")
 
 
+def perfil_para_avaliar(usuarios: list[Usuario]) -> Perfil:
+    if usuarios:
+        return usuarios[0].perfil
+    return perfil_de_exemplo()
+
+
 def avaliar(settings: Settings) -> None:
-    perfil = perfil_de_exemplo()
     usuarios = listar_usuarios(settings)
+    perfil = perfil_para_avaliar(usuarios)
+    print(f"Perfil usado: {perfil.curso}, {perfil.periodo}º período, {perfil.cidade}")
     with httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http:
         coletadas = montar_coletor(settings, cliente_http, usuarios).coletar()
         vagas = filtrar(remover_duplicatas(coletadas), perfil)

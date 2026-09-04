@@ -43,3 +43,10 @@ def test_documentacao_reflete_a_fase_atual_e_as_evidencias_recentes():
     assert "703 vagas únicas e 55 candidatas" in pre_prd
     assert "703 vagas únicas" in pre_prd
     assert "aprende com o feedback" not in proposta
+
+
+def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
+    css = (RAIZ / "web/assets/styles.css").read_text()
+    regra_do_celular = css[css.index("@media (max-width: 760px)") :]
+
+    assert "overflow-y: auto" in regra_do_celular.split(".dialog-shell")[0]
