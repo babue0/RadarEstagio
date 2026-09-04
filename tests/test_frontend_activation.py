@@ -79,3 +79,31 @@ def test_migration_reserva_campos_de_vinculo_ao_webhook():
     assert "grant insert (user_id, curso, periodo, habilidades, cidade, modalidade)" in migration
     assert "telegram_chat_id" not in migration
     assert "token_vinculo" not in migration
+
+
+def test_dono_desvincula_o_telegram_e_o_token_e_rotacionado():
+    sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+
+    assert "create function public.desvincular_meu_telegram()" in sql
+    assert "telegram_chat_id = null" in sql
+    assert "token_vinculo = gen_random_uuid()" in sql
+    assert "where user_id = auth.uid()" in sql
+
+
+def test_exclusao_da_conta_exige_sessao_e_apaga_o_usuario_de_auth():
+    sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+
+    assert "create function public.excluir_minha_conta()" in sql
+    assert "dono uuid := auth.uid()" in sql
+    assert "raise exception 'sem sessão'" in sql
+    assert "delete from auth.users where id = dono" in sql
+
+
+def test_controle_do_perfil_e_fechado_a_visitante_anonimo():
+    sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+
+    for funcao in ("desvincular_meu_telegram", "excluir_minha_conta"):
+        assert f"revoke all on function public.{funcao}() from public, anon" in sql
+        assert f"grant execute on function public.{funcao}() to authenticated" in sql
+        assert "security definer" in sql
+        assert "set search_path = ''" in sql
