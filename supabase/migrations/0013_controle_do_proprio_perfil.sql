@@ -34,9 +34,7 @@ begin
     raise exception 'sem sessão';
   end if;
   update public.perfis
-  set ativo = false,
-      telegram_chat_id = null,
-      excluida_em = coalesce(excluida_em, now()),
+  set excluida_em = coalesce(excluida_em, now()),
       atualizado_em = now()
   where user_id = dono
   returning excluida_em into marcada;
@@ -53,7 +51,6 @@ as $$
 begin
   update public.perfis
   set excluida_em = null,
-      ativo = true,
       atualizado_em = now()
   where user_id = auth.uid() and excluida_em is not null;
 end;

@@ -29,11 +29,14 @@ SQL_USUARIOS_ATIVOS = """
            ) as sem_recomendacao_desde,
            p.silencio_avisado_em
     from perfis p
-    where p.ativo and p.telegram_chat_id is not null
+    where p.ativo and p.excluida_em is null and p.telegram_chat_id is not null
     order by p.criado_em
 """
 
-SQL_PERFIS_SEM_VINCULO = "select count(*) from perfis where ativo and telegram_chat_id is null"
+SQL_PERFIS_SEM_VINCULO = (
+    "select count(*) from perfis "
+    "where ativo and excluida_em is null and telegram_chat_id is null"
+)
 
 SQL_AVALIACOES_EXISTENTES = """
     select v.fonte, v.id_externo, a.nota,

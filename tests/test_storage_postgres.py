@@ -338,12 +338,13 @@ def test_excluir_marca_e_para_de_entregar_sem_apagar_ainda(
     conexao.execute("select public.excluir_minha_conta()")
 
     conexao.execute("select set_config('role', 'postgres', true)")
-    ativo, chat, excluida = conexao.execute(
-        "select ativo, telegram_chat_id, excluida_em from perfis where id = %s", (usuario.id,)
-    ).fetchone()
-    assert ativo is False
-    assert chat is None
-    assert excluida is not None
+    assert (
+        conexao.execute(
+            "select excluida_em from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        is not None
+    )
+    assert RepositorioPostgres(conexao).listar_ativos() == []
 
 
 def test_cancelar_devolve_o_perfil_ao_ar(conexao: psycopg.Connection, usuario: Usuario):
@@ -353,11 +354,49 @@ def test_cancelar_devolve_o_perfil_ao_ar(conexao: psycopg.Connection, usuario: U
     conexao.execute("select public.cancelar_exclusao_da_minha_conta()")
 
     conexao.execute("select set_config('role', 'postgres', true)")
-    ativo, excluida = conexao.execute(
-        "select ativo, excluida_em from perfis where id = %s", (usuario.id,)
-    ).fetchone()
-    assert ativo is True
-    assert excluida is None
+    assert (
+        conexao.execute(
+            "select excluida_em from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        is None
+    )
+    assert [u.id for u in RepositorioPostgres(conexao).listar_ativos()] == [usuario.id]
+
+
+def test_excluir_a_conta_nao_registra_pausa_de_entregas(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    como_dono(conexao, usuario)
+
+    conexao.execute("select public.excluir_minha_conta()")
+
+    conexao.execute("select set_config('role', 'postgres', true)")
+    assert (
+        conexao.execute(
+            "select count(*) from eventos_produto "
+            "where perfil_id = %s and nome = 'entregas_pausadas'",
+            (usuario.id,),
+        ).fetchone()[0]
+        == 0
+    )
+
+
+def test_cancelar_a_exclusao_nao_retoma_entregas_que_o_dono_tinha_pausado(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    como_dono(conexao, usuario)
+    conexao.execute("update perfis set ativo = false where user_id = auth.uid()")
+    conexao.execute("select public.excluir_minha_conta()")
+
+    conexao.execute("select public.cancelar_exclusao_da_minha_conta()")
+
+    conexao.execute("select set_config('role', 'postgres', true)")
+    assert (
+        conexao.execute(
+            "select ativo from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        is False
+    )
 
 
 def test_a_carencia_protege_a_conta_recem_excluida(
