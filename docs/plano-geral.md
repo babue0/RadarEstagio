@@ -49,11 +49,14 @@ semana"*. Vaga útil é definida em `CONTEXT.md` como recomendação com **feedb
 
 Nenhum dos dois eventos é gravado por linha nenhuma do código.
 
-Como isso aconteceu: o formato original do feedback tinha 👍, 👎 e "Candidatei-me" por vaga, e
-emitia os três eventos. Ao trocar por uma mensagem só com botões numerados — que resolveu a
-poluição do chat — o "Candidatei-me" saiu do teclado e o "Todas serviram" ficou só apagando a
-mensagem, sem gravar nada. A troca resolveu a cadência e removeu em silêncio os dois eventos que
-mais importam.
+**Nenhum commit alcançável jamais gravou os dois.** Não é regressão: é lacuna que atravessou o
+sprint inteiro sem ninguém notar, porque o catálogo da `0005` já previa os nomes e a instrumentação
+parecia completa.
+
+O que o código faz hoje, e dá para conferir: o teclado numerado só oferece recusa e "Todas
+serviram", e o "Todas serviram" apenas apaga a mensagem, sem gravar evento. O "Candidatei-me" foi
+deliberadamente deixado de fora do teclado diário, para a pergunta do dia seguinte — que ainda não
+existe.
 
 Duas saídas, e a escolha muda o produto:
 

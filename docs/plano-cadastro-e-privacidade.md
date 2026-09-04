@@ -82,6 +82,10 @@ Entre as duas ela pode entrar e cancelar.
   durante a execução ainda recebe a mensagem daquele dia. Revalidar antes de enviar.
 - A função `ir` registra clique de link antigo sem consultar `ativo` nem `excluida_em`. Durante os
   60 dias ela continuaria gravando `vaga_aberta` de quem pediu para sair.
+- O mesmo vale para o `telegram-webhook`: `envioDoToken` e `registrarRecusa` gravam
+  `vaga_irrelevante` e respondem no Telegram sem verificar exclusão, `ativo` ou se o `chat_id`
+  ainda está vinculado. Clicar num botão antigo continuaria processando dado de quem pediu para
+  sair.
 - Os eventos anteriores ao login têm só `sessao_id`, com `user_id` e `perfil_id` nulos. **Nenhuma
   cascata os alcança.** A rotina dos 60 dias precisa apagá-los pelo `sessao_id` das sessões
   ligadas àquela conta, senão "apagamos tudo" é falso.
@@ -114,6 +118,7 @@ política precisa dizer isso; escrever "nada seu é enviado" seria falso.
 | Google Gemini | **apenas o texto dos anúncios de vaga** |
 | Adzuna e Gupy | **a cidade** dos perfis presenciais e híbridos, usada como termo de busca; nenhum identificador individual |
 | Cloudflare | tráfego do site e o Turnstile |
+| GitHub Actions | **todo o perfil**: o job diário roda em runner do GitHub com a `DATABASE_URL` e carrega curso, período, habilidades, cidade, modalidade, interesses e `chat_id` para a memória de lá |
 
 A linha do Gemini é um ponto forte e verificável: desde a separação entre extração e pontuação, em
 03/09/2026, o perfil deixou de ir no prompt. Antes seguiam curso, período e habilidades; hoje a IA
@@ -137,9 +142,11 @@ os dados. O documento não promete nada além disso.
 10. **Recuperação de senha** — não existe hoje, nem tela nem chamada. Configurar o Resend não
     entrega isso sozinho: falta o link "esqueci minha senha", a chamada
     `resetPasswordForEmail`, e a tela que recebe a volta e define a senha nova
-11. **Textos do painel** — hoje ele diz "Não dá para desfazer" e "Seus dados foram apagados". Com
-    os 60 dias as duas frases ficam falsas; entram a data do apagamento definitivo e o botão de
-    cancelar
+11. **Textos e controles do painel** — hoje ele diz "Não dá para desfazer" e "Seus dados foram
+    apagados". Com os 60 dias as duas frases ficam falsas; entram a data do apagamento definitivo
+    e o botão de cancelar. Entra também o **controle para revogar o consentimento de e-mail**: a
+    decisão 2 promete que é reversível e a seção 6 usa isso para dispensar o link de descadastro,
+    mas a sequência só previa a coluna no banco e o checkbox no cadastro
 12. **Retorno da confirmação** — o `resumeConfirmedSignup` desiste quando não acha perfil no
     navegador, antes de consultar sessão e banco. Com o gatilho criando o perfil, ele precisa
     consultar primeiro. E o `sessao_id` do aparelho onde a pessoa se cadastrou não viaja para o
@@ -156,7 +163,7 @@ mudança.
 
 | O quê | Trava o quê |
 |---|---|
-| Domínio | contato na política, hospedagem, remetente do e-mail |
+| Domínio | contato na política e remetente do e-mail. **Não trava a hospedagem**: o Cloudflare Pages publica em `*.pages.dev` |
 | Resend | remetente próprio, em vez do domínio compartilhado do Supabase |
 | Chaves do Turnstile | pública no `web/config.js`, secreta no Supabase |
 
