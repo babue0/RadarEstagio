@@ -6,6 +6,7 @@ from radar.domain.models import (
     Modalidade,
     NivelCompatibilidade,
     Perfil,
+    PerguntaDeFeedback,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -93,6 +94,7 @@ class NotificadorFalso:
     def __init__(self, chats_com_erro: set[str] = frozenset()) -> None:
         self.textos: list[str] = []
         self.chats: list[str] = []
+        self.perguntas: list[PerguntaDeFeedback] = []
         self._chats_com_erro = chats_com_erro
 
     def enviar(self, chat_id: str, texto: str) -> None:
@@ -100,6 +102,11 @@ class NotificadorFalso:
             raise ErroDeNotificacao("chat not found")
         self.chats.append(chat_id)
         self.textos.append(texto)
+
+    def enviar_pergunta(self, chat_id: str, pergunta: PerguntaDeFeedback) -> None:
+        if chat_id in self._chats_com_erro:
+            raise ErroDeNotificacao("chat not found")
+        self.perguntas.append(pergunta)
 
 
 class RepositorioFalso(RepositorioEmMemoria):

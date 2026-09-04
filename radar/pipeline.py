@@ -18,7 +18,11 @@ from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
-from radar.notification.formatador import formatar_mensagem, formatar_mensagem_sem_vagas
+from radar.notification.formatador import (
+    formatar_mensagem,
+    formatar_mensagem_sem_vagas,
+    formatar_pergunta_de_feedback,
+)
 from radar.notification.telegram import ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
 
@@ -197,6 +201,7 @@ def atender_usuario(
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
         pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
         return None
+    perguntar_o_que_nao_serviu(notificador, usuario, selecionadas)
     try:
         repositorio.registrar_envios(usuario, selecionadas)
     except ErroDeArmazenamento as erro:
@@ -204,6 +209,15 @@ def atender_usuario(
             "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
         )
     return selecionadas
+
+
+def perguntar_o_que_nao_serviu(
+    notificador: Notificador, usuario: Usuario, selecionadas: list[Recomendacao]
+) -> None:
+    try:
+        notificador.enviar_pergunta(usuario.chat_id, formatar_pergunta_de_feedback(selecionadas))
+    except ErroDeNotificacao as erro:
+        logger.warning("usuário %s ficou sem a pergunta de feedback: %s", usuario.id, erro)
 
 
 def gravar_avaliacoes(

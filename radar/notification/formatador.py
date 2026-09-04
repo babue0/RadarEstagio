@@ -2,13 +2,30 @@ from datetime import date
 from html import escape
 from urllib.parse import urlsplit
 
-from radar.domain.models import Recomendacao, Vaga
+from radar.domain.models import (
+    BotaoDeFeedback,
+    MotivoDeRecusa,
+    PerguntaDeFeedback,
+    Recomendacao,
+    Vaga,
+)
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
+NUMEROS_POR_LINHA = 5
+ACAO_DE_RECUSA = "recusa"
+ACAO_SEM_RECUSA = "todas"
+TEXTO_DA_PERGUNTA = "Alguma não serviu? Toque no número para dizer por quê."
+ROTULO_SEM_RECUSA = "Todas serviram"
+ROTULOS_DE_MOTIVO = {
+    MotivoDeRecusa.AREA: "Não é da minha área",
+    MotivoDeRecusa.EXIGENCIA: "Pedem demais",
+    MotivoDeRecusa.LOGISTICA: "Local ou modalidade",
+    MotivoDeRecusa.REPETIDA: "Já vi essa",
+}
 ROTULOS_MODALIDADE = {
     "remoto": "Remoto",
     "presencial": "Presencial",
@@ -17,17 +34,46 @@ ROTULOS_MODALIDADE = {
 }
 
 
+def ranquear(recomendacoes: list[Recomendacao]) -> list[Recomendacao]:
+    return sorted(recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True)
+
+
 def formatar_mensagem(
     recomendacoes: list[Recomendacao], data: date, url_de_rastreio: str = ""
 ) -> str:
-    ranqueadas = sorted(
-        recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True
-    )
+    ranqueadas = ranquear(recomendacoes)
     blocos = [
         formatar_vaga(posicao, recomendacao, url_de_rastreio)
         for posicao, recomendacao in enumerate(ranqueadas, start=1)
     ]
     return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
+
+
+def formatar_pergunta_de_feedback(recomendacoes: list[Recomendacao]) -> PerguntaDeFeedback:
+    ranqueadas = ranquear(recomendacoes)
+    numeros = [
+        BotaoDeFeedback(rotulo=str(posicao), dados=f"{ACAO_DE_RECUSA}:{recomendacao.token}")
+        for posicao, recomendacao in enumerate(ranqueadas, start=1)
+    ]
+    linhas = [
+        numeros[inicio : inicio + NUMEROS_POR_LINHA]
+        for inicio in range(0, len(numeros), NUMEROS_POR_LINHA)
+    ]
+    linhas.append(
+        [
+            BotaoDeFeedback(
+                rotulo=ROTULO_SEM_RECUSA, dados=f"{ACAO_SEM_RECUSA}:{ranqueadas[0].token}"
+            )
+        ]
+    )
+    return PerguntaDeFeedback(texto=TEXTO_DA_PERGUNTA, linhas_de_botoes=linhas)
+
+
+def formatar_motivos_da_recusa(token: str) -> list[list[BotaoDeFeedback]]:
+    return [
+        [BotaoDeFeedback(rotulo=rotulo, dados=f"{motivo.value}:{token}")]
+        for motivo, rotulo in ROTULOS_DE_MOTIVO.items()
+    ]
 
 
 def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None) -> str:

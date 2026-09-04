@@ -68,6 +68,23 @@ class Perfil(BaseModel):
         return self.cidade.split(",")[0].strip()
 
 
+class MotivoDeRecusa(StrEnum):
+    AREA = "motivo_area"
+    EXIGENCIA = "motivo_exigencia"
+    LOGISTICA = "motivo_logistica"
+    REPETIDA = "motivo_repetida"
+
+
+class BotaoDeFeedback(BaseModel):
+    rotulo: str = Field(min_length=1)
+    dados: str = Field(min_length=1, max_length=64)
+
+
+class PerguntaDeFeedback(BaseModel):
+    texto: str = Field(min_length=1)
+    linhas_de_botoes: list[list[BotaoDeFeedback]] = Field(min_length=1)
+
+
 class Usuario(BaseModel):
     id: UUID
     perfil: Perfil
