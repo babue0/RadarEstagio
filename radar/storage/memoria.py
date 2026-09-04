@@ -1,4 +1,4 @@
-from radar.domain.models import ExtracaoDaVaga, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import ExtracaoDaVaga, Recomendacao, ResultadoMatch, Usuario, Vaga
 
 
 class RepositorioEmMemoria:
@@ -25,7 +25,7 @@ class RepositorioEmMemoria:
     ) -> None:
         return None
 
-    def registrar_envios(self, usuario: Usuario, enviadas: list[ResultadoMatch]) -> None:
+    def registrar_envios(self, usuario: Usuario, enviadas: list[Recomendacao]) -> None:
         return None
 
     def registrar_falha_de_envio(self, usuario: Usuario) -> int:

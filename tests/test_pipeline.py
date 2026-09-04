@@ -16,6 +16,7 @@ from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
 
 AGORA_DE_TESTE = datetime(2026, 8, 26, 10, 23, tzinfo=UTC)
+URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
 ID_USUARIO = UUID(int=1)
 ID_OUTRO_USUARIO = UUID(int=2)
 
@@ -119,6 +120,7 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.pausados: list[UUID] = []
         self.avisos_de_silencio: list[UUID] = []
         self.extracoes_guardadas: dict[str, ExtracaoDaVaga] = {}
+        self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
 
     def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
@@ -153,8 +155,9 @@ class RepositorioFalso(RepositorioEmMemoria):
             raise ErroDeArmazenamento("banco caiu")
         self.falhas_por_usuario[usuario.id] = 0
         self.envios_gravados.append(
-            (usuario.id, [resultado.vaga.id_externo for resultado in enviadas])
+            (usuario.id, [item.resultado.vaga.id_externo for item in enviadas])
         )
+        self.tokens_gravados.extend(item.token for item in enviadas)
 
     def registrar_falha_de_envio(self, usuario) -> int:
         if self._falha_ao_gravar:
@@ -174,6 +177,7 @@ def parametros(
     nota_minima: int = 0,
     falhas_ate_pausar: int = 3,
     dias_de_silencio_ate_avisar: int = 7,
+    url_de_rastreio: str = "",
 ) -> ParametrosDaExecucao:
     return ParametrosDaExecucao(
         modelo="modelo-teste",
@@ -181,6 +185,7 @@ def parametros(
         nota_minima=nota_minima,
         falhas_ate_pausar=falhas_ate_pausar,
         dias_de_silencio_ate_avisar=dias_de_silencio_ate_avisar,
+        url_de_rastreio=url_de_rastreio,
     )
 
 
@@ -227,8 +232,8 @@ def test_vaga_enriquecida_e_pontuada_com_a_descricao_completa():
     )
 
     selecionadas = resumo.enviadas_por_usuario[ID_USUARIO]
-    assert selecionadas[0].nota == 90
-    assert selecionadas[0].avisos_objetivos == []
+    assert selecionadas[0].resultado.nota == 90
+    assert selecionadas[0].resultado.avisos_objetivos == []
 
 
 def rodar(
@@ -257,7 +262,8 @@ def rodar(
         agora,
         pontuador,
     )
-    return resumo.enviadas_por_usuario.get(ID_USUARIO, []), notificador, pontuador
+    enviadas = resumo.enviadas_por_usuario.get(ID_USUARIO, [])
+    return [item.resultado for item in enviadas], notificador, pontuador
 
 
 def test_envia_vagas_ordenadas_por_nota():
@@ -348,7 +354,7 @@ def test_envia_para_cada_usuario_com_o_proprio_perfil():
 
     assert notificador.chats == ["123", "456"]
     assert "Nenhuma vaga nova compatível" in notificador.textos[1]
-    assert [resultado.nota for resultado in resumo.enviadas_por_usuario[ID_USUARIO]] == [70]
+    assert [item.resultado.nota for item in resumo.enviadas_por_usuario[ID_USUARIO]] == [70]
     assert ID_OUTRO_USUARIO not in resumo.enviadas_por_usuario
     assert resumo.usuarios == 2
     assert resumo.atendidos() == 1
@@ -557,3 +563,37 @@ def test_vaga_reprovada_no_prefiltro_de_todos_os_perfis_nao_e_extraida():
     extrator = executar_com(RepositorioFalso([usuario()]), [vaga(1), fora_da_area], {"1": 70})
 
     assert extrator.extraidas == ["1"]
+
+
+def test_link_da_mensagem_usa_o_token_gravado_no_envio():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorFalso()
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 70}),
+        notificador,
+        repositorio,
+        parametros(url_de_rastreio=URL_DE_RASTREIO),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 70}),
+    )
+
+    assert len(repositorio.tokens_gravados) == 1
+    assert f"{URL_DE_RASTREIO}?t={repositorio.tokens_gravados[0]}" in notificador.textos[0]
+
+
+def test_cada_usuario_recebe_um_token_diferente_para_a_mesma_vaga():
+    repositorio = RepositorioFalso([usuario(), usuario(ID_OUTRO_USUARIO, chat_id="456")])
+
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 70}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(url_de_rastreio=URL_DE_RASTREIO),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 70}),
+    )
+
+    assert len(set(repositorio.tokens_gravados)) == 2

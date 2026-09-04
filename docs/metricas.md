@@ -14,7 +14,15 @@ pessoal nas propriedades do evento. Propriedades livres são limitadas a um obje
 |---|---|
 | Web | `landing_visualizada`, `cta_cadastro_aberto`, as três etapas concluídas, `perfil_salvo`, `telegram_aberto` |
 | Gatilhos do banco | `conta_criada`, `email_confirmado`, `perfil_salvo`, `telegram_vinculado`, `primeira_recomendacao_enviada`, `entregas_pausadas` |
-| Contrato reservado | `vaga_aberta`, `vaga_util`, `vaga_irrelevante`, `candidatura_iniciada` |
+| Telegram | `vaga_aberta` |
+| Contrato reservado | `vaga_util`, `vaga_irrelevante`, `candidatura_iniciada` |
+
+`vaga_aberta` vem da Edge Function `ir`. Cada linha de `envios` guarda um `token` único e o link
+da mensagem aponta para `ir?t=<token>`; a função registra o evento com `perfil_id` e `vaga_id` e
+responde 302 para a URL da vaga. Token desconhecido — link antigo, envio que não chegou a ser
+gravado — redireciona para a landing sem registrar evento. Cliques repetidos geram linhas
+repetidas de propósito: as consultas de funil usam a primeira ocorrência, e a contagem bruta mede
+reincidência.
 
 `perfil_salvo` pode aparecer duas vezes: o gatilho garante o marco autoritativo e o evento web
 liga a sessão anônima ao usuário. Consultas de funil devem usar o primeiro instante por evento,
@@ -83,9 +91,9 @@ compatibilidade com o schema atual. O pipeline o preenche somente depois de o Te
 entrega e na mesma transação que grava os respectivos registros em `envios`. O valor nunca é
 sobrescrito; reprocessamentos não geram uma segunda ativação operacional.
 
-A ativação de produto ainda não é mensurável: `vaga_aberta` pertence ao contrato, mas não é
-emitido porque os links apontam diretamente para as fontes. Quando o redirecionamento rastreável
-existir, a primeira ocorrência de `vaga_aberta` por usuário será sua fonte de verdade.
+A fonte de verdade da ativação de produto é a primeira ocorrência de `vaga_aberta` por usuário.
+Ela depende do link rastreável: sem `URL_DE_RASTREIO` configurado, a mensagem volta a apontar
+direto para a fonte e nenhuma abertura é registrada.
 
 A migration `0003_evento_ativacao.sql` também preenche o campo de perfis antigos a partir do
 primeiro `envios.enviada_em` já registrado.

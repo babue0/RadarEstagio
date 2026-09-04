@@ -5,7 +5,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from radar.domain.models import ExtracaoDaVaga, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import (
+    ExtracaoDaVaga,
+    Perfil,
+    Recomendacao,
+    ResultadoMatch,
+    Usuario,
+    Vaga,
+)
 from radar.domain.ports import ColetorDeVagas, ExtratorDeVagas, Notificador, Repositorio
 from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
@@ -31,6 +38,7 @@ class ParametrosDaExecucao(BaseModel):
     nota_minima: int = Field(ge=0, le=100)
     falhas_ate_pausar: int = Field(ge=1)
     dias_de_silencio_ate_avisar: int = Field(ge=1)
+    url_de_rastreio: str = ""
 
 
 class ResumoDaExecucao(BaseModel):
@@ -39,7 +47,7 @@ class ResumoDaExecucao(BaseModel):
     vagas_unicas: int
     vagas_candidatas: int
     vagas_extraidas_agora: int
-    enviadas_por_usuario: dict[UUID, list[ResultadoMatch]]
+    enviadas_por_usuario: dict[UUID, list[Recomendacao]]
 
     def atendidos(self) -> int:
         return len(self.enviadas_por_usuario)
@@ -73,7 +81,7 @@ def executar(
     extracoes, extraidas_agora = obter_extracoes(
         extrator, repositorio, candidatas, parametros.modelo
     )
-    enviadas_por_usuario: dict[UUID, list[ResultadoMatch]] = {}
+    enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
     for usuario in usuarios:
         selecionadas = atender_usuario(
             usuario,
@@ -145,7 +153,7 @@ def atender_usuario(
     parametros: ParametrosDaExecucao,
     agora: datetime,
     pontuador: Pontuador,
-) -> list[ResultadoMatch] | None:
+) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     candidatas = [
         vaga
@@ -181,7 +189,10 @@ def atender_usuario(
         avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora)
         return None
     try:
-        notificador.enviar(usuario.chat_id, formatar_mensagem(selecionadas, agora.date()))
+        notificador.enviar(
+            usuario.chat_id,
+            formatar_mensagem(selecionadas, agora.date(), parametros.url_de_rastreio),
+        )
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
         pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
@@ -258,9 +269,9 @@ def pausar_apos_falhas_seguidas(
 
 def selecionar(
     resultados: list[ResultadoMatch], quantidade: int, nota_minima: int
-) -> list[ResultadoMatch]:
+) -> list[Recomendacao]:
     aprovados = [resultado for resultado in resultados if resultado.nota >= nota_minima]
-    return ranquear(aprovados)[:quantidade]
+    return [Recomendacao(resultado=resultado) for resultado in ranquear(aprovados)[:quantidade]]
 
 
 def ranquear(resultados: list[ResultadoMatch]) -> list[ResultadoMatch]:

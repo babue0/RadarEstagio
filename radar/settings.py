@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     telegram_bot_token: str = Field(min_length=1)
     telegram_chat_id: str = ""
     database_url: str = ""
+    url_de_rastreio: str = ""
     fontes: str = SEPARADOR_DE_FONTES.join(FONTES_DISPONIVEIS)
     dias_recentes: int = Field(default=3, ge=1)
     quantidade_vagas_enviadas: int = 5

@@ -1,11 +1,14 @@
 from datetime import date
 from html import escape
+from urllib.parse import urlsplit
 
-from radar.domain.models import ResultadoMatch, Vaga
+from radar.domain.models import Recomendacao, Vaga
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
+PARAMETRO_DO_TOKEN = "t"
+PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
 ROTULOS_MODALIDADE = {
     "remoto": "Remoto",
     "presencial": "Presencial",
@@ -14,10 +17,15 @@ ROTULOS_MODALIDADE = {
 }
 
 
-def formatar_mensagem(resultados: list[ResultadoMatch], data: date) -> str:
-    ranqueados = sorted(resultados, key=lambda resultado: resultado.nota, reverse=True)
+def formatar_mensagem(
+    recomendacoes: list[Recomendacao], data: date, url_de_rastreio: str = ""
+) -> str:
+    ranqueadas = sorted(
+        recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True
+    )
     blocos = [
-        formatar_vaga(posicao, resultado) for posicao, resultado in enumerate(ranqueados, start=1)
+        formatar_vaga(posicao, recomendacao, url_de_rastreio)
+        for posicao, recomendacao in enumerate(ranqueadas, start=1)
     ]
     return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
 
@@ -64,7 +72,8 @@ def formatar_falha_da_execucao(data: date, erro: str) -> str:
     return f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')} falhou</b>\n{escape(erro)}"
 
 
-def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
+def formatar_vaga(posicao: int, recomendacao: Recomendacao, url_de_rastreio: str = "") -> str:
+    resultado = recomendacao.resultado
     vaga = resultado.vaga
     linhas = [
         f"<b>{posicao}. {escape(vaga.titulo)}</b> — {escape(vaga.empresa)}",
@@ -96,8 +105,20 @@ def formatar_vaga(posicao: int, resultado: ResultadoMatch) -> str:
         linhas.append(f"⚠️ {escape(aviso)}")
     if resultado.alerta_pegadinha:
         linhas.append(f"⚠️ {escape(resultado.alerta_pegadinha)}")
-    linhas.append(f'🔗 <a href="{escape(vaga.url)}">Ver vaga</a>')
+    destino = url_de_abertura(recomendacao, url_de_rastreio)
+    linhas.append(f'🔗 <a href="{escape(destino)}">Ver vaga em {escape(dominio_da_vaga(vaga))}</a>')
     return "\n".join(linhas)
+
+
+def url_de_abertura(recomendacao: Recomendacao, url_de_rastreio: str) -> str:
+    if not url_de_rastreio:
+        return recomendacao.resultado.vaga.url
+    return f"{url_de_rastreio}?{PARAMETRO_DO_TOKEN}={recomendacao.token}"
+
+
+def dominio_da_vaga(vaga: Vaga) -> str:
+    dominio = urlsplit(vaga.url).hostname or vaga.fonte
+    return dominio.removeprefix(PREFIXO_DE_SUBDOMINIO_IGNORADO)
 
 
 def rotulo_modalidade(vaga: Vaga) -> str:
