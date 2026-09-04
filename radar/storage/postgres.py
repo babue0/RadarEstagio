@@ -70,6 +70,15 @@ SQL_IDS_ENVIADOS = """
     where e.perfil_id = %(perfil_id)s
 """
 
+SQL_VAGAS_ENVIADAS_RECENTES = """
+    select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
+           v.publicada_em, v.modalidade
+    from envios e
+    join vagas v on v.id = e.vaga_id
+    where e.perfil_id = %(perfil_id)s
+      and e.enviada_em > now() - interval '30 days'
+"""
+
 SQL_GUARDAR_VAGA = """
     insert into vagas
       (fonte, id_externo, titulo, empresa, localizacao, descricao, url, publicada_em, modalidade)
@@ -260,6 +269,18 @@ class RepositorioPostgres:
             raise ErroDeArmazenamento(f"Falha ao ler os envios: {descrever(erro)}") from erro
         return {(fonte, id_externo) for fonte, id_externo in linhas}
 
+    def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                linhas = cursor.execute(
+                    SQL_VAGAS_ENVIADAS_RECENTES, {"perfil_id": usuario.id}
+                ).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao ler as vagas enviadas: {descrever(erro)}"
+            ) from erro
+        return [converter_em_vaga_enviada(linha) for linha in linhas]
+
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
     ) -> None:
@@ -362,6 +383,21 @@ def guardar_envio(cursor: psycopg.Cursor, perfil_id: UUID, vaga_id: int, token: 
 
 def registrar_ativacao(cursor: psycopg.Cursor, perfil_id: UUID) -> bool:
     return cursor.execute(SQL_REGISTRAR_ATIVACAO, {"perfil_id": perfil_id}).fetchone() is not None
+
+
+def converter_em_vaga_enviada(linha: dict) -> Vaga:
+    modalidade = linha["modalidade"]
+    return Vaga(
+        id_externo=linha["id_externo"],
+        fonte=linha["fonte"],
+        titulo=linha["titulo"],
+        empresa=linha["empresa"],
+        localizacao=linha["localizacao"],
+        descricao=linha["descricao"],
+        url=linha["url"],
+        publicada_em=linha["publicada_em"],
+        modalidade=Modalidade(modalidade) if modalidade else None,
+    )
 
 
 def converter_em_usuario(linha: dict) -> Usuario:

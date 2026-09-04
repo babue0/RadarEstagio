@@ -95,6 +95,9 @@ def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, us
     assert existentes[0].requisitos_tecnicos_analisados
     assert existentes[0].pontos_a_favor == ["Curso compatível"]
     assert repositorio.ids_ja_enviadas(usuario) == {("adzuna", "teste-1")}
+    enviadas_recentes = repositorio.vagas_enviadas_recentemente(usuario)
+    assert [item.id_externo for item in enviadas_recentes] == ["teste-1"]
+    assert enviadas_recentes[0].descricao
     assert conexao.execute("select ativado_em from perfis where id = %s", (usuario.id,)).fetchone()[
         0
     ]

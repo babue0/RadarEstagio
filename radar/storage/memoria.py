@@ -20,6 +20,9 @@ class RepositorioEmMemoria:
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set()
 
+    def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]:
+        return []
+
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
     ) -> None:
