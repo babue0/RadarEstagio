@@ -15,7 +15,9 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - pede e-mail e senha somente depois que o usuário configura o radar;
 - persiste o perfil no Supabase e abre o vínculo com o Telegram por token aleatório;
 - reconhece quando o webhook concluiu o vínculo;
-- registra os eventos do funil sem bloquear o cadastro quando a telemetria falha.
+- registra os eventos do funil sem bloquear o cadastro quando a telemetria falha;
+- diz, no rodapé e no cadastro, quais dados guarda e para que servem, sem prometer tela de
+  edição ou exclusão enquanto ela não existir.
 - ainda não oferece edição, pausa ou retomada do perfil; essas ações ficam para a Fase 3.
 
 Quando a confirmação de e-mail está ativa no Supabase, os campos do perfil ficam temporariamente
