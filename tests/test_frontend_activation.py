@@ -90,19 +90,35 @@ def test_dono_desvincula_o_telegram_e_o_token_e_rotacionado():
     assert "where user_id = auth.uid()" in sql
 
 
-def test_exclusao_da_conta_exige_sessao_e_apaga_o_usuario_de_auth():
+def test_exclusao_da_conta_exige_sessao_e_para_de_entregar_na_hora():
     sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
 
     assert "create function public.excluir_minha_conta()" in sql
     assert "dono uuid := auth.uid()" in sql
     assert "raise exception 'sem sessão'" in sql
-    assert "delete from auth.users where id = dono" in sql
+    assert "ativo = false" in sql
+    assert "telegram_chat_id = null" in sql
+    assert "excluida_em = coalesce(excluida_em, now())" in sql
+    assert "delete from auth.users" not in sql
+
+
+def test_exclusao_pode_ser_cancelada_enquanto_o_prazo_nao_venceu():
+    sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+
+    assert "create function public.cancelar_exclusao_da_minha_conta()" in sql
+    assert "excluida_em = null" in sql
+    assert "ativo = true" in sql
+    assert "where user_id = auth.uid() and excluida_em is not null" in sql
 
 
 def test_controle_do_perfil_e_fechado_a_visitante_anonimo():
     sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
 
-    for funcao in ("desvincular_meu_telegram", "excluir_minha_conta"):
+    for funcao in (
+        "desvincular_meu_telegram",
+        "excluir_minha_conta",
+        "cancelar_exclusao_da_minha_conta",
+    ):
         assert f"revoke all on function public.{funcao}() from public, anon" in sql
         assert f"grant execute on function public.{funcao}() to authenticated" in sql
         assert "security definer" in sql
