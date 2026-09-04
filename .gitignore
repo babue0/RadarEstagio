@@ -39,3 +39,6 @@ htmlcov/
 # Supabase CLI
 supabase/.temp/
 supabase/.branches/
+
+# Anotacao de sessao, nao e documentacao do projeto
+HANDOFF.md
