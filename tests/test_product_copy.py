@@ -20,12 +20,12 @@ def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
     assert "Nada é vendido nem compartilhado." in html
 
 
-def test_aviso_de_privacidade_nao_promete_tela_que_nao_existe():
+def test_aviso_de_privacidade_aponta_para_o_painel_que_passou_a_existir():
     html = (RAIZ / "web/index.html").read_text()
 
-    assert "apagar sua conta pelo painel" not in html
-    assert "edite seus dados na página de perfil" not in html
-    assert "fale com a equipe do projeto" in html
+    assert "fale com a equipe do projeto" not in html
+    assert "entre na sua conta pelo botão de cadastro" in html
+    assert 'id="delete-account"' in html
 
 
 def test_aviso_de_privacidade_do_cadastro_aparece_tambem_no_celular():
@@ -50,3 +50,65 @@ def test_cadastro_rola_no_celular_em_vez_de_cortar_o_botao():
     regra_do_celular = css[css.index("@media (max-width: 760px)") :]
 
     assert "overflow-y: auto" in regra_do_celular.split(".dialog-shell")[0]
+
+
+def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
+    html = (RAIZ / "web/index.html").read_text()
+
+    for controle in ("edit-profile", "toggle-deliveries", "unlink-telegram", "delete-account"):
+        assert f'id="{controle}"' in html
+
+
+def test_acao_destrutiva_pede_confirmacao_antes():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "pedirConfirmacao(" in javascript
+    assert "#account-confirm-yes" in javascript
+
+
+def test_exclusao_diz_a_verdade_sobre_os_60_dias_e_o_arrependimento():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "Não dá para desfazer" not in javascript
+    assert "Seus dados foram apagados" not in javascript
+    assert "As entregas param na hora" in javascript
+    assert "entre aqui de novo para cancelar" in javascript
+    assert 'rpc("cancelar_exclusao_da_minha_conta")' in javascript
+    assert 'id="cancel-deletion"' in html
+
+
+def test_exclusao_e_desvinculo_passam_pelas_funcoes_do_banco():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert 'rpc("desvincular_meu_telegram")' in javascript
+    assert 'rpc("excluir_minha_conta")' in javascript
+
+
+def test_edicao_dispensa_as_credenciais_de_quem_ja_tem_sessao():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "function entrarNoModoEdicao()" in javascript
+    assert "form.elements.senha.required = false" in javascript
+
+
+def test_perfil_pausado_que_revincula_nao_diz_que_esta_ativo():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "if (profile?.telegram_chat_id) showActivation(profile)" not in javascript
+    assert javascript.count("mostrarEstadoDoPerfil(profile)") >= 2
+
+
+def test_sessao_perdida_no_meio_avisa_em_vez_de_falhar_calado():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "MENSAGEM_SEM_SESSAO" in javascript
+    assert "MENSAGEM_SEM_PERFIL" in javascript
+    assert "if (editandoPerfilExistente && !existingSession) {" in javascript
+
+
+def test_pedir_exclusao_mantem_a_sessao_para_a_pessoa_poder_cancelar():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    trecho = javascript[javascript.index('rpc("excluir_minha_conta")') :][:600]
+
+    assert "signOut" not in trecho

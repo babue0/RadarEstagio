@@ -12,8 +12,30 @@ que o site precisa é o projeto do Supabase (Auth + tabela `perfis`) e um link d
    `https://t.me/RadarEstagio_bot?start=<token_vinculo>` com o `token_vinculo` lido do perfil.
 4. Mostra se o Telegram já está vinculado (`telegram_chat_id` preenchido).
 
-Edição, pausa e retomada do perfil estão previstas para a Fase 3 e não fazem parte da interface
-atual.
+5. Depois do vínculo, mostra o **painel da conta**: editar o perfil, pausar e retomar as
+   entregas, desvincular o Telegram e excluir a conta.
+
+Editar, pausar e retomar são `update` direto em `perfis`, com as colunas que o `grant` já
+permite. Desvincular e excluir **não são**: `telegram_chat_id` é escrito só pelo webhook e
+`auth.users` o cliente não apaga. As duas passam por funções `security definer` que filtram por
+`auth.uid()`, chamadas com `supabase.rpc()`:
+
+```js
+await supabase.rpc("desvincular_meu_telegram");
+await supabase.rpc("excluir_minha_conta");            // devolve a data da marcação
+await supabase.rpc("cancelar_exclusao_da_minha_conta");
+```
+
+**Excluir não apaga na hora.** Marca `perfis.excluida_em`, zera o `telegram_chat_id` e põe `ativo`
+em `false`, então a entrega para imediatamente. O apagamento definitivo acontece 60 dias depois,
+no job diário. Enquanto isso o perfil continua legível e a sessão continua válida — sem ela a
+pessoa não teria como voltar para cancelar.
+
+O front deve ler `excluida_em` junto do resto do perfil e mostrar o estado; um perfil marcado não
+deve oferecer pausar, desvincular nem excluir de novo.
+
+Desvincular também rotaciona o `token_vinculo`, então um link de vínculo lido antes deixa de
+valer — releia o perfil depois de chamar.
 
 Tudo o resto — coletar vagas, avaliar, mandar a mensagem, gravar o `chat_id` — é do radar e
 do webhook, e já está pronto. O site não precisa saber como funciona.

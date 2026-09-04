@@ -177,6 +177,7 @@ def executar_fluxo(
                 nota_minima=settings.nota_minima,
                 falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
                 dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
+            dias_ate_apagar_conta_excluida=settings.dias_ate_apagar_conta_excluida,
                 url_de_rastreio=url_de_rastreio_utilizavel(settings),
             ),
             agora,

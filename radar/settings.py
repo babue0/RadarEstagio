@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     nota_minima: int = Field(default=40, ge=0, le=100)
     falhas_de_envio_ate_pausar: int = Field(default=3, ge=1)
     dias_de_silencio_ate_avisar: int = Field(default=7, ge=1)
+    dias_ate_apagar_conta_excluida: int = Field(default=60, ge=1)
 
     @field_validator("fontes")
     @classmethod

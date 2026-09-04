@@ -150,7 +150,7 @@
         <p>© 2026 Radar de Estágio</p>
       </div>
       <div class="container footer-privacy">
-        <p><strong>Seus dados.</strong> O Radar guarda curso, período, habilidades, cidade, modalidade, e-mail e o identificador da sua conversa no Telegram. Usa isso só para comparar vagas com o seu perfil e entregar as compatíveis. Nada é vendido nem compartilhado com terceiros, e as vagas vêm de portais públicos. Para corrigir ou apagar seus dados, fale com a equipe do projeto.</p>
+        <p><strong>Seus dados.</strong> O Radar guarda curso, período, habilidades, cidade, modalidade, e-mail e o identificador da sua conversa no Telegram. Usa isso só para comparar vagas com o seu perfil e entregar as compatíveis. Nada é vendido nem compartilhado com terceiros, e as vagas vêm de portais públicos. Para corrigir, pausar ou apagar seus dados, entre na sua conta pelo botão de cadastro.</p>
       </div>
     </footer>
 
@@ -231,15 +231,41 @@
                   <label><input type="checkbox" name="areas" value="suporte_tecnico" /><span>Suporte técnico</span></label>
                   <label><input type="checkbox" name="areas" value="qa_testes" /><span>QA e testes</span></label>
                 </div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
+                <div class="credenciais" id="credenciais">
                 <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
                 <label class="field field-full"><span>Senha</span><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /></label>
               </div>
-              <p class="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
+              </div>
+              <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
               <div class="form-actions"><button class="button button-ghost" type="button" id="previous-step">← Voltar</button><button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
           </form>
           <section class="success-state" id="success-state" aria-live="polite" hidden>
             <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Fechar</button></div>
+          </section>
+          <section class="account-state" id="account-state" aria-live="polite" hidden>
+            <p class="eyebrow"><span></span> Sua conta</p>
+            <h2 id="account-title">Seu Radar</h2>
+            <p id="account-summary"></p>
+            <p class="account-schedule" id="account-schedule"></p>
+            <p class="form-message" id="account-message" role="alert" hidden></p>
+            <div class="account-actions">
+              <button class="button button-primary" type="button" id="edit-profile">Editar meu perfil</button>
+              <button class="button button-ghost" type="button" id="toggle-deliveries"></button>
+            </div>
+            <div class="account-danger">
+              <button class="text-link" type="button" id="unlink-telegram">Desvincular o Telegram</button>
+              <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
+              <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
+            </div>
+            <div class="account-confirm" id="account-confirm" hidden>
+              <p id="account-confirm-copy"></p>
+              <div class="account-actions">
+                <button class="button button-primary" type="button" id="account-confirm-yes">Confirmar</button>
+                <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
+              </div>
+            </div>
+            <button class="button button-ghost" type="button" id="close-account">Fechar</button>
           </section>
         </div>
       </div>

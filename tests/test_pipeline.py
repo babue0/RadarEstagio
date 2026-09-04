@@ -128,6 +128,7 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.falhas_por_usuario: dict[UUID, int] = {}
         self.pausados: list[UUID] = []
         self.avisos_de_silencio: list[UUID] = []
+        self.carencias_aplicadas: list[int] = []
         self.extracoes_guardadas: dict[str, ExtracaoDaVaga] = {}
         self.tokens_gravados: list[UUID] = []
         self.gravacoes_de_extracao = 0
@@ -177,6 +178,10 @@ class RepositorioFalso(RepositorioEmMemoria):
         self.falhas_por_usuario[usuario.id] = self.falhas_por_usuario.get(usuario.id, 0) + 1
         return self.falhas_por_usuario[usuario.id]
 
+    def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
+        self.carencias_aplicadas.append(dias_de_carencia)
+        return 0
+
     def registrar_aviso_de_silencio(self, usuario) -> None:
         self.avisos_de_silencio.append(usuario.id)
 
@@ -190,6 +195,7 @@ def parametros(
     falhas_ate_pausar: int = 3,
     dias_de_silencio_ate_avisar: int = 7,
     url_de_rastreio: str = "",
+    dias_ate_apagar_conta_excluida: int = 60,
 ) -> ParametrosDaExecucao:
     return ParametrosDaExecucao(
         modelo="modelo-teste",
@@ -198,6 +204,7 @@ def parametros(
         falhas_ate_pausar=falhas_ate_pausar,
         dias_de_silencio_ate_avisar=dias_de_silencio_ate_avisar,
         url_de_rastreio=url_de_rastreio,
+        dias_ate_apagar_conta_excluida=dias_ate_apagar_conta_excluida,
     )
 
 
@@ -626,3 +633,11 @@ def test_cada_usuario_recebe_um_token_diferente_para_a_mesma_vaga():
     )
 
     assert len(set(repositorio.tokens_gravados)) == 2
+
+
+def test_a_execucao_apaga_as_contas_que_venceram_a_carencia():
+    repositorio = RepositorioFalso([usuario()])
+
+    executar_com(repositorio, [vaga(1)], {"1": 70})
+
+    assert repositorio.carencias_aplicadas == [60]
