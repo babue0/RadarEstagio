@@ -14,7 +14,7 @@ def perfil_de_exemplo() -> Perfil:
             "Git",
             "Lógica de Programação",
         ],
-        cidade="São Paulo, SP",
-        modalidade=Modalidade.HIBRIDO,
+        cidade="Rio de Janeiro, RJ",
+        modalidade=Modalidade.PRESENCIAL,
         areas_de_interesse=[AreaDeInteresse.DESENVOLVIMENTO_WEB, AreaDeInteresse.DADOS_IA],
     )

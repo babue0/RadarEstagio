@@ -71,7 +71,7 @@ def test_perfil_rejeita_lista_de_habilidades_vazia():
 
 def test_perfil_de_exemplo_e_valido():
     perfil = perfil_de_exemplo()
-    assert perfil.modalidade is Modalidade.HIBRIDO
+    assert perfil.modalidade is Modalidade.PRESENCIAL
     assert perfil.periodo >= 1
     assert perfil.habilidades
     assert perfil.nome_da_cidade() == "São Paulo"
