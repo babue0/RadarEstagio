@@ -14,7 +14,7 @@ from radar.domain.models import (
     Vaga,
 )
 from radar.domain.ports import ColetorDeVagas, ExtratorDeVagas, Notificador, Repositorio
-from radar.filtering.duplicatas import remover_duplicatas
+from radar.filtering.duplicatas import remover_duplicatas, remover_republicacoes_de
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
@@ -164,6 +164,9 @@ def atender_usuario(
         for vaga in filtrar(vagas, usuario.perfil)
         if (vaga.fonte, vaga.id_externo) not in ja_enviadas
     ]
+    candidatas = remover_republicacoes_de(
+        candidatas, repositorio.vagas_enviadas_recentemente(usuario)
+    )
     guardadas = aplicar_regras_objetivas(
         repositorio.avaliacoes_existentes(usuario, candidatas), usuario.perfil
     )

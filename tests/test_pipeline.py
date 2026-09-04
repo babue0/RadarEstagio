@@ -116,10 +116,12 @@ class RepositorioFalso(RepositorioEmMemoria):
         guardadas: list[ResultadoMatch] = (),
         enviadas: set[tuple[str, str]] = frozenset(),
         falha_ao_gravar: bool = False,
+        enviadas_recentes: list[Vaga] = (),
     ) -> None:
         super().__init__(usuarios)
         self._guardadas = list(guardadas)
         self._enviadas = set(enviadas)
+        self._enviadas_recentes = list(enviadas_recentes)
         self._falha_ao_gravar = falha_ao_gravar
         self.avaliacoes_gravadas: list[tuple[UUID, list[str], str]] = []
         self.envios_gravados: list[tuple[UUID, list[str]]] = []
@@ -149,6 +151,9 @@ class RepositorioFalso(RepositorioEmMemoria):
 
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]:
         return set(self._enviadas)
+
+    def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]:
+        return list(self._enviadas_recentes)
 
     def guardar_avaliacoes(self, usuario, avaliadas, modelo) -> None:
         if self._falha_ao_gravar:
@@ -385,6 +390,23 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
     assert notificador.chats == ["123"]
     assert list(resumo.enviadas_por_usuario) == [ID_OUTRO_USUARIO]
     assert [registro[0] for registro in repositorio.envios_gravados] == [ID_OUTRO_USUARIO]
+
+
+def test_republicacao_de_vaga_ja_enviada_em_outro_dia_nao_e_reenviada():
+    descricao = (
+        "Dar apoio ao time de desenvolvimento nas rotinas do site, com estudo de "
+        "requisitos, ajustes de paginas, testes manuais, correcao de defeitos simples "
+        "e acompanhamento das entregas semanais junto ao coordenador da area."
+    )
+    enviada = vaga(1).model_copy(update={"descricao": descricao})
+    republicada = vaga(2).model_copy(
+        update={"titulo": enviada.titulo + " - Vaga", "descricao": descricao}
+    )
+    repositorio = RepositorioFalso([usuario()], enviadas_recentes=[enviada])
+
+    selecionadas, notificador, _ = rodar([republicada], {"2": 90}, repositorio=repositorio)
+
+    assert selecionadas == []
 
 
 def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
