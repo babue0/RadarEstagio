@@ -8,6 +8,7 @@ from psycopg.types.json import Jsonb
 from radar.domain.models import (
     AreaDeInteresse,
     ExtracaoDaVaga,
+    FunilDaCoorte,
     Modalidade,
     Perfil,
     Recomendacao,
@@ -131,6 +132,45 @@ SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     update perfis
     set silencio_avisado_em = now()
     where id = %(perfil_id)s
+"""
+
+SQL_FUNIL_DA_COORTE = """
+    with coorte as (
+      select id, telegram_chat_id, ativado_em
+      from perfis
+      where criado_em >= now() - make_interval(days => %(dias)s)
+    ), eventos as (
+      select e.perfil_id, e.nome
+      from eventos_produto e
+      join coorte c on c.id = e.perfil_id
+    )
+    select
+      (select count(*) from coorte) as perfis_criados,
+      (select count(*) from coorte where telegram_chat_id is not null) as perfis_vinculados,
+      (select count(*) from coorte where ativado_em is not null) as perfis_ativados,
+      (select count(distinct perfil_id) from eventos where nome = 'vaga_aberta')
+        as perfis_com_vaga_aberta,
+      (select count(distinct perfil_id) from eventos where nome = 'vaga_util')
+        as perfis_com_vaga_util,
+      (select count(distinct perfil_id) from eventos where nome = 'candidatura_iniciada')
+        as perfis_com_candidatura,
+      (select count(*) from envios e join coorte c on c.id = e.perfil_id) as vagas_enviadas,
+      (select count(*) from eventos where nome = 'vaga_aberta') as vagas_abertas,
+      (select count(*) from eventos where nome = 'vaga_util') as vagas_uteis,
+      (select count(*) from eventos where nome = 'vaga_irrelevante') as vagas_irrelevantes,
+      (select count(*) from eventos where nome = 'candidatura_iniciada') as candidaturas,
+      (select count(*) from vagas where extraida_em >= now() - make_interval(days => %(dias)s))
+        as vagas_extraidas
+"""
+
+SQL_RECUSAS_POR_MOTIVO = """
+    select coalesce(e.propriedades->>'motivo', 'sem_motivo') as motivo, count(*) as total
+    from eventos_produto e
+    join perfis p on p.id = e.perfil_id
+    where e.nome = 'vaga_irrelevante'
+      and p.criado_em >= now() - make_interval(days => %(dias)s)
+    group by 1
+    order by total desc, motivo
 """
 
 
@@ -267,6 +307,19 @@ class RepositorioPostgres:
             raise ErroDeArmazenamento(
                 f"Falha ao gravar o aviso de silêncio: {descrever(erro)}"
             ) from erro
+
+    def funil_da_coorte(self, dias: int) -> FunilDaCoorte:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                totais = cursor.execute(SQL_FUNIL_DA_COORTE, {"dias": dias}).fetchone()
+                recusas = cursor.execute(SQL_RECUSAS_POR_MOTIVO, {"dias": dias}).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao ler o funil: {descrever(erro)}") from erro
+        return FunilDaCoorte(
+            dias=dias,
+            recusas_por_motivo={linha["motivo"]: linha["total"] for linha in recusas},
+            **totais,
+        )
 
     def pausar(self, usuario: Usuario) -> None:
         try:

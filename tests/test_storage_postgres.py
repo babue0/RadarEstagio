@@ -247,3 +247,29 @@ def test_envio_guarda_o_token_do_link_rastreavel(conexao: psycopg.Connection, us
         ]
         == recomendacao.token
     )
+
+
+def test_funil_da_coorte_conta_perfis_envios_e_eventos(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    recomendacao = Recomendacao(resultado=ResultadoMatch(vaga=vaga(1), nota=80))
+    repositorio.registrar_envios(usuario, [recomendacao])
+    vaga_id = conexao.execute("select id from vagas where id_externo = 'teste-1'").fetchone()[0]
+    conexao.execute(
+        "insert into eventos_produto (nome, origem, perfil_id, vaga_id, propriedades) values "
+        "('vaga_aberta', 'telegram', %s, %s, '{}'::jsonb), "
+        "('vaga_irrelevante', 'telegram', %s, %s, '{\"motivo\": \"motivo_area\"}'::jsonb)",
+        (usuario.id, vaga_id, usuario.id, vaga_id),
+    )
+
+    funil = repositorio.funil_da_coorte(30)
+
+    assert funil.dias == 30
+    assert funil.perfis_criados >= 1
+    assert funil.perfis_vinculados >= 1
+    assert funil.perfis_ativados >= 1
+    assert funil.perfis_com_vaga_aberta >= 1
+    assert funil.vagas_enviadas >= 1
+    assert funil.vagas_abertas >= 1
+    assert funil.recusas_por_motivo["motivo_area"] >= 1

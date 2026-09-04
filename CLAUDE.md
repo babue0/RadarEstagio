@@ -41,6 +41,9 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
   banco, a mensagem volta a apontar direto para a vaga.
+- **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
+  últimos 30 dias, a quebra das recusas por motivo e o custo de extração por usuário ativado. As
+  consultas equivalentes estão em `docs/metricas.md`.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
