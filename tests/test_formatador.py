@@ -1,6 +1,6 @@
 from datetime import UTC, date, datetime
 
-from radar.domain.models import Modalidade, ResultadoMatch, Vaga
+from radar.domain.models import Modalidade, Recomendacao, ResultadoMatch, Vaga
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
     dividir_em_mensagens,
@@ -11,6 +11,14 @@ from radar.notification.formatador import (
 )
 
 DATA_DE_TESTE = date(2026, 8, 26)
+URL_DE_RASTREIO = "https://projeto.supabase.co/functions/v1/ir"
+
+
+def mensagem(
+    resultados: list[ResultadoMatch], data: date = DATA_DE_TESTE, url_de_rastreio: str = ""
+) -> str:
+    recomendacoes = [Recomendacao(resultado=item) for item in resultados]
+    return formatar_mensagem(recomendacoes, data, url_de_rastreio)
 
 
 def vaga(titulo: str = "Estágio Python", numero: int = 1) -> Vaga:
@@ -54,7 +62,7 @@ def resultado(
 
 
 def test_cabecalho_contem_a_data():
-    texto = formatar_mensagem([resultado(50)], DATA_DE_TESTE)
+    texto = mensagem([resultado(50)], DATA_DE_TESTE)
 
     assert texto.startswith("📡 <b>Radar de Estágio</b> — 26/08/2026")
 
@@ -77,7 +85,7 @@ def test_silencio_prolongado_acrescenta_a_sugestao_sem_tirar_o_aviso_do_dia():
 
 
 def test_ordena_por_nota_decrescente_e_numera():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [
             resultado(40, "Baixa", numero=1),
             resultado(90, "Alta", numero=2),
@@ -90,7 +98,7 @@ def test_ordena_por_nota_decrescente_e_numera():
 
 
 def test_inclui_titulo_empresa_nota_pontos_e_link():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [resultado(85, a_favor=["Python", "SQL"], contra=["Presencial em SP"])], DATA_DE_TESTE
     )
 
@@ -99,11 +107,40 @@ def test_inclui_titulo_empresa_nota_pontos_e_link():
     assert "Nota 85/100" in texto
     assert "✅ Python · SQL" in texto
     assert "❌ Presencial em SP" in texto
-    assert '<a href="https://exemplo.com/vaga/1">' in texto
+    assert '<a href="https://exemplo.com/vaga/1">Ver vaga em exemplo.com</a>' in texto
+
+
+def test_link_rastreavel_usa_o_token_do_envio_e_mantem_o_dominio_visivel():
+    recomendacao = Recomendacao(resultado=resultado(85))
+
+    texto = formatar_mensagem([recomendacao], DATA_DE_TESTE, URL_DE_RASTREIO)
+
+    assert f'<a href="{URL_DE_RASTREIO}?t={recomendacao.token}">' in texto
+    assert "Ver vaga em exemplo.com" in texto
+    assert "https://exemplo.com/vaga/1" not in texto
+
+
+def test_cada_vaga_recebe_o_proprio_link_rastreavel():
+    primeira = Recomendacao(resultado=resultado(90, numero=1))
+    segunda = Recomendacao(resultado=resultado(80, numero=2))
+
+    texto = formatar_mensagem([primeira, segunda], DATA_DE_TESTE, URL_DE_RASTREIO)
+
+    assert primeira.token != segunda.token
+    assert f"?t={primeira.token}" in texto
+    assert f"?t={segunda.token}" in texto
+
+
+def test_dominio_do_link_ignora_o_www():
+    com_www = vaga().model_copy(update={"url": "https://www.gupy.io/vaga/9"})
+
+    texto = mensagem([resultado(85).model_copy(update={"vaga": com_www})])
+
+    assert "Ver vaga em gupy.io" in texto
 
 
 def test_exibe_requisitos_tecnicos_atendidos_e_nao_atendidos_explicitamente():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [
             resultado(
                 64,
@@ -122,7 +159,7 @@ def test_exibe_requisitos_tecnicos_atendidos_e_nao_atendidos_explicitamente():
 
 
 def test_avisa_quando_descricao_nao_informa_requisitos_tecnicos():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [resultado(73, a_favor=[], contra=[], requisitos_analisados=True)], DATA_DE_TESTE
     )
 
@@ -141,7 +178,7 @@ def test_descricao_incompleta_nao_afirma_que_requisitos_nao_foram_informados():
         update={"vaga": resultado_incompleto.vaga.model_copy(update={"descricao_completa": False})}
     )
 
-    texto = formatar_mensagem([resultado_incompleto], DATA_DE_TESTE)
+    texto = mensagem([resultado_incompleto], DATA_DE_TESTE)
 
     assert "requisitos podem estar ausentes" in texto
     assert "não informados na descrição" not in texto
@@ -149,9 +186,7 @@ def test_descricao_incompleta_nao_afirma_que_requisitos_nao_foram_informados():
 
 def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
     oportunidade = vaga().model_copy(update={"modalidade": Modalidade.HIBRIDO})
-    texto = formatar_mensagem(
-        [resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE
-    )
+    texto = mensagem([resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE)
 
     assert "📍 Rio de Janeiro · Híbrido" in texto
     assert "🏷️ Fonte: Adzuna" in texto
@@ -159,7 +194,7 @@ def test_inclui_localizacao_modalidade_fonte_e_data_de_publicacao():
 
 
 def test_modalidade_nao_informada_aparece_explicitamente():
-    texto = formatar_mensagem([resultado(85)], DATA_DE_TESTE)
+    texto = mensagem([resultado(85)], DATA_DE_TESTE)
 
     assert "📍 Rio de Janeiro · Modalidade não informada" in texto
 
@@ -168,9 +203,7 @@ def test_escapa_localizacao_e_fonte_dos_metadados():
     oportunidade = vaga().model_copy(
         update={"localizacao": "Rio <Centro> & região", "fonte": "portal_exemplo"}
     )
-    texto = formatar_mensagem(
-        [resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE
-    )
+    texto = mensagem([resultado(85).model_copy(update={"vaga": oportunidade})], DATA_DE_TESTE)
 
     assert "Rio &lt;Centro&gt; &amp; região" in texto
     assert "Fonte: Portal Exemplo" in texto
@@ -178,10 +211,8 @@ def test_escapa_localizacao_e_fonte_dos_metadados():
 
 
 def test_linha_de_pontos_some_quando_a_lista_esta_vazia():
-    so_contra = formatar_mensagem(
-        [resultado(10, a_favor=[], contra=["Fora da área"])], DATA_DE_TESTE
-    )
-    so_a_favor = formatar_mensagem([resultado(95, a_favor=["Python"], contra=[])], DATA_DE_TESTE)
+    so_contra = mensagem([resultado(10, a_favor=[], contra=["Fora da área"])], DATA_DE_TESTE)
+    so_a_favor = mensagem([resultado(95, a_favor=["Python"], contra=[])], DATA_DE_TESTE)
 
     assert "✅" not in so_contra
     assert "❌ Fora da área" in so_contra
@@ -190,7 +221,7 @@ def test_linha_de_pontos_some_quando_a_lista_esta_vazia():
 
 
 def test_exibe_no_maximo_tres_pontos_de_cada_tipo():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [
             resultado(
                 80,
@@ -208,15 +239,15 @@ def test_exibe_no_maximo_tres_pontos_de_cada_tipo():
 
 
 def test_alerta_aparece_somente_quando_existe():
-    com_alerta = formatar_mensagem([resultado(30, alerta="Exige pleno")], DATA_DE_TESTE)
-    sem_alerta = formatar_mensagem([resultado(30)], DATA_DE_TESTE)
+    com_alerta = mensagem([resultado(30, alerta="Exige pleno")], DATA_DE_TESTE)
+    sem_alerta = mensagem([resultado(30)], DATA_DE_TESTE)
 
     assert "⚠️ Exige pleno" in com_alerta
     assert "⚠️" not in sem_alerta
 
 
 def test_aviso_objetivo_aparece_separado_dos_pontos_contra():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [
             resultado(
                 85,
@@ -233,7 +264,7 @@ def test_aviso_objetivo_aparece_separado_dos_pontos_contra():
 
 
 def test_escapa_caracteres_html_dos_dados_da_vaga_e_dos_pontos():
-    texto = formatar_mensagem(
+    texto = mensagem(
         [resultado(50, titulo="Dev <Júnior> & Estágio", contra=["C++ & <Go>"])], DATA_DE_TESTE
     )
 
@@ -243,14 +274,14 @@ def test_escapa_caracteres_html_dos_dados_da_vaga_e_dos_pontos():
 
 
 def test_vagas_sao_separadas_por_linha_divisoria():
-    texto = formatar_mensagem([resultado(50, numero=1), resultado(40, numero=2)], DATA_DE_TESTE)
+    texto = mensagem([resultado(50, numero=1), resultado(40, numero=2)], DATA_DE_TESTE)
 
     assert texto.count("───────────────") == 1
     assert texto.index("1. ") < texto.index("───────────────") < texto.index("2. ")
 
 
 def test_mensagem_curta_nao_e_dividida():
-    texto = formatar_mensagem([resultado(50)], DATA_DE_TESTE)
+    texto = mensagem([resultado(50)], DATA_DE_TESTE)
 
     assert dividir_em_mensagens(texto) == [texto]
 
@@ -259,7 +290,7 @@ def test_mensagem_longa_e_dividida_sem_quebrar_vagas():
     resultados = [
         resultado(50, titulo="Estágio " + "x" * 400, numero=numero) for numero in range(20)
     ]
-    texto = formatar_mensagem(resultados, DATA_DE_TESTE)
+    texto = mensagem(resultados, DATA_DE_TESTE)
 
     partes = dividir_em_mensagens(texto)
 

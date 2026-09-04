@@ -10,6 +10,7 @@ from radar.domain.models import (
     ExtracaoDaVaga,
     Modalidade,
     Perfil,
+    Recomendacao,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -95,8 +96,8 @@ SQL_GUARDAR_AVALIACAO = """
 """
 
 SQL_GUARDAR_ENVIO = """
-    insert into envios (perfil_id, vaga_id)
-    values (%(perfil_id)s, %(vaga_id)s)
+    insert into envios (perfil_id, vaga_id, token)
+    values (%(perfil_id)s, %(vaga_id)s, %(token)s)
     on conflict (perfil_id, vaga_id) do nothing
 """
 
@@ -232,14 +233,14 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(f"Falha ao gravar avaliações: {descrever(erro)}") from erro
 
-    def registrar_envios(self, usuario: Usuario, enviadas: list[ResultadoMatch]) -> None:
+    def registrar_envios(self, usuario: Usuario, enviadas: list[Recomendacao]) -> None:
         if not enviadas:
             return
         try:
             with self._conexao.transaction(), self._conexao.cursor() as cursor:
-                for resultado in enviadas:
-                    vaga_id = guardar_vaga(cursor, resultado.vaga)
-                    guardar_envio(cursor, usuario.id, vaga_id)
+                for recomendacao in enviadas:
+                    vaga_id = guardar_vaga(cursor, recomendacao.resultado.vaga)
+                    guardar_envio(cursor, usuario.id, vaga_id, recomendacao.token)
                 ativado_agora = registrar_ativacao(cursor, usuario.id)
                 cursor.execute(SQL_ZERAR_FALHAS_DE_ENVIO, {"perfil_id": usuario.id})
         except psycopg.Error as erro:
@@ -302,8 +303,8 @@ def guardar_avaliacao(
     )
 
 
-def guardar_envio(cursor: psycopg.Cursor, perfil_id: UUID, vaga_id: int) -> None:
-    cursor.execute(SQL_GUARDAR_ENVIO, {"perfil_id": perfil_id, "vaga_id": vaga_id})
+def guardar_envio(cursor: psycopg.Cursor, perfil_id: UUID, vaga_id: int, token: UUID) -> None:
+    cursor.execute(SQL_GUARDAR_ENVIO, {"perfil_id": perfil_id, "vaga_id": vaga_id, "token": token})
 
 
 def registrar_ativacao(cursor: psycopg.Cursor, perfil_id: UUID) -> bool:

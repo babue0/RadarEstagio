@@ -29,6 +29,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          URL_DE_RASTREIO: ${{ secrets.URL_DE_RASTREIO }}
           DIAS_RECENTES: "5"
           QUANTIDADE_VAGAS_ENVIADAS: "7"
 

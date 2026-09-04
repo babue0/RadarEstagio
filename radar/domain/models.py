@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
@@ -86,3 +86,8 @@ class ResultadoMatch(BaseModel):
     pontos_contra: list[str] = Field(default_factory=list)
     avisos_objetivos: list[str] = Field(default_factory=list)
     alerta_pegadinha: str | None = None
+
+
+class Recomendacao(BaseModel):
+    resultado: ResultadoMatch
+    token: UUID = Field(default_factory=uuid4)

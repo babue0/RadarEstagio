@@ -38,6 +38,9 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   alternar, ver a skill `trocar-avaliador`. A IA **só extrai fatos da vaga**; quem compara com o
   perfil e calcula a nota é Python, sem IA.
 - **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens.
+- **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
+  `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
+  banco, a mensagem volta a apontar direto para a vaga.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
@@ -249,6 +252,9 @@ empate, a de descrição mais longa.
   operação: usuários ativos, quantos receberam recomendação, vagas enviadas e requisições. Kill
   por timeout, que o Python não consegue reportar, é coberto pelo passo `if: failure()` do
   workflow.
+- **Cada linha de `envios` tem um `token` único**, gerado em Python antes do envio porque a
+  mensagem precisa do link antes de a linha existir. Envio que falha ao ser gravado deixa um token
+  órfão, e a Edge Function `ir` trata isso redirecionando para a landing.
 - Ativação operacional = primeira entrega bem-sucedida com ao menos uma recomendação;
   `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`. `docs/metricas.md`
   separa esse marco da ativação de produto.

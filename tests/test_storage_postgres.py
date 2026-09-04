@@ -11,6 +11,7 @@ from radar.domain.models import (
     Modalidade,
     NivelCompatibilidade,
     Perfil,
+    Recomendacao,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -82,7 +83,7 @@ def test_registra_e_recupera_avaliacoes_e_envios(conexao: psycopg.Connection, us
             pontos_a_favor=["Curso compatível"],
         )
     ]
-    enviadas = avaliadas
+    enviadas = [Recomendacao(resultado=resultado) for resultado in avaliadas]
 
     repositorio.guardar_avaliacoes(usuario, avaliadas, "modelo-teste")
     repositorio.registrar_envios(usuario, enviadas)
@@ -112,12 +113,12 @@ def test_registrar_duas_vezes_nao_duplica(conexao: psycopg.Connection, usuario: 
     resultado = ResultadoMatch(vaga=vaga(1), nota=80)
 
     repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
-    repositorio.registrar_envios(usuario, [resultado])
+    repositorio.registrar_envios(usuario, [Recomendacao(resultado=resultado)])
     primeira_ativacao = conexao.execute(
         "select ativado_em from perfis where id = %s", (usuario.id,)
     ).fetchone()[0]
     repositorio.guardar_avaliacoes(usuario, [resultado], "modelo")
-    repositorio.registrar_envios(usuario, [resultado])
+    repositorio.registrar_envios(usuario, [Recomendacao(resultado=resultado)])
 
     assert len(repositorio.avaliacoes_existentes(usuario, [vaga(1)])) == 1
     assert (
@@ -157,7 +158,9 @@ def test_falhas_seguidas_sao_contadas_e_zeradas_pelo_envio(
     assert repositorio.registrar_falha_de_envio(usuario) == 1
     assert repositorio.registrar_falha_de_envio(usuario) == 2
 
-    repositorio.registrar_envios(usuario, [ResultadoMatch(vaga=vaga(1), nota=80)])
+    repositorio.registrar_envios(
+        usuario, [Recomendacao(resultado=ResultadoMatch(vaga=vaga(1), nota=80))]
+    )
 
     assert (
         conexao.execute(
@@ -198,7 +201,9 @@ def test_usuario_ativo_traz_desde_quando_esta_sem_recomendacao(
     assert antes.sem_recomendacao_desde == criado_em
     assert antes.silencio_avisado_em is None
 
-    repositorio.registrar_envios(usuario, [ResultadoMatch(vaga=vaga(1), nota=80)])
+    repositorio.registrar_envios(
+        usuario, [Recomendacao(resultado=ResultadoMatch(vaga=vaga(1), nota=80))]
+    )
     repositorio.registrar_aviso_de_silencio(usuario)
 
     depois = next(item for item in repositorio.listar_ativos() if item.id == usuario.id)
@@ -228,4 +233,17 @@ def test_extracao_e_guardada_na_vaga_e_reaproveitada(conexao: psycopg.Connection
             "select modelo_extracao from vagas where id_externo = 'teste-1'"
         ).fetchone()[0]
         == "modelo-teste"
+    )
+
+
+def test_envio_guarda_o_token_do_link_rastreavel(conexao: psycopg.Connection, usuario: Usuario):
+    recomendacao = Recomendacao(resultado=ResultadoMatch(vaga=vaga(1), nota=80))
+
+    RepositorioPostgres(conexao).registrar_envios(usuario, [recomendacao])
+
+    assert (
+        conexao.execute("select token from envios where perfil_id = %s", (usuario.id,)).fetchone()[
+            0
+        ]
+        == recomendacao.token
     )

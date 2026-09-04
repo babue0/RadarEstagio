@@ -31,9 +31,9 @@ RLS e pelas permissões de coluna das migrations. Nunca use a chave `service_rol
 No Supabase Auth, adicione a URL publicada do site e `http://localhost:8000` à lista de Redirect
 URLs. A confirmação de e-mail retorna ao site, que conclui a criação do perfil automaticamente.
 
-Antes de publicar, aplique em ordem todas as migrations de `0001` a `0007`. A `0005` instrumenta
-o funil, a `0006` adiciona áreas de interesse ao perfil e a `0007` persiste os requisitos técnicos
-extraídos das vagas.
+Antes de publicar, aplique em ordem todas as migrations de `0001` a `0011`. A `0005` instrumenta
+o funil, a `0006` adiciona áreas de interesse ao perfil, a `0007` persiste os requisitos técnicos
+extraídos das vagas e a `0011` dá a cada envio o token do link rastreável.
 
 ## Como abrir
 

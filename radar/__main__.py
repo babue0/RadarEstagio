@@ -135,6 +135,12 @@ def montar_extrator(settings: Settings) -> ExtratorEmLotes:
     return ExtratorEmLotes(criar_extrator(settings), settings.gemini_vagas_por_lote)
 
 
+def url_de_rastreio_utilizavel(settings: Settings) -> str:
+    if not settings.usa_banco():
+        return ""
+    return settings.url_de_rastreio.strip()
+
+
 def executar_fluxo(
     settings: Settings, cliente_http: httpx.Client, repositorio: Repositorio
 ) -> None:
@@ -153,6 +159,7 @@ def executar_fluxo(
                 nota_minima=settings.nota_minima,
                 falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
                 dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
+                url_de_rastreio=url_de_rastreio_utilizavel(settings),
             ),
             agora,
             enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
