@@ -9,6 +9,14 @@ const formMessage = document.querySelector("#form-message");
 const submitProfile = document.querySelector("#submit-profile");
 const toggleAuthMode = document.querySelector("#toggle-auth-mode");
 const telegramLink = document.querySelector("#telegram-link");
+const accountState = document.querySelector("#account-state");
+const accountMessage = document.querySelector("#account-message");
+const accountConfirm = document.querySelector("#account-confirm");
+const toggleDeliveries = document.querySelector("#toggle-deliveries");
+const credenciais = document.querySelector("#credenciais");
+const accountSwitch = document.querySelector("#account-switch");
+let editandoPerfilExistente = false;
+const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
 const pendingProfileKey = "radar-perfil-pendente";
 const eventSessionKey = "radar-sessao-eventos";
 const landingViewKey = "radar-landing-vista";
@@ -203,6 +211,10 @@ function setSubmitting(submitting) {
     submitProfile.textContent = "Salvando…";
     return;
   }
+  if (editandoPerfilExistente) {
+    submitProfile.textContent = "Salvar alterações";
+    return;
+  }
   submitProfile.textContent = authMode === "signup"
     ? "Criar conta e continuar →"
     : "Entrar e continuar →";
@@ -220,9 +232,30 @@ function setAuthMode(mode) {
   setFormMessage();
 }
 
+function sairDoModoEdicao() {
+  editandoPerfilExistente = false;
+  credenciais.hidden = false;
+  accountSwitch.hidden = false;
+  form.elements.email.required = true;
+  form.elements.senha.required = true;
+}
+
+function entrarNoModoEdicao() {
+  editandoPerfilExistente = true;
+  credenciais.hidden = true;
+  accountSwitch.hidden = true;
+  form.elements.email.required = false;
+  form.elements.senha.required = false;
+  submitProfile.textContent = "Salvar alterações";
+}
+
 function resetDialogView() {
+  sairDoModoEdicao();
   form.hidden = false;
   successState.hidden = true;
+  accountState.hidden = true;
+  accountConfirm.hidden = true;
+  setAccountMessage();
   progressWrap.hidden = false;
   telegramLink.hidden = true;
   setFormMessage();
@@ -313,6 +346,14 @@ function showConfirmation(email) {
   });
 }
 
+function mostrarEstadoDoPerfil(profile) {
+  if (profile.telegram_chat_id) {
+    showAccount(profile);
+    return;
+  }
+  showActivation(profile);
+}
+
 function showActivation(profile) {
   if (profile.telegram_chat_id) {
     showSuccess({
@@ -329,6 +370,78 @@ function showActivation(profile) {
     copy: "Vincule seu Telegram para receber as vagas selecionadas pelo Radar.",
     token: profile.token_vinculo,
   });
+}
+
+
+function setAccountMessage(message = "") {
+  accountMessage.textContent = message;
+  accountMessage.hidden = !message;
+}
+
+function resumoDoPerfil(profile) {
+  const modalidades = {
+    remoto: "remoto",
+    presencial: "presencial",
+    hibrido: "híbrido",
+    indiferente: "qualquer modalidade",
+  };
+  const habilidades = profile.habilidades.join(", ");
+  return `${profile.curso}, ${profile.periodo}º período · ${profile.cidade} · ${modalidades[profile.modalidade]}\n${habilidades}`;
+}
+
+function estadoDasEntregas(profile) {
+  if (!profile.telegram_chat_id) return "Telegram ainda não vinculado.";
+  if (!profile.ativo) return "Entregas pausadas. Nada chega até você retomar.";
+  return `Entregas ativas: o Radar procura ${HORARIO_DA_BUSCA}.`;
+}
+
+function showAccount(profile) {
+  form.hidden = true;
+  progressWrap.hidden = true;
+  successState.hidden = true;
+  accountConfirm.hidden = true;
+  accountState.hidden = false;
+  setAccountMessage();
+  document.querySelector("#account-summary").textContent = resumoDoPerfil(profile);
+  document.querySelector("#account-schedule").textContent = estadoDasEntregas(profile);
+  toggleDeliveries.textContent = profile.ativo ? "Pausar entregas" : "Retomar entregas";
+  toggleDeliveries.hidden = !profile.telegram_chat_id;
+  document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id;
+  document.querySelector("#close-account").focus();
+}
+
+function preencherFormularioCom(profile) {
+  form.elements.curso.value = profile.curso;
+  form.elements.periodo.value = String(profile.periodo);
+  form.elements.cidade.value = profile.cidade;
+  form.elements.modalidade.value = profile.modalidade;
+  selectedSkills.clear();
+  profile.habilidades.forEach((skill) => selectedSkills.add(skill));
+  renderSkills();
+  document.querySelectorAll('input[name="areas"]').forEach((campo) => {
+    campo.checked = (profile.areas_de_interesse ?? []).includes(campo.value);
+  });
+}
+
+async function perfilAtual() {
+  const session = await currentSession();
+  if (!session) return null;
+  return loadProfile(session.user.id);
+}
+
+async function alternarEntregas(profile) {
+  const { error } = await getClient()
+    .from("perfis")
+    .update({ ativo: !profile.ativo, atualizado_em: new Date().toISOString() })
+    .eq("user_id", (await currentSession()).user.id);
+  if (error) throw error;
+}
+
+function pedirConfirmacao(copy, acao) {
+  document.querySelector("#account-confirm-copy").textContent = copy;
+  accountConfirm.hidden = false;
+  accountConfirm.dataset.acao = acao;
+  document.querySelector("#account-confirm-yes").focus();
 }
 
 async function currentSession() {
@@ -403,7 +516,7 @@ async function openSignup() {
     if (!session) return;
     form.elements.email.value = session.user.email ?? "";
     const profile = await loadProfile(session.user.id);
-    if (profile) showActivation(profile);
+    if (profile) mostrarEstadoDoPerfil(profile);
   } catch (error) {
     setFormMessage(humanizeError(error));
   }
@@ -417,7 +530,7 @@ async function resumeConfirmedSignup() {
     if (!session) return;
     openDialog();
     const profile = await persistProfile(session.user.id, pending);
-    showActivation(profile);
+    mostrarEstadoDoPerfil(profile);
   } catch (error) {
     resetDialogView();
     openDialog();
@@ -447,6 +560,79 @@ document.querySelectorAll(".js-open-signup").forEach((button) => {
   });
 });
 document.querySelector("#close-dialog").addEventListener("click", closeSignup);
+document.querySelector("#close-account").addEventListener("click", closeSignup);
+
+document.querySelector("#edit-profile").addEventListener("click", async () => {
+  try {
+    const profile = await perfilAtual();
+    if (!profile) return;
+    preencherFormularioCom(profile);
+    accountState.hidden = true;
+    form.hidden = false;
+    progressWrap.hidden = false;
+    entrarNoModoEdicao();
+    setSubmitting(false);
+    showStep(1);
+  } catch (error) {
+    setAccountMessage(humanizeError(error));
+  }
+});
+
+toggleDeliveries.addEventListener("click", async () => {
+  setAccountMessage();
+  try {
+    const profile = await perfilAtual();
+    if (!profile) return;
+    await alternarEntregas(profile);
+    showAccount({ ...profile, ativo: !profile.ativo });
+  } catch (error) {
+    setAccountMessage(humanizeError(error));
+  }
+});
+
+document.querySelector("#unlink-telegram").addEventListener("click", () => {
+  pedirConfirmacao(
+    "Desvincular para de entregar vagas neste Telegram e invalida o link antigo. Você pode vincular de novo depois.",
+    "desvincular",
+  );
+});
+
+document.querySelector("#delete-account").addEventListener("click", () => {
+  pedirConfirmacao(
+    "Excluir apaga sua conta, seu perfil e o histórico de entregas. Não dá para desfazer.",
+    "excluir",
+  );
+});
+
+document.querySelector("#account-confirm-no").addEventListener("click", () => {
+  accountConfirm.hidden = true;
+});
+
+document.querySelector("#account-confirm-yes").addEventListener("click", async () => {
+  const acao = accountConfirm.dataset.acao;
+  accountConfirm.hidden = true;
+  setAccountMessage();
+  try {
+    if (acao === "desvincular") {
+      const { error } = await getClient().rpc("desvincular_meu_telegram");
+      if (error) throw error;
+      const profile = await perfilAtual();
+      if (profile) showActivation(profile);
+      return;
+    }
+    const { error } = await getClient().rpc("excluir_minha_conta");
+    if (error) throw error;
+    await getClient().auth.signOut();
+    clearPendingProfile();
+    showSuccess({
+      kicker: "Conta excluída",
+      title: "Seus dados foram apagados.",
+      copy: "Nada mais será entregue. Se mudar de ideia, é só criar um perfil de novo.",
+    });
+  } catch (error) {
+    setAccountMessage(humanizeError(error));
+  }
+});
 document.querySelector("#finish-signup").addEventListener("click", closeSignup);
 document.querySelector("#previous-step").addEventListener("click", () => showStep(2));
 document.querySelector("#next-step").addEventListener("click", completeProfileStep);
@@ -497,7 +683,7 @@ form.addEventListener("submit", async (event) => {
     }
     profileSaveStarted = true;
     const savedProfile = await persistProfile(session.user.id, profile);
-    showActivation(savedProfile);
+    mostrarEstadoDoPerfil(savedProfile);
   } catch (error) {
     setFormMessage(humanizeError(error, { profilePending: profileSaveStarted }));
   } finally {
