@@ -79,3 +79,19 @@ def test_edicao_dispensa_as_credenciais_de_quem_ja_tem_sessao():
 
     assert "function entrarNoModoEdicao()" in javascript
     assert "form.elements.senha.required = false" in javascript
+
+
+def test_perfil_pausado_que_revincula_nao_diz_que_esta_ativo():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "if (profile?.telegram_chat_id) showActivation(profile)" not in javascript
+    assert javascript.count("mostrarEstadoDoPerfil(profile)") >= 2
+
+
+def test_sessao_perdida_no_meio_avisa_em_vez_de_falhar_calado():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+
+    assert "MENSAGEM_SEM_SESSAO" in javascript
+    assert "MENSAGEM_SEM_PERFIL" in javascript
+    assert "if (editandoPerfilExistente && !existingSession) {" in javascript
+    assert "if (saida.error) throw saida.error" in javascript

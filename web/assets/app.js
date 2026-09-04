@@ -17,6 +17,8 @@ const credenciais = document.querySelector("#credenciais");
 const accountSwitch = document.querySelector("#account-switch");
 let editandoPerfilExistente = false;
 const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
+const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
+const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const pendingProfileKey = "radar-perfil-pendente";
 const eventSessionKey = "radar-sessao-eventos";
 const landingViewKey = "radar-landing-vista";
@@ -425,15 +427,19 @@ function preencherFormularioCom(profile) {
 
 async function perfilAtual() {
   const session = await currentSession();
-  if (!session) return null;
-  return loadProfile(session.user.id);
+  if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+  const profile = await loadProfile(session.user.id);
+  if (!profile) throw validationError(MENSAGEM_SEM_PERFIL);
+  return profile;
 }
 
 async function alternarEntregas(profile) {
+  const session = await currentSession();
+  if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
   const { error } = await getClient()
     .from("perfis")
     .update({ ativo: !profile.ativo, atualizado_em: new Date().toISOString() })
-    .eq("user_id", (await currentSession()).user.id);
+    .eq("user_id", session.user.id);
   if (error) throw error;
 }
 
@@ -501,7 +507,7 @@ async function refreshActivationStatus() {
     const session = await currentSession();
     if (!session) return;
     const profile = await loadProfile(session.user.id);
-    if (profile?.telegram_chat_id) showActivation(profile);
+    if (profile) mostrarEstadoDoPerfil(profile);
   } catch {
     document.querySelector("#success-copy").textContent =
       "O Telegram foi aberto, mas ainda não conseguimos confirmar o vínculo. Tente voltar a esta janela novamente.";
@@ -565,7 +571,6 @@ document.querySelector("#close-account").addEventListener("click", closeSignup);
 document.querySelector("#edit-profile").addEventListener("click", async () => {
   try {
     const profile = await perfilAtual();
-    if (!profile) return;
     preencherFormularioCom(profile);
     accountState.hidden = true;
     form.hidden = false;
@@ -582,7 +587,6 @@ toggleDeliveries.addEventListener("click", async () => {
   setAccountMessage();
   try {
     const profile = await perfilAtual();
-    if (!profile) return;
     await alternarEntregas(profile);
     showAccount({ ...profile, ativo: !profile.ativo });
   } catch (error) {
@@ -617,12 +621,17 @@ document.querySelector("#account-confirm-yes").addEventListener("click", async (
       const { error } = await getClient().rpc("desvincular_meu_telegram");
       if (error) throw error;
       const profile = await perfilAtual();
-      if (profile) showActivation(profile);
+      if (!profile) {
+        showConfirmation(form.elements.email.value);
+        return;
+      }
+      mostrarEstadoDoPerfil(profile);
       return;
     }
     const { error } = await getClient().rpc("excluir_minha_conta");
     if (error) throw error;
-    await getClient().auth.signOut();
+    const saida = await getClient().auth.signOut();
+    if (saida.error) throw saida.error;
     clearPendingProfile();
     showSuccess({
       kicker: "Conta excluída",
@@ -669,6 +678,11 @@ form.addEventListener("submit", async (event) => {
     const profile = profileFromForm();
     savePendingProfile(profile);
     const existingSession = await currentSession();
+    if (editandoPerfilExistente && !existingSession) {
+      sairDoModoEdicao();
+      setFormMessage(MENSAGEM_SEM_SESSAO);
+      return;
+    }
     if (existingSession && existingSession.user.email !== email) {
       const { error } = await getClient().auth.signOut();
       if (error) throw error;
