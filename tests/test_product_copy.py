@@ -62,9 +62,20 @@ def test_painel_da_conta_oferece_editar_pausar_desvincular_e_excluir():
 def test_acao_destrutiva_pede_confirmacao_antes():
     javascript = (RAIZ / "web/assets/app.js").read_text()
 
-    assert 'pedirConfirmacao(' in javascript
-    assert 'Não dá para desfazer.' in javascript
-    assert '#account-confirm-yes' in javascript
+    assert "pedirConfirmacao(" in javascript
+    assert "#account-confirm-yes" in javascript
+
+
+def test_exclusao_diz_a_verdade_sobre_os_60_dias_e_o_arrependimento():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    html = (RAIZ / "web/index.html").read_text()
+
+    assert "Não dá para desfazer" not in javascript
+    assert "Seus dados foram apagados" not in javascript
+    assert "As entregas param na hora" in javascript
+    assert "entre aqui de novo para cancelar" in javascript
+    assert 'rpc("cancelar_exclusao_da_minha_conta")' in javascript
+    assert 'id="cancel-deletion"' in html
 
 
 def test_exclusao_e_desvinculo_passam_pelas_funcoes_do_banco():
@@ -94,4 +105,10 @@ def test_sessao_perdida_no_meio_avisa_em_vez_de_falhar_calado():
     assert "MENSAGEM_SEM_SESSAO" in javascript
     assert "MENSAGEM_SEM_PERFIL" in javascript
     assert "if (editandoPerfilExistente && !existingSession) {" in javascript
-    assert "if (saida.error) throw saida.error" in javascript
+
+
+def test_pedir_exclusao_mantem_a_sessao_para_a_pessoa_poder_cancelar():
+    javascript = (RAIZ / "web/assets/app.js").read_text()
+    trecho = javascript[javascript.index('rpc("excluir_minha_conta")') :][:600]
+
+    assert "signOut" not in trecho

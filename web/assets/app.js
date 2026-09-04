@@ -19,6 +19,7 @@ let editandoPerfilExistente = false;
 const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
+const DIAS_ATE_APAGAR = 60;
 const pendingProfileKey = "radar-perfil-pendente";
 const eventSessionKey = "radar-sessao-eventos";
 const landingViewKey = "radar-landing-vista";
@@ -392,6 +393,9 @@ function resumoDoPerfil(profile) {
 }
 
 function estadoDasEntregas(profile) {
+  if (profile.excluida_em) {
+    return `Exclusão pedida. Seus dados são apagados em ${dataDoApagamento(profile.excluida_em)}.`;
+  }
   if (!profile.telegram_chat_id) return "Telegram ainda não vinculado.";
   if (!profile.ativo) return "Entregas pausadas. Nada chega até você retomar.";
   return `Entregas ativas: o Radar procura ${HORARIO_DA_BUSCA}.`;
@@ -406,9 +410,12 @@ function showAccount(profile) {
   setAccountMessage();
   document.querySelector("#account-summary").textContent = resumoDoPerfil(profile);
   document.querySelector("#account-schedule").textContent = estadoDasEntregas(profile);
+  const emExclusao = Boolean(profile.excluida_em);
   toggleDeliveries.textContent = profile.ativo ? "Pausar entregas" : "Retomar entregas";
-  toggleDeliveries.hidden = !profile.telegram_chat_id;
-  document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id;
+  toggleDeliveries.hidden = !profile.telegram_chat_id || emExclusao;
+  document.querySelector("#unlink-telegram").hidden = !profile.telegram_chat_id || emExclusao;
+  document.querySelector("#delete-account").hidden = emExclusao;
+  document.querySelector("#cancel-deletion").hidden = !emExclusao;
   document.querySelector("#close-account").focus();
 }
 
@@ -443,6 +450,12 @@ async function alternarEntregas(profile) {
   if (error) throw error;
 }
 
+function dataDoApagamento(marcadaEm) {
+  const marcada = marcadaEm ? new Date(marcadaEm) : new Date();
+  marcada.setDate(marcada.getDate() + DIAS_ATE_APAGAR);
+  return marcada.toLocaleDateString("pt-BR");
+}
+
 function pedirConfirmacao(copy, acao) {
   document.querySelector("#account-confirm-copy").textContent = copy;
   accountConfirm.hidden = false;
@@ -459,7 +472,7 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -473,7 +486,7 @@ async function persistProfile(userId, profile) {
     ? getClient().from("perfis").update(fields).eq("user_id", userId)
     : getClient().from("perfis").insert({ user_id: userId, ...profile });
   const { data, error } = await query
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em")
     .single();
   if (error) throw error;
   clearPendingProfile();
@@ -603,9 +616,22 @@ document.querySelector("#unlink-telegram").addEventListener("click", () => {
 
 document.querySelector("#delete-account").addEventListener("click", () => {
   pedirConfirmacao(
-    "Excluir apaga sua conta, seu perfil e o histórico de entregas. Não dá para desfazer.",
+    "As entregas param na hora. Sua conta e seus dados são apagados definitivamente 60 dias " +
+      "depois; até lá você pode cancelar entrando aqui de novo.",
     "excluir",
   );
+});
+
+document.querySelector("#cancel-deletion").addEventListener("click", async () => {
+  setAccountMessage();
+  try {
+    const { error } = await getClient().rpc("cancelar_exclusao_da_minha_conta");
+    if (error) throw error;
+    const profile = await perfilAtual();
+    showAccount(profile);
+  } catch (error) {
+    setAccountMessage(humanizeError(error));
+  }
 });
 
 document.querySelector("#account-confirm-no").addEventListener("click", () => {
@@ -628,15 +654,12 @@ document.querySelector("#account-confirm-yes").addEventListener("click", async (
       mostrarEstadoDoPerfil(profile);
       return;
     }
-    const { error } = await getClient().rpc("excluir_minha_conta");
+    const { data, error } = await getClient().rpc("excluir_minha_conta");
     if (error) throw error;
-    const saida = await getClient().auth.signOut();
-    if (saida.error) throw saida.error;
-    clearPendingProfile();
     showSuccess({
-      kicker: "Conta excluída",
-      title: "Seus dados foram apagados.",
-      copy: "Nada mais será entregue. Se mudar de ideia, é só criar um perfil de novo.",
+      kicker: "Exclusão agendada",
+      title: "As entregas pararam agora.",
+      copy: `Seus dados são apagados definitivamente em ${dataDoApagamento(data)}. Até lá, entre aqui de novo para cancelar.`,
     });
   } catch (error) {
     setAccountMessage(humanizeError(error));
