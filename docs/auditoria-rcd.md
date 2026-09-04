@@ -326,6 +326,14 @@ manual.
 **14.** Decidir `cidades_aceitas`/`modalidades_aceitas`: implementar múltiplas cidades na edição
 do perfil ou remover as colunas por migration. Não deixar como está.
 
+**Decidido em 04/09/2026: remover, pela migration `0012`.** Implementar de verdade exigiria a tela
+de edição do item 11 escrevendo as colunas, o `SQL_USUARIOS_ATIVOS` lendo, o pré-filtro aceitando
+qualquer cidade da lista e o coletor buscando por todas — isto é, construir a preferência múltipla
+antes de qualquer sinal de que o estudante a quer. As colunas ficariam mentindo enquanto isso,
+que é exatamente a armadilha apontada em E1. O sinal que traz o assunto de volta é o piloto:
+`motivo_logistica` concentrado nas recusas, ou entrevistado pedindo mais de uma cidade. Aí a
+coluna volta na mesma entrega da tela que a escreve.
+
 **15.** Substituir `perfil_fixo.py` por um perfil sintético.
 
 **Critério do Portão C':** o estudante controla o serviço e toda recomendação gera sinal

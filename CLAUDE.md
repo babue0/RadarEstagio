@@ -252,6 +252,9 @@ empate, a de descrição mais longa.
 - O projeto **`bnzogphdvpubtkcflcue` (`us-east-2`) foi criado por engano e não deve ser usado.**
   Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.
 - **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
+- **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
+  existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
+  tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
 - Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
 - **`token_vinculo` é de uso único**: o webhook grava o `chat_id` e troca o token na mesma
   atualização, então link vazado não vincula o chat de outra pessoa. O token que o site leu antes
