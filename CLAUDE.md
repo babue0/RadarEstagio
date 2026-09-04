@@ -257,11 +257,15 @@ modalidade e, em empate, a de descrição mais longa.
   `grant` — `telegram_chat_id` é do webhook e `auth.users` o cliente não apaga — então são funções
   `security definer` filtrando por `auth.uid()`, na migration `0013`. Desvincular rotaciona o
   `token_vinculo` junto, senão o link antigo continuaria valendo.
-- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` marca
-  `excluida_em`, zera o `chat_id` e desativa o perfil — a entrega para na hora. O apagamento
+- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` só marca
+  `excluida_em`; quem para a entrega é o `excluida_em is null` na consulta dos perfis. O apagamento
   definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
   anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
   encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
+- **`ativo` é só da pausa; exclusão não escreve nele** (04/09/2026). O gatilho da `0005` emite
+  `entregas_pausadas` em toda transição de `ativo` para `false`, então exclusão entrava no funil
+  como pausa; e cancelar, que punha `ativo = true` sem saber o estado anterior, devolvia ao ar quem
+  tinha pausado antes de excluir. Marcar em vez de destruir é o que faz cancelar ser desfazer.
 - **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
 - **O perfil aceita uma cidade e uma modalidade.** `cidades_aceitas` e `modalidades_aceitas`
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da

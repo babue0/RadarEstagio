@@ -26,10 +26,13 @@ await supabase.rpc("excluir_minha_conta");            // devolve a data da marca
 await supabase.rpc("cancelar_exclusao_da_minha_conta");
 ```
 
-**Excluir não apaga na hora.** Marca `perfis.excluida_em`, zera o `telegram_chat_id` e põe `ativo`
-em `false`, então a entrega para imediatamente. O apagamento definitivo acontece 60 dias depois,
-no job diário. Enquanto isso o perfil continua legível e a sessão continua válida — sem ela a
-pessoa não teria como voltar para cancelar.
+**Excluir não apaga na hora.** Marca `perfis.excluida_em` e nada mais: a entrega para porque o job
+diário ignora perfil marcado, não porque algum campo foi destruído. O apagamento definitivo
+acontece 60 dias depois, no mesmo job. Enquanto isso o perfil continua legível e a sessão continua
+válida — sem ela a pessoa não teria como voltar para cancelar.
+
+`ativo` continua sendo só da pausa. Exclusão não escreve nele, senão o gatilho da `0005` marcaria
+`entregas_pausadas` para quem saiu de vez, e cancelar devolveria ao ar quem tinha pausado antes.
 
 O front deve ler `excluida_em` junto do resto do perfil e mostrar o estado; um perfil marcado não
 deve oferecer pausar, desvincular nem excluir de novo.
@@ -71,7 +74,8 @@ Uma linha por usuário. `user_id` é o `id` do usuário no Auth (`auth.users.id`
 O que o radar usa para escolher vagas: `curso`, `periodo`, `habilidades`, `cidade`,
 `modalidade`. Quanto mais específicas as habilidades, melhor o ranqueamento.
 
-Só entram no envio diário os perfis com `ativo = true` **e** `telegram_chat_id` preenchido.
+Só entram no envio diário os perfis com `ativo = true`, `excluida_em` nulo **e**
+`telegram_chat_id` preenchido.
 
 ## Exemplos com `@supabase/supabase-js`
 
