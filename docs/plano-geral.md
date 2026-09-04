@@ -14,8 +14,9 @@ O código dos sprints 0 e 1 e de quase todo o 3 está no `main`. **Quase nada di
 | Job diário | funcionando; entrega vaga todo dia às 07:23 |
 | Custo de IA | resolvido; não cresce com o número de usuários |
 | Landing | **não hospedada em lugar nenhum** |
-| Edge Functions `ir` e `telegram-webhook` | escritas, **não publicadas** |
-| Webhook do Telegram | registrado só com `message`; clique de botão não chega |
+| Edge Function `telegram-webhook` | publicada em 29/08; a versão com feedback **não foi republicada** |
+| Edge Function `ir` | escrita, **nunca publicada** |
+| Webhook do Telegram | `allowed_updates` já inclui `callback_query`, corrigido em 04/09 |
 | Painel da conta | escrito na PR #9, migration não aplicada |
 
 A distância entre "está no `main`" e "o estudante usa" é toda de infraestrutura, não de código.
@@ -36,7 +37,7 @@ A distância entre "está no `main`" e "o estudante usa" é toda de infraestrutu
 | `telegram_vinculado` | gatilho | sim |
 | `primeira_recomendacao_enviada` | gatilho | sim |
 | `vaga_aberta` | função `ir` | **não** — falta publicar e criar `URL_DE_RASTREIO` |
-| `vaga_irrelevante` | webhook | **não** — falta publicar e registrar `callback_query` |
+| `vaga_irrelevante` | webhook | **não** — falta republicar a função com o feedback |
 | `vaga_util` | ninguém | **não existe emissor** |
 | `candidatura_iniciada` | ninguém | **não existe emissor** |
 
@@ -69,22 +70,28 @@ estiver no ar. A primeira como paliativo se o piloto começar antes.
 
 ### Fase A — destravar (tudo depende disto)
 
-O domínio é o gargalo único: ele libera três coisas de uma vez.
+**O domínio não trava a medição.** O Cloudflare Pages publica em `*.pages.dev`, e a função `ir`
+exige apenas que `URL_DA_LANDING` aponte para algum lugar — não para um domínio próprio. Dá para
+destravar `vaga_aberta` hoje, sem comprar nada.
+
+O domínio trava outra coisa: o **e-mail**. Sem ele não há endereço de contato para a política de
+privacidade nem remetente próprio para o Resend.
 
 ```
-domínio ─┬─ hospedagem da landing ── URL_DA_LANDING ── deploy da função ir ── vaga_aberta
-         ├─ contato@ ─────────────── política de privacidade completa
-         └─ Resend ───────────────── confirmação decente + recuperação de senha
+publicar no *.pages.dev ── URL_DA_LANDING ── deploy da ir ── vaga_aberta
+domínio ─┬─ contato@ ───── política de privacidade completa
+         └─ Resend ─────── remetente próprio da confirmação
 ```
 
-1. Comprar o domínio e decidir em nome de quem fica
-2. Publicar a landing
+1. Publicar a landing no Cloudflare Pages, no endereço provisório
+2. Registrar esse endereço em **Site URL e Redirect URLs** do Supabase Auth — sem isso o
+   `emailRedirectTo` da confirmação não volta para a página publicada
 3. Criar `URL_DA_LANDING` no Supabase e `URL_DE_RASTREIO` nos secrets do GitHub
-4. Publicar as duas Edge Functions
-5. Registrar o webhook com `allowed_updates` incluindo `callback_query`
-6. Aplicar a migration `0013`, revisada com os 60 dias
+4. Publicar a função `ir` e **republicar** a `telegram-webhook` com o feedback
+5. Comprar o domínio quando quiser, e repetir os passos 2 e 3 com o endereço definitivo
 
-Do 1 ao 5 nada é código. O 6 depende da revisão da PR #9.
+Nada disso é código. A migration `0013` **não entra aqui**: ela é reescrita na fase B, com os 60
+dias, e só então é aplicada.
 
 ### Fase B — cadastro, consentimento e documentos
 
@@ -95,8 +102,12 @@ na confirmação, a tela de reenvio, o Turnstile e o botão de baixar os dados.
 
 ### Fase C — fechar a medição
 
-7. Decidir entre as duas saídas da seção 3 e implementar
-8. Rodar `python -m radar metricas` com dado real e conferir se o funil fecha de ponta a ponta
+7. Decidir entre as duas saídas da seção 3 e implementar o emissor
+8. Corrigir o `python -m radar metricas`, que hoje **não fecha o funil**: a consulta começa nos
+   perfis criados e ignora visita, etapas do cadastro e confirmação; conta utilidade e candidatura
+   separadamente, sem formar a união que define vaga útil; e não recorta por semana, que a North
+   Star exige. Implementar os emissores não conserta isso sozinho.
+9. Rodar com dado real e conferir
 
 Sem a fase C o piloto roda e não mede o que importa.
 
@@ -104,6 +115,12 @@ Sem a fase C o piloto roda e não mede o que importa.
 
 Descrito no sprint 4 de `auditoria-rcd.md`: 10 a 20 estudantes, duas semanas, cinco entrevistas,
 canais identificados. Só faz sentido depois da fase C.
+
+**Uma decisão precisa ser tomada antes.** A auditoria trata a demora até a primeira entrega — hoje
+até 24 horas, contra a meta de 15 minutos — como bloqueador do piloto, e o
+`plano-melhorias-rcd.md` exige que os limites sejam aprovados antes de começar. Este plano coloca o
+piloto depois da fase C sem resolver isso. Ou o sprint 2 entra antes, ou o grupo dispensa o
+bloqueador explicitamente e registra o porquê. Deixar implícito é o pior dos três.
 
 ## 5. Decisões em aberto
 

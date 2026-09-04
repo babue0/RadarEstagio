@@ -12,7 +12,7 @@ tudo que fica entre a landing e a primeira vaga entregue.
 |---|---|---|
 | 1 | Controlador dos dados | Os três integrantes do projeto |
 | 2 | Canal de contato | Criado junto com o domínio; até lá o documento fica com espaço reservado |
-| 3 | Retenção | Enquanto a conta existir. Excluir apaga tudo em cascata |
+| 3 | Retenção | Enquanto a conta existir. Excluir apaga em cascata o que está ligado à conta |
 | 4 | Portabilidade | Botão de baixar os próprios dados, por função no banco |
 | 5 | Menor de idade | Fora do escopo; o documento não trata |
 | 6 | Confirmação de e-mail | **Mantida.** Sem ela o endereço nunca é verificado e a recuperação de conta fica apoiada em algo que ninguém provou existir |
@@ -65,16 +65,26 @@ quebrado.
 
 ```
 clica em excluir
-   ↓  imediato e visível
-ativo = false             para de entregar na hora
+   ↓  imediato
+ativo = false             sai do where ativo do job
 telegram_chat_id = null   nada mais chega no Telegram
 excluida_em = now()
    ↓  60 dias
-auth.users apagado; a cascata leva perfil, avaliações, envios e eventos
+auth.users apagado; a cascata leva perfil, avaliações, envios e eventos ligados à conta
 ```
 
 A primeira etapa é o que a pessoa pediu: parar de processar. A segunda é o apagamento definitivo.
 Entre as duas ela pode entrar e cancelar.
+
+**Três coisas que "parar na hora" ainda não cobre**, e que precisam entrar junto:
+
+- O pipeline lê os usuários **antes** de coletar e guarda o `chat_id` em memória. Quem exclui
+  durante a execução ainda recebe a mensagem daquele dia. Revalidar antes de enviar.
+- A função `ir` registra clique de link antigo sem consultar `ativo` nem `excluida_em`. Durante os
+  60 dias ela continuaria gravando `vaga_aberta` de quem pediu para sair.
+- Os eventos anteriores ao login têm só `sessao_id`, com `user_id` e `perfil_id` nulos. **Nenhuma
+  cascata os alcança.** A rotina dos 60 dias precisa apagá-los pelo `sessao_id` das sessões
+  ligadas àquela conta, senão "apagamos tudo" é falso.
 
 Os 60 dias precisam de justificativa perante a LGPD — guardar dado "por precaução" não basta.
 Permitir o arrependimento é a justificativa, e vai escrita na política.
@@ -91,6 +101,10 @@ faz está todo lido:
 cidade, modalidade, áreas de interesse e o `chat_id` do Telegram. Mais eventos de funil, que usam
 identificador de sessão anônimo e não guardam dado pessoal nas propriedades.
 
+A cidade merece nota à parte: ela sai do sistema. O coletor monta a busca por cidade para os
+perfis presenciais e híbridos, então Adzuna e Gupy recebem esse campo — sem saber de quem é. A
+política precisa dizer isso; escrever "nada seu é enviado" seria falso.
+
 **Com quem são compartilhados**
 
 | Quem | O que recebe |
@@ -98,7 +112,7 @@ identificador de sessão anônimo e não guardam dado pessoal nas propriedades.
 | Supabase | tudo — é onde o banco e as contas moram |
 | Telegram | o `chat_id` e o conteúdo das mensagens |
 | Google Gemini | **apenas o texto dos anúncios de vaga** |
-| Adzuna e Gupy | nada do usuário; só a busca sai |
+| Adzuna e Gupy | **a cidade** dos perfis presenciais e híbridos, usada como termo de busca; nenhum identificador individual |
 | Cloudflare | tráfego do site e o Turnstile |
 
 A linha do Gemini é um ponto forte e verificável: desde a separação entre extração e pontuação, em
@@ -120,6 +134,17 @@ os dados. O documento não promete nada além disso.
 7. Tela de reenvio
 8. Turnstile
 9. Botão de baixar os dados
+10. **Recuperação de senha** — não existe hoje, nem tela nem chamada. Configurar o Resend não
+    entrega isso sozinho: falta o link "esqueci minha senha", a chamada
+    `resetPasswordForEmail`, e a tela que recebe a volta e define a senha nova
+11. **Textos do painel** — hoje ele diz "Não dá para desfazer" e "Seus dados foram apagados". Com
+    os 60 dias as duas frases ficam falsas; entram a data do apagamento definitivo e o botão de
+    cancelar
+12. **Retorno da confirmação** — o `resumeConfirmedSignup` desiste quando não acha perfil no
+    navegador, antes de consultar sessão e banco. Com o gatilho criando o perfil, ele precisa
+    consultar primeiro. E o `sessao_id` do aparelho onde a pessoa se cadastrou não viaja para o
+    gatilho: confirmar no celular cria o perfil e deixa o começo do funil do notebook
+    desconectado
 
 Do 3 em diante, um commit por decisão e suíte verde em comando separado, como manda o `CLAUDE.md`.
 
@@ -132,11 +157,16 @@ mudança.
 | O quê | Trava o quê |
 |---|---|
 | Domínio | contato na política, hospedagem, remetente do e-mail |
-| Resend | o e-mail sair com remetente próprio e sem limite por hora |
+| Resend | remetente próprio, em vez do domínio compartilhado do Supabase |
 | Chaves do Turnstile | pública no `web/config.js`, secreta no Supabase |
 
-Os passos 8 e 9 ficam prontos e inertes até as chaves existirem — mesma situação da Edge Function
-`ir` hoje.
+O passo 8 fica pronto e inerte até as chaves do Turnstile existirem — mesma situação da Edge
+Function `ir` hoje. O passo 9 não depende de chave nenhuma: é função no banco mais botão, e pode
+ir junto com o resto.
+
+Sobre o limite de envio: trocar para o Resend **não remove** a limitação por hora. O Supabase
+mantém um limite próprio mesmo com SMTP personalizado — mais alto que o do servidor compartilhado
+e configurável, mas existe. Conferir o valor no painel antes do piloto.
 
 ## 6. Fora do escopo, e por quê
 

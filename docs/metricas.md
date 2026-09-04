@@ -14,8 +14,12 @@ pessoal nas propriedades do evento. Propriedades livres são limitadas a um obje
 |---|---|
 | Web | `landing_visualizada`, `cta_cadastro_aberto`, as três etapas concluídas, `perfil_salvo`, `telegram_aberto` |
 | Gatilhos do banco | `conta_criada`, `email_confirmado`, `perfil_salvo`, `telegram_vinculado`, `primeira_recomendacao_enviada`, `entregas_pausadas` |
-| Telegram | `vaga_aberta` |
-| Contrato reservado | `vaga_util`, `vaga_irrelevante`, `candidatura_iniciada` |
+| Telegram | `vaga_aberta`, `vaga_irrelevante` — o código existe; falta publicar as funções |
+| Sem emissor | `vaga_util`, `candidatura_iniciada` — **nenhuma linha do código os grava** |
+
+Os dois últimos não são detalhe: a North Star depende deles. Vaga útil é definida como
+recomendação com feedback positivo **ou** que gera candidatura, e nenhum dos dois sinais é
+capturado hoje. Ver a seção 3 de [`plano-geral.md`](plano-geral.md).
 
 `vaga_aberta` vem da Edge Function `ir`. Cada linha de `envios` guarda um `token` único e o link
 da mensagem aponta para `ir?t=<token>`; a função registra o evento com `user_id`, `perfil_id` e
