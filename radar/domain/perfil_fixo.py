@@ -1,26 +1,20 @@
 from radar.domain.models import AreaDeInteresse, Modalidade, Perfil
 
 
-def perfil_do_mvp() -> Perfil:
+def perfil_de_exemplo() -> Perfil:
     return Perfil(
-        curso="Engenharia de Software",
-        periodo=4,
+        curso="Ciência da Computação",
+        periodo=5,
         habilidades=[
             "Python",
             "JavaScript",
-            "Java",
-            "React",
+            "SQL",
             "HTML",
             "CSS",
-            "Lua",
-            "SQL",
             "Git",
             "Lógica de Programação",
-            "Excel",
-            "Inglês",
-            "Espanhol",
         ],
-        cidade="Rio de Janeiro, RJ",
-        modalidade=Modalidade.PRESENCIAL,
+        cidade="São Paulo, SP",
+        modalidade=Modalidade.HIBRIDO,
         areas_de_interesse=[AreaDeInteresse.DESENVOLVIMENTO_WEB, AreaDeInteresse.DADOS_IA],
     )

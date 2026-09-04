@@ -2,12 +2,12 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from radar.domain.models import ResultadoMatch, Usuario, Vaga
-from radar.domain.perfil_fixo import perfil_do_mvp
+from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.storage.memoria import RepositorioEmMemoria
 
 
 def usuario_exemplo() -> Usuario:
-    return Usuario(id=uuid4(), perfil=perfil_do_mvp(), chat_id="123")
+    return Usuario(id=uuid4(), perfil=perfil_de_exemplo(), chat_id="123")
 
 
 def vaga_exemplo() -> Vaga:

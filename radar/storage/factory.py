@@ -5,7 +5,7 @@ from uuid import UUID
 import psycopg
 
 from radar.domain.models import Usuario
-from radar.domain.perfil_fixo import perfil_do_mvp
+from radar.domain.perfil_fixo import perfil_de_exemplo
 from radar.domain.ports import Repositorio, RepositorioDeMetricas
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
@@ -53,4 +53,6 @@ def abrir_repositorio_em_memoria(settings: Settings) -> Iterator[Repositorio]:
 
 
 def usuario_fixo(settings: Settings) -> Usuario:
-    return Usuario(id=ID_DO_USUARIO_FIXO, perfil=perfil_do_mvp(), chat_id=settings.telegram_chat_id)
+    return Usuario(
+        id=ID_DO_USUARIO_FIXO, perfil=perfil_de_exemplo(), chat_id=settings.telegram_chat_id
+    )

@@ -41,8 +41,8 @@ faltantes.
   - `ResultadoMatch` — uma vaga + nota (0–100) + pontos a favor e contra + alerta de pegadinha opcional.
 - `radar/domain/ports.py`: os **contratos** (`Protocol`) que as outras camadas cumprem:
   `ColetorDeVagas`, `AvaliadorDeVagas`, `Notificador`.
-- `radar/domain/perfil_fixo.py`: o perfil do usuário nº 1 (Engenharia de Software, 4º
-  período, Python/Git/JavaScript/React/SQL/Java, Rio de Janeiro, remoto).
+- `radar/domain/perfil_fixo.py`: o perfil usado quando não há banco. Nasceu com os dados reais do
+  usuário nº 1 e passou a ser sintético em 04/09/2026, porque o repositório é público.
 
 **Por quê**
 

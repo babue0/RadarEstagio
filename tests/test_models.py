@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
-from radar.domain.perfil_fixo import perfil_do_mvp
+from radar.domain.perfil_fixo import perfil_de_exemplo
 
 
 def vaga_exemplo() -> Vaga:
@@ -69,26 +69,14 @@ def test_perfil_rejeita_lista_de_habilidades_vazia():
         )
 
 
-def test_perfil_do_mvp_e_valido():
-    perfil = perfil_do_mvp()
-    assert perfil.modalidade is Modalidade.PRESENCIAL
-    assert perfil.habilidades == [
-        "Python",
-        "JavaScript",
-        "Java",
-        "React",
-        "HTML",
-        "CSS",
-        "Lua",
-        "SQL",
-        "Git",
-        "Lógica de Programação",
-        "Excel",
-        "Inglês",
-        "Espanhol",
-    ]
+def test_perfil_de_exemplo_e_valido():
+    perfil = perfil_de_exemplo()
+    assert perfil.modalidade is Modalidade.HIBRIDO
+    assert perfil.periodo >= 1
+    assert perfil.habilidades
+    assert perfil.nome_da_cidade() == "São Paulo"
 
 
 def test_usuario_exige_chat_id_preenchido():
     with pytest.raises(ValidationError):
-        Usuario(id=uuid4(), perfil=perfil_do_mvp(), chat_id="")
+        Usuario(id=uuid4(), perfil=perfil_de_exemplo(), chat_id="")

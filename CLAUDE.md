@@ -272,4 +272,5 @@ empate, a de descrição mais longa.
 - Ativação operacional = primeira entrega bem-sucedida com ao menos uma recomendação;
   `perfis.ativado_em` é gravado uma única vez, na transação dos `envios`. `docs/metricas.md`
   separa esse marco da ativação de produto.
-- `domain/perfil_fixo.py` já contém o perfil real do usuário nº 1.
+- `domain/perfil_fixo.py` é um perfil **sintético** (`perfil_de_exemplo`), usado só quando não há
+  `DATABASE_URL`. O repositório é público: nunca colocar ali dados reais de ninguém.
