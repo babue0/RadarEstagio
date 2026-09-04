@@ -24,13 +24,19 @@ from radar.notification.formatador import (
 )
 from radar.notification.telegram import ErroDeNotificacao, NotificadorTelegram
 from radar.pipeline import ParametrosDaExecucao, executar
+from radar.reporting.funil import formatar_funil
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
-from radar.storage.factory import abrir_repositorio, abrir_repositorio_em_memoria
+from radar.storage.factory import (
+    abrir_repositorio,
+    abrir_repositorio_de_metricas,
+    abrir_repositorio_em_memoria,
+)
 
 TIPOS_DE_ERRO_DE_PREENCHIMENTO = frozenset({"missing", "string_too_short"})
 TIMEOUT_HTTP_EM_SEGUNDOS = 30
 LIMITE_DE_VAGAS_NA_AVALIACAO_MANUAL = 3
+DIAS_DA_COORTE = 30
 COMANDO_PADRAO = "rodar"
 
 
@@ -109,6 +115,11 @@ def avaliar(settings: Settings) -> None:
             print(f"  Aviso: {aviso}")
         if resultado.alerta_pegadinha:
             print(f"  Alerta: {resultado.alerta_pegadinha}")
+
+
+def metricas(settings: Settings) -> None:
+    with abrir_repositorio_de_metricas(settings) as repositorio:
+        print(formatar_funil(repositorio.funil_da_coorte(DIAS_DA_COORTE)))
 
 
 def testar_telegram(settings: Settings) -> None:
@@ -215,6 +226,7 @@ COMANDOS = {
     "verificar": verificar_configuracao,
     "coletar": coletar,
     "avaliar": avaliar,
+    "metricas": metricas,
     "testar-telegram": testar_telegram,
     "testar-local": testar_local,
     "rodar": rodar,
@@ -239,6 +251,9 @@ def main() -> None:
     )
     subcomandos.add_parser(
         "avaliar", help="coleta, pré-filtra e avalia algumas vagas com o avaliador configurado"
+    )
+    subcomandos.add_parser(
+        "metricas", help="imprime o funil da coorte e o custo de extração do período"
     )
     subcomandos.add_parser("testar-telegram", help='envia "Radar OK" para o chat configurado')
     subcomandos.add_parser(

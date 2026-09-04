@@ -49,6 +49,9 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   formato `<acao>:<token do envio>` (no máximo 53 dos 64 bytes permitidos). O 👎 troca os botões
   pelos quatro motivos e o motivo escolhido entra nas `propriedades` do mesmo `vaga_irrelevante`.
   O feedback é só registrado: **não** altera ranking nesta fase.
+- **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
+  últimos 30 dias, a quebra das recusas por motivo e o custo de extração por usuário ativado. As
+  consultas equivalentes estão em `docs/metricas.md`.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.

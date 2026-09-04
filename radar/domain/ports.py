@@ -2,6 +2,7 @@ from typing import Protocol
 
 from radar.domain.models import (
     ExtracaoDaVaga,
+    FunilDaCoorte,
     MensagemDaRecomendacao,
     Recomendacao,
     ResultadoMatch,
@@ -54,6 +55,10 @@ class RepositorioDeAvaliacoes(Protocol):
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None: ...
 
     def pausar(self, usuario: Usuario) -> None: ...
+
+
+class RepositorioDeMetricas(Protocol):
+    def funil_da_coorte(self, dias: int) -> FunilDaCoorte: ...
 
 
 class Repositorio(RepositorioDeUsuarios, RepositorioDeAvaliacoes, Protocol): ...

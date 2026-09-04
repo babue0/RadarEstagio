@@ -93,6 +93,28 @@ class Recomendacao(BaseModel):
     token: UUID = Field(default_factory=uuid4)
 
 
+class FunilDaCoorte(BaseModel):
+    dias: int = Field(ge=1)
+    perfis_criados: int
+    perfis_vinculados: int
+    perfis_ativados: int
+    perfis_com_vaga_aberta: int
+    perfis_com_vaga_util: int
+    perfis_com_candidatura: int
+    vagas_enviadas: int
+    vagas_abertas: int
+    vagas_uteis: int
+    vagas_irrelevantes: int
+    candidaturas: int
+    vagas_extraidas: int
+    recusas_por_motivo: dict[str, int] = Field(default_factory=dict)
+
+    def vagas_extraidas_por_ativado(self) -> float | None:
+        if not self.perfis_ativados:
+            return None
+        return self.vagas_extraidas / self.perfis_ativados
+
+
 class AcaoDeFeedback(StrEnum):
     UTIL = "util"
     IRRELEVANTE = "irrelevante"

@@ -6,7 +6,7 @@ import psycopg
 
 from radar.domain.models import Usuario
 from radar.domain.perfil_fixo import perfil_do_mvp
-from radar.domain.ports import Repositorio
+from radar.domain.ports import Repositorio, RepositorioDeMetricas
 from radar.settings import Settings
 from radar.storage.errors import ErroDeArmazenamento
 from radar.storage.memoria import RepositorioEmMemoria
@@ -22,16 +22,27 @@ def abrir_repositorio(settings: Settings) -> Iterator[Repositorio]:
         with abrir_repositorio_em_memoria(settings) as repositorio:
             yield repositorio
         return
+    with conectar(settings) as conexao:
+        yield RepositorioPostgres(conexao)
+
+
+@contextmanager
+def abrir_repositorio_de_metricas(settings: Settings) -> Iterator[RepositorioDeMetricas]:
+    if not settings.usa_banco():
+        raise ErroDeArmazenamento("DATABASE_URL é obrigatório para ler as métricas")
+    with conectar(settings) as conexao:
+        yield RepositorioPostgres(conexao)
+
+
+def conectar(settings: Settings) -> psycopg.Connection:
     try:
-        conexao = psycopg.connect(
+        return psycopg.connect(
             settings.database_url, connect_timeout=TIMEOUT_DE_CONEXAO_EM_SEGUNDOS
         )
     except psycopg.Error as erro:
         raise ErroDeArmazenamento(
             f"Não foi possível conectar ao banco ({type(erro).__name__})"
         ) from erro
-    with conexao:
-        yield RepositorioPostgres(conexao)
 
 
 @contextmanager

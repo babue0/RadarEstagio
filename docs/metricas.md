@@ -150,9 +150,88 @@ select
 from ativados;
 ```
 
-## Métricas pendentes de interação
+## Funil de valor da coorte
 
-Quando `vaga_aberta` passar a ser emitido, acompanhar:
+Da entrega ao resultado: quantos perfis chegaram a cada etapa e quantas recomendações viraram
+abertura, feedback e candidatura. `python -m radar metricas` imprime exatamente este funil para os
+perfis criados nos últimos 30 dias, junto do custo de extração do período.
+
+```sql
+with coorte as (
+  select id, telegram_chat_id, ativado_em
+  from public.perfis
+  where criado_em >= now() - interval '30 days'
+), eventos as (
+  select evento.perfil_id, evento.nome
+  from public.eventos_produto as evento
+  join coorte on coorte.id = evento.perfil_id
+)
+select
+  (select count(*) from coorte) as perfis_criados,
+  (select count(*) from coorte where telegram_chat_id is not null) as perfis_vinculados,
+  (select count(*) from coorte where ativado_em is not null) as perfis_ativados,
+  (select count(distinct perfil_id) from eventos where nome = 'vaga_aberta')
+    as perfis_com_vaga_aberta,
+  (select count(distinct perfil_id) from eventos where nome = 'vaga_util')
+    as perfis_com_vaga_util,
+  (select count(distinct perfil_id) from eventos where nome = 'candidatura_iniciada')
+    as perfis_com_candidatura,
+  (select count(*) from public.envios e join coorte on coorte.id = e.perfil_id) as vagas_enviadas,
+  (select count(*) from eventos where nome = 'vaga_aberta') as vagas_abertas,
+  (select count(*) from eventos where nome = 'vaga_util') as vagas_uteis,
+  (select count(*) from eventos where nome = 'vaga_irrelevante') as vagas_irrelevantes,
+  (select count(*) from eventos where nome = 'candidatura_iniciada') as candidaturas;
+```
+
+## Custo por usuário ativado
+
+Cada vaga é extraída uma vez e a extração serve todos os perfis, então o custo do período é o
+número de vagas extraídas, não o número de usuários. As requisições ao Gemini são menos do que as
+vagas extraídas, porque a extração vai em lotes de `GEMINI_VAGAS_POR_LOTE` — o número exato de
+requisições da execução do dia sai no resumo enviado ao chat de operação.
+
+```sql
+select
+  (select count(*) from public.vagas where extraida_em >= now() - interval '30 days')
+    as vagas_extraidas,
+  (select count(*) from public.perfis
+    where criado_em >= now() - interval '30 days' and ativado_em is not null)
+    as usuarios_ativados,
+  round(
+    (select count(*) from public.vagas where extraida_em >= now() - interval '30 days')::numeric
+    / nullif(
+      (select count(*) from public.perfis
+        where criado_em >= now() - interval '30 days' and ativado_em is not null),
+      0
+    ),
+    1
+  ) as vagas_extraidas_por_ativado;
+```
+
+## Recusa por motivo
+
+Fecha o laço com o viés registrado na seção 7 de [`auditoria-rcd.md`](auditoria-rcd.md): se a
+recusa se concentrar em vagas que declaram uma ou duas tecnologias, o teto para anúncio raso
+deixa de ser intuição e vira correção com dado. `motivo` nulo é recusa sem segunda resposta.
+
+```sql
+select
+  coalesce(evento.propriedades->>'motivo', 'sem_motivo') as motivo,
+  count(*) as recusas,
+  count(*) filter (
+    where jsonb_array_length(
+      coalesce(vaga.extracao->'habilidades_obrigatorias', '[]'::jsonb)
+    ) <= 2
+  ) as recusas_de_anuncio_raso
+from public.eventos_produto as evento
+join public.vagas as vaga on vaga.id = evento.vaga_id
+where evento.nome = 'vaga_irrelevante'
+  and evento.ocorrido_em >= now() - interval '30 days'
+group by 1
+order by recusas desc, motivo;
+```
+
+## Métricas derivadas de interação
 
 - **Taxa de ativação de produto em 7 dias:** percentual dos perfis criados que abrem ao menos uma
   recomendação em até 7 dias.
