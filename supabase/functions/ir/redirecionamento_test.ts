@@ -9,7 +9,10 @@ Deno.test("extrai o token do parâmetro t", () => {
 });
 
 Deno.test("normaliza token em maiúsculas", () => {
-  assertEquals(tokenDaRequisicao(`${URL_DA_FUNCAO}?t=${TOKEN.toUpperCase()}`), TOKEN);
+  assertEquals(
+    tokenDaRequisicao(`${URL_DA_FUNCAO}?t=${TOKEN.toUpperCase()}`),
+    TOKEN,
+  );
 });
 
 Deno.test("ignora requisição sem token", () => {

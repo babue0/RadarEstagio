@@ -10,7 +10,9 @@ interface EnvioDaVaga {
 
 const urlDaLandingConfigurada = Deno.env.get("URL_DA_LANDING");
 if (!urlDaLandingConfigurada) {
-  throw new Error("URL_DA_LANDING é obrigatória: sem ela o token inválido não tem para onde ir");
+  throw new Error(
+    "URL_DA_LANDING é obrigatória: sem ela o token inválido não tem para onde ir",
+  );
 }
 const urlDaLanding: string = urlDaLandingConfigurada;
 const supabase = createClient(
@@ -48,7 +50,10 @@ async function registrarVagaAberta(envio: EnvioDaVaga): Promise<void> {
   if (error) throw error;
 }
 
-async function destinoDoToken(url: string, registrar: boolean): Promise<string> {
+async function destinoDoToken(
+  url: string,
+  registrar: boolean,
+): Promise<string> {
   const token = tokenDaRequisicao(url);
   if (!token) return urlDaLanding;
   const envio = await envioDoToken(token);
@@ -67,7 +72,10 @@ Deno.serve(async (requisicao) => {
     return new Response(null, { status: 405 });
   }
   try {
-    const destino = await destinoDoToken(requisicao.url, requisicao.method === "GET");
+    const destino = await destinoDoToken(
+      requisicao.url,
+      requisicao.method === "GET",
+    );
     return redirecionarPara(destino);
   } catch (erro) {
     console.error("falha ao redirecionar para a vaga", erro);
