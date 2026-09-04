@@ -91,3 +91,20 @@ class ResultadoMatch(BaseModel):
 class Recomendacao(BaseModel):
     resultado: ResultadoMatch
     token: UUID = Field(default_factory=uuid4)
+
+
+class AcaoDeFeedback(StrEnum):
+    UTIL = "util"
+    IRRELEVANTE = "irrelevante"
+    CANDIDATURA = "candidatura"
+
+
+class BotaoDeFeedback(BaseModel):
+    rotulo: str
+    acao: AcaoDeFeedback
+    token: UUID
+
+
+class MensagemDaRecomendacao(BaseModel):
+    texto: str
+    botoes: list[BotaoDeFeedback]

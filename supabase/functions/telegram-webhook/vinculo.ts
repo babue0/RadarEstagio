@@ -6,8 +6,15 @@ export interface MensagemDoTelegram {
   text?: string;
 }
 
+export interface CliqueDoTelegram {
+  id?: string;
+  data?: string;
+  message?: { message_id: number; chat: { id: number } };
+}
+
 export interface AtualizacaoDoTelegram {
   message?: MensagemDoTelegram;
+  callback_query?: CliqueDoTelegram;
 }
 
 export interface PedidoDeVinculo {

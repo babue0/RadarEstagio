@@ -3,6 +3,7 @@ from uuid import UUID
 
 from radar.domain.models import (
     ExtracaoDaVaga,
+    MensagemDaRecomendacao,
     Modalidade,
     NivelCompatibilidade,
     Perfil,
@@ -10,6 +11,7 @@ from radar.domain.models import (
     Usuario,
     Vaga,
 )
+from radar.notification.formatador import SEPARADOR_ENTRE_VAGAS
 from radar.notification.telegram import ErroDeNotificacao
 from radar.pipeline import ParametrosDaExecucao, executar
 from radar.storage.errors import ErroDeArmazenamento
@@ -93,6 +95,7 @@ class NotificadorFalso:
     def __init__(self, chats_com_erro: set[str] = frozenset()) -> None:
         self.textos: list[str] = []
         self.chats: list[str] = []
+        self.mensagens: list[MensagemDaRecomendacao] = []
         self._chats_com_erro = chats_com_erro
 
     def enviar(self, chat_id: str, texto: str) -> None:
@@ -100,6 +103,13 @@ class NotificadorFalso:
             raise ErroDeNotificacao("chat not found")
         self.chats.append(chat_id)
         self.textos.append(texto)
+
+    def enviar_recomendacoes(self, chat_id: str, mensagens: list[MensagemDaRecomendacao]) -> None:
+        if chat_id in self._chats_com_erro:
+            raise ErroDeNotificacao("chat not found")
+        self.chats.append(chat_id)
+        self.mensagens.extend(mensagens)
+        self.textos.append(SEPARADOR_ENTRE_VAGAS.join(item.texto for item in mensagens))
 
 
 class RepositorioFalso(RepositorioEmMemoria):
@@ -597,3 +607,22 @@ def test_cada_usuario_recebe_um_token_diferente_para_a_mesma_vaga():
     )
 
     assert len(set(repositorio.tokens_gravados)) == 2
+
+
+def test_cada_recomendacao_leva_os_botoes_de_feedback_com_o_token_do_envio():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorFalso()
+
+    executar(
+        ColetorFalso([vaga(1), vaga(2)]),
+        ExtratorFalso({"1": 70, "2": 80}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 70, "2": 80}),
+    )
+
+    tokens_dos_botoes = {botao.token for item in notificador.mensagens for botao in item.botoes}
+    assert len(notificador.mensagens) == 2
+    assert tokens_dos_botoes == set(repositorio.tokens_gravados)

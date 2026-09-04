@@ -18,7 +18,7 @@ from radar.filtering.duplicatas import remover_duplicatas
 from radar.filtering.prefiltro import filtrar
 from radar.matching.avaliacoes import pontuar_vagas
 from radar.matching.regras import aplicar_regras_objetivas
-from radar.notification.formatador import formatar_mensagem, formatar_mensagem_sem_vagas
+from radar.notification.formatador import formatar_mensagem_sem_vagas, formatar_recomendacoes
 from radar.notification.telegram import ErroDeNotificacao
 from radar.storage.errors import ErroDeArmazenamento
 
@@ -189,9 +189,9 @@ def atender_usuario(
         avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora)
         return None
     try:
-        notificador.enviar(
+        notificador.enviar_recomendacoes(
             usuario.chat_id,
-            formatar_mensagem(selecionadas, agora.date(), parametros.url_de_rastreio),
+            formatar_recomendacoes(selecionadas, agora.date(), parametros.url_de_rastreio),
         )
     except ErroDeNotificacao as erro:
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)

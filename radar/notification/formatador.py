@@ -2,13 +2,24 @@ from datetime import date
 from html import escape
 from urllib.parse import urlsplit
 
-from radar.domain.models import Recomendacao, Vaga
+from radar.domain.models import (
+    AcaoDeFeedback,
+    BotaoDeFeedback,
+    MensagemDaRecomendacao,
+    Recomendacao,
+    Vaga,
+)
 
 LIMITE_DE_CARACTERES_DO_TELEGRAM = 4096
 MAXIMO_DE_PONTOS_EXIBIDOS = 3
 SEPARADOR_ENTRE_VAGAS = "\n\n───────────────\n\n"
 PARAMETRO_DO_TOKEN = "t"
 PREFIXO_DE_SUBDOMINIO_IGNORADO = "www."
+ROTULOS_DE_FEEDBACK = {
+    AcaoDeFeedback.UTIL: "👍 Faz sentido",
+    AcaoDeFeedback.IRRELEVANTE: "👎 Não serve",
+    AcaoDeFeedback.CANDIDATURA: "Candidatei-me",
+}
 ROTULOS_MODALIDADE = {
     "remoto": "Remoto",
     "presencial": "Presencial",
@@ -17,17 +28,35 @@ ROTULOS_MODALIDADE = {
 }
 
 
-def formatar_mensagem(
+def formatar_recomendacoes(
     recomendacoes: list[Recomendacao], data: date, url_de_rastreio: str = ""
-) -> str:
+) -> list[MensagemDaRecomendacao]:
     ranqueadas = sorted(
         recomendacoes, key=lambda recomendacao: recomendacao.resultado.nota, reverse=True
     )
-    blocos = [
-        formatar_vaga(posicao, recomendacao, url_de_rastreio)
+    return [
+        MensagemDaRecomendacao(
+            texto=texto_da_recomendacao(posicao, recomendacao, data, url_de_rastreio),
+            botoes=botoes_de_feedback(recomendacao),
+        )
         for posicao, recomendacao in enumerate(ranqueadas, start=1)
     ]
-    return cabecalho(data) + "\n\n" + SEPARADOR_ENTRE_VAGAS.join(blocos)
+
+
+def texto_da_recomendacao(
+    posicao: int, recomendacao: Recomendacao, data: date, url_de_rastreio: str
+) -> str:
+    bloco = formatar_vaga(posicao, recomendacao, url_de_rastreio)
+    if posicao > 1:
+        return bloco
+    return f"{cabecalho(data)}\n\n{bloco}"
+
+
+def botoes_de_feedback(recomendacao: Recomendacao) -> list[BotaoDeFeedback]:
+    return [
+        BotaoDeFeedback(rotulo=rotulo, acao=acao, token=recomendacao.token)
+        for acao, rotulo in ROTULOS_DE_FEEDBACK.items()
+    ]
 
 
 def formatar_mensagem_sem_vagas(data: date, dias_de_silencio: int | None = None) -> str:

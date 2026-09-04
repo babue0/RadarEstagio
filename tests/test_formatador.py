@@ -1,12 +1,19 @@
 from datetime import UTC, date, datetime
 
-from radar.domain.models import Modalidade, Recomendacao, ResultadoMatch, Vaga
+from radar.domain.models import (
+    AcaoDeFeedback,
+    Modalidade,
+    Recomendacao,
+    ResultadoMatch,
+    Vaga,
+)
 from radar.notification.formatador import (
     LIMITE_DE_CARACTERES_DO_TELEGRAM,
+    SEPARADOR_ENTRE_VAGAS,
     dividir_em_mensagens,
     formatar_falha_da_execucao,
-    formatar_mensagem,
     formatar_mensagem_sem_vagas,
+    formatar_recomendacoes,
     formatar_resumo_da_execucao,
 )
 
@@ -18,7 +25,11 @@ def mensagem(
     resultados: list[ResultadoMatch], data: date = DATA_DE_TESTE, url_de_rastreio: str = ""
 ) -> str:
     recomendacoes = [Recomendacao(resultado=item) for item in resultados]
-    return formatar_mensagem(recomendacoes, data, url_de_rastreio)
+    return juntar(formatar_recomendacoes(recomendacoes, data, url_de_rastreio))
+
+
+def juntar(mensagens) -> str:
+    return SEPARADOR_ENTRE_VAGAS.join(item.texto for item in mensagens)
 
 
 def vaga(titulo: str = "Estágio Python", numero: int = 1) -> Vaga:
@@ -113,7 +124,7 @@ def test_inclui_titulo_empresa_nota_pontos_e_link():
 def test_link_rastreavel_usa_o_token_do_envio_e_mantem_o_dominio_visivel():
     recomendacao = Recomendacao(resultado=resultado(85))
 
-    texto = formatar_mensagem([recomendacao], DATA_DE_TESTE, URL_DE_RASTREIO)
+    texto = juntar(formatar_recomendacoes([recomendacao], DATA_DE_TESTE, URL_DE_RASTREIO))
 
     assert f'<a href="{URL_DE_RASTREIO}?t={recomendacao.token}">' in texto
     assert "Ver vaga em exemplo.com" in texto
@@ -124,7 +135,7 @@ def test_cada_vaga_recebe_o_proprio_link_rastreavel():
     primeira = Recomendacao(resultado=resultado(90, numero=1))
     segunda = Recomendacao(resultado=resultado(80, numero=2))
 
-    texto = formatar_mensagem([primeira, segunda], DATA_DE_TESTE, URL_DE_RASTREIO)
+    texto = juntar(formatar_recomendacoes([primeira, segunda], DATA_DE_TESTE, URL_DE_RASTREIO))
 
     assert primeira.token != segunda.token
     assert f"?t={primeira.token}" in texto
@@ -316,3 +327,28 @@ def test_falha_da_execucao_escapa_a_mensagem_do_erro():
 
     assert "26/08/2026 falhou" in texto
     assert "Gemini &lt;429&gt; &amp; cota" in texto
+
+
+def test_o_cabecalho_do_dia_aparece_uma_vez_na_primeira_mensagem():
+    mensagens = formatar_recomendacoes(
+        [Recomendacao(resultado=resultado(90, numero=1)), Recomendacao(resultado=resultado(80))],
+        DATA_DE_TESTE,
+    )
+
+    assert mensagens[0].texto.startswith("📡 <b>Radar de Estágio</b> — 26/08/2026")
+    assert "Radar de Estágio" not in mensagens[1].texto
+
+
+def test_cada_vaga_vai_em_uma_mensagem_com_os_tres_botoes_de_feedback():
+    recomendacao = Recomendacao(resultado=resultado(90))
+
+    mensagens = formatar_recomendacoes([recomendacao], DATA_DE_TESTE)
+
+    botoes = mensagens[0].botoes
+    assert [botao.rotulo for botao in botoes] == ["👍 Faz sentido", "👎 Não serve", "Candidatei-me"]
+    assert [botao.acao for botao in botoes] == [
+        AcaoDeFeedback.UTIL,
+        AcaoDeFeedback.IRRELEVANTE,
+        AcaoDeFeedback.CANDIDATURA,
+    ]
+    assert {botao.token for botao in botoes} == {recomendacao.token}

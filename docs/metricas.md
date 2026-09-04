@@ -14,8 +14,7 @@ pessoal nas propriedades do evento. Propriedades livres são limitadas a um obje
 |---|---|
 | Web | `landing_visualizada`, `cta_cadastro_aberto`, as três etapas concluídas, `perfil_salvo`, `telegram_aberto` |
 | Gatilhos do banco | `conta_criada`, `email_confirmado`, `perfil_salvo`, `telegram_vinculado`, `primeira_recomendacao_enviada`, `entregas_pausadas` |
-| Telegram | `vaga_aberta` |
-| Contrato reservado | `vaga_util`, `vaga_irrelevante`, `candidatura_iniciada` |
+| Telegram | `vaga_aberta`, `vaga_util`, `vaga_irrelevante`, `candidatura_iniciada` |
 
 `vaga_aberta` vem da Edge Function `ir`. Cada linha de `envios` guarda um `token` único e o link
 da mensagem aponta para `ir?t=<token>`; a função registra o evento com `perfil_id` e `vaga_id` e
@@ -23,6 +22,17 @@ responde 302 para a URL da vaga. Token desconhecido — link antigo, envio que n
 gravado — redireciona para a landing sem registrar evento. Cliques repetidos geram linhas
 repetidas de propósito: as consultas de funil usam a primeira ocorrência, e a contagem bruta mede
 reincidência.
+
+`vaga_util`, `vaga_irrelevante` e `candidatura_iniciada` vêm dos botões da mensagem, tratados pela
+Edge Function `telegram-webhook`. O `callback_data` é `<acao>:<token do envio>`, o mesmo token do
+link, então cada clique identifica perfil e vaga sem depender do texto da mensagem. O clique só é
+aceito quando o chat que clicou é o chat vinculado ao perfil daquele envio.
+
+O motivo da recusa é gravado nas `propriedades` do **mesmo** `vaga_irrelevante`, não em um segundo
+evento: o 👎 já registra a recusa na hora — para não perder o sinal de quem não responde a segunda
+pergunta — e o motivo apenas completa a linha existente. Assim a contagem de `vaga_irrelevante`
+continua sendo a contagem de recusas, e `propriedades->>'motivo'` nulo significa "recusou e não
+disse por quê".
 
 `perfil_salvo` pode aparecer duas vezes: o gatilho garante o marco autoritativo e o evento web
 liga a sessão anônima ao usuário. Consultas de funil devem usar o primeiro instante por evento,

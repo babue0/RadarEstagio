@@ -1,6 +1,13 @@
 from typing import Protocol
 
-from radar.domain.models import ExtracaoDaVaga, Recomendacao, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import (
+    ExtracaoDaVaga,
+    MensagemDaRecomendacao,
+    Recomendacao,
+    ResultadoMatch,
+    Usuario,
+    Vaga,
+)
 
 
 class ColetorDeVagas(Protocol):
@@ -13,6 +20,10 @@ class ExtratorDeVagas(Protocol):
 
 class Notificador(Protocol):
     def enviar(self, chat_id: str, texto: str) -> None: ...
+
+    def enviar_recomendacoes(
+        self, chat_id: str, mensagens: list[MensagemDaRecomendacao]
+    ) -> None: ...
 
 
 class RepositorioDeUsuarios(Protocol):

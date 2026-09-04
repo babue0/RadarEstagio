@@ -37,10 +37,18 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
   padrão é `gemini_api` e o GitHub Actions não define a variável, portanto segue nele. Para
   alternar, ver a skill `trocar-avaliador`. A IA **só extrai fatos da vaga**; quem compara com o
   perfil e calcula a nota é Python, sem IA.
-- **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens.
+- **Telegram**: bot `RadarEstagio_bot`; o job só envia mensagens. Cada vaga vai em uma mensagem
+  própria, porque o teclado inline do Telegram é por mensagem e uma mensagem só com as sete vagas
+  passaria do limite de 4096 caracteres, deixando os botões órfãos no último pedaço. Só a primeira
+  mensagem do dia notifica; as demais vão com `disable_notification` para o dia continuar valendo
+  um aviso só.
 - **Link rastreável**: o link de cada vaga na mensagem passa pela Edge Function `ir`, que registra
   `vaga_aberta` e redireciona para a fonte. O endereço vem de `URL_DE_RASTREIO`; vazio ou sem
   banco, a mensagem volta a apontar direto para a vaga.
+- **Feedback por botões**: cada recomendação leva 👍/👎/Candidatei-me com `callback_data` no
+  formato `<acao>:<token do envio>` (no máximo 53 dos 64 bytes permitidos). O 👎 troca os botões
+  pelos quatro motivos e o motivo escolhido entra nas `propriedades` do mesmo `vaga_irrelevante`.
+  O feedback é só registrado: **não** altera ranking nesta fase.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
