@@ -4,11 +4,12 @@ import {
   chatIdDaMensagem,
   extrairPedidoDeVinculo,
   RESPOSTA_SEM_TOKEN,
-  RESPOSTA_TOKEN_INVALIDO,
-  RESPOSTA_VINCULADO,
+  RESPOSTAS_DO_VINCULO,
+  type ResultadoDoVinculo,
 } from "./vinculo.ts";
 
 const CABECALHO_DO_SEGREDO = "x-telegram-bot-api-secret-token";
+const CODIGO_DE_VALOR_DUPLICADO = "23505";
 
 const tokenDoBot = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const segredoDoWebhook = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
@@ -25,14 +26,30 @@ async function responderNoTelegram(chatId: string, texto: string): Promise<void>
   });
 }
 
-async function vincularChat(token: string, chatId: string): Promise<boolean> {
+async function vincularChat(token: string, chatId: string): Promise<ResultadoDoVinculo> {
   const { data, error } = await supabase
     .from("perfis")
-    .update({ telegram_chat_id: chatId, atualizado_em: new Date().toISOString() })
+    .update({
+      telegram_chat_id: chatId,
+      token_vinculo: crypto.randomUUID(),
+      atualizado_em: new Date().toISOString(),
+    })
     .eq("token_vinculo", token)
     .select("id");
+  if (error?.code === CODIGO_DE_VALOR_DUPLICADO) return "chat_de_outra_conta";
   if (error) throw error;
-  return data.length === 1;
+  if (data.length === 1) return "vinculado";
+  return (await chatJaVinculado(chatId)) ? "chat_ja_vinculado" : "token_ja_usado";
+}
+
+async function chatJaVinculado(chatId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("perfis")
+    .select("id")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+  if (error) throw error;
+  return data !== null;
 }
 
 async function tratarAtualizacao(atualizacao: AtualizacaoDoTelegram): Promise<void> {
@@ -42,11 +59,8 @@ async function tratarAtualizacao(atualizacao: AtualizacaoDoTelegram): Promise<vo
     if (chatId) await responderNoTelegram(chatId, RESPOSTA_SEM_TOKEN);
     return;
   }
-  const vinculado = await vincularChat(pedido.token, pedido.chatId);
-  await responderNoTelegram(
-    pedido.chatId,
-    vinculado ? RESPOSTA_VINCULADO : RESPOSTA_TOKEN_INVALIDO,
-  );
+  const resultado = await vincularChat(pedido.token, pedido.chatId);
+  await responderNoTelegram(pedido.chatId, RESPOSTAS_DO_VINCULO[resultado]);
 }
 
 Deno.serve(async (requisicao) => {

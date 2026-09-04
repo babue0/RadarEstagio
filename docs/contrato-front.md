@@ -41,7 +41,7 @@ Uma linha por usuário. `user_id` é o `id` do usuário no Auth (`auth.users.id`
 | `cidade`           | text     | site           | obrigatório. Ex.: `Rio de Janeiro`                         |
 | `modalidade`       | text     | site           | um de `remoto`, `presencial`, `hibrido`, `indiferente`     |
 | `telegram_chat_id` | text     | **webhook**    | só leitura no site; `null` = ainda não vinculou            |
-| `token_vinculo`    | uuid     | banco          | gerado; só leitura, usado no link do Telegram              |
+| `token_vinculo`    | uuid     | banco/webhook  | gerado; só leitura, usado no link do Telegram; **rotaciona a cada vínculo** |
 | `ativo`            | boolean  | sistema        | `true` recebe mensagens, `false` pausa; controle do site previsto para a Fase 3 |
 | `criado_em`        | timestamptz | banco       | gerado                                                     |
 | `atualizado_em`    | timestamptz | site        | atualizado quando um perfil existente é salvo novamente    |
@@ -99,6 +99,16 @@ O Telegram abre o bot e manda `/start <token_vinculo>` automaticamente. O bot ch
 Function `telegram-webhook`, que grava o `telegram_chat_id` no perfil daquele token e responde
 "Telegram vinculado! Você vai receber as vagas compatíveis com o seu perfil todos os dias de
 manhã." A partir da próxima execução (07:23, horário de Brasília) o usuário recebe a mensagem.
+
+**O token é de uso único.** Na mesma atualização em que grava o `chat_id`, o webhook troca o
+`token_vinculo` por um novo, de modo que um link vazado — print, histórico de conversa, celular
+emprestado — não vincula o chat de outra pessoa ao perfil. Consequências para o site:
+
+- o `token_vinculo` que a página leu antes do clique **deixa de valer** depois do vínculo. Ao
+  recarregar o perfil, releia a coluna em vez de reaproveitar o valor em memória;
+- quem clicar de novo com o link antigo recebe "Este link já foi usado ou expirou", ou, se aquele
+  chat já for o chat vinculado, "Seu Telegram já está vinculado";
+- um chat que já pertence a outra conta recebe recusa explícita, em vez de o webhook falhar calado.
 
 ## O que não fazer
 

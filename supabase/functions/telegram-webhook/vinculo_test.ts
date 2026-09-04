@@ -1,5 +1,10 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { chatIdDaMensagem, extrairPedidoDeVinculo } from "./vinculo.ts";
+import {
+  chatIdDaMensagem,
+  extrairPedidoDeVinculo,
+  RESPOSTAS_DO_VINCULO,
+  type ResultadoDoVinculo,
+} from "./vinculo.ts";
 
 const TOKEN = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
 
@@ -39,4 +44,21 @@ Deno.test("ignora atualização sem mensagem", () => {
 
 Deno.test("devolve chat_id como texto", () => {
   assertEquals(chatIdDaMensagem({ message: { chat: { id: 987 } } }), "987");
+});
+
+Deno.test("cada resultado do vínculo tem uma resposta própria", () => {
+  const resultados: ResultadoDoVinculo[] = [
+    "vinculado",
+    "token_ja_usado",
+    "chat_de_outra_conta",
+    "chat_ja_vinculado",
+  ];
+  const respostas = resultados.map((resultado) => RESPOSTAS_DO_VINCULO[resultado]);
+
+  assertEquals(new Set(respostas).size, resultados.length);
+  assertEquals(respostas.filter((resposta) => !resposta).length, 0);
+});
+
+Deno.test("o link usado uma vez não promete vínculo", () => {
+  assertEquals(RESPOSTAS_DO_VINCULO.token_ja_usado.includes("já foi usado"), true);
 });

@@ -245,6 +245,9 @@ empate, a de descrição mais longa.
   Não o remover sem confirmar que nenhum recurso externo ainda aponta para ele.
 - **Nunca alterar tabela pelo painel do Supabase** — só por migration em `supabase/migrations/`.
 - Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
+- **`token_vinculo` é de uso único**: o webhook grava o `chat_id` e troca o token na mesma
+  atualização, então link vazado não vincula o chat de outra pessoa. O token que o site leu antes
+  do clique deixa de valer depois do vínculo.
 - Pendência externa: configurar o redirect do Auth para `http://localhost:8000`.
 - No pipeline, a falha de leitura dos usuários é a única fatal; erros ao enviar ou gravar de um
   usuário viram aviso.
