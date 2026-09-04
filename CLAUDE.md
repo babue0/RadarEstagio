@@ -241,8 +241,10 @@ Rio presencial saiu de 2 para 55 candidatas em um dia.
 Agregadores (Divulga Vagas, BuscarVagas) republicam o mesmo anúncio com "empresa" diferente:
 `remover_republicacoes` em `filtering/duplicatas.py` une vagas com mesmo título e cidade cujas 40
 primeiras palavras da descrição coincidam em 80% — só o início conta porque a Adzuna trunca a
-descrição em 500 caracteres. Duplicata entre fontes: fica a versão que informa modalidade e, em
-empate, a de descrição mais longa.
+descrição em 500 caracteres. A mesma regra bloqueia republicação entre dias (04/09/2026): a
+candidata é comparada com as vagas enviadas ao usuário nos últimos 30 dias, porque o id novo do
+repost furava o anti-repetição por id. Duplicata entre fontes: fica a versão que informa
+modalidade e, em empate, a de descrição mais longa.
 
 ### Supabase e Telegram: fatos operacionais
 
