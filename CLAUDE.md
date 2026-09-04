@@ -257,6 +257,11 @@ modalidade e, em empate, a de descrição mais longa.
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
   tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
 - Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
+- O `setWebhook` precisa de `allowed_updates=["message","callback_query"]` (corrigido em
+  04/09/2026): o registro original só aceitava `message` e o Telegram descartava os cliques
+  dos botões de feedback antes de chegarem à função. Ao re-registrar o webhook, sempre
+  repassar os dois tipos. Botão de mensagem do `testar-local` nunca funciona: o token do
+  envio não é gravado no banco no modo local.
 - **`token_vinculo` é de uso único**: o webhook grava o `chat_id` e troca o token na mesma
   atualização, então link vazado não vincula o chat de outra pessoa. O token que o site leu antes
   do clique deixa de valer depois do vínculo.
