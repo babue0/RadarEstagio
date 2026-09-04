@@ -137,6 +137,29 @@ SQL_PAUSAR = """
     where id = %(perfil_id)s and ativo
 """
 
+SQL_SESSOES_DAS_CONTAS_EXCLUIDAS = """
+    select distinct e.sessao_id
+    from eventos_produto e
+    join perfis p on p.user_id = e.user_id
+    where e.sessao_id is not null
+      and p.excluida_em is not null
+      and p.excluida_em < now() - make_interval(days => %(dias)s)
+"""
+
+SQL_APAGAR_EVENTOS_ANONIMOS = """
+    delete from eventos_produto
+    where sessao_id = any(%(sessoes)s::uuid[])
+"""
+
+SQL_APAGAR_CONTAS_EXCLUIDAS = """
+    delete from auth.users
+    where id in (
+      select user_id from perfis
+      where excluida_em is not null
+        and excluida_em < now() - make_interval(days => %(dias)s)
+    )
+"""
+
 SQL_REGISTRAR_AVISO_DE_SILENCIO = """
     update perfis
     set silencio_avisado_em = now()
@@ -318,6 +341,24 @@ class RepositorioPostgres:
         except psycopg.Error as erro:
             raise ErroDeArmazenamento(
                 f"Falha ao contar a falha de envio: {descrever(erro)}"
+            ) from erro
+
+    def apagar_contas_excluidas(self, dias_de_carencia: int) -> int:
+        try:
+            with self._conexao.transaction(), self._conexao.cursor() as cursor:
+                sessoes = [
+                    linha[0]
+                    for linha in cursor.execute(
+                        SQL_SESSOES_DAS_CONTAS_EXCLUIDAS, {"dias": dias_de_carencia}
+                    ).fetchall()
+                ]
+                if sessoes:
+                    cursor.execute(SQL_APAGAR_EVENTOS_ANONIMOS, {"sessoes": sessoes})
+                cursor.execute(SQL_APAGAR_CONTAS_EXCLUIDAS, {"dias": dias_de_carencia})
+                return cursor.rowcount
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao apagar contas excluídas: {descrever(erro)}"
             ) from erro
 
     def registrar_aviso_de_silencio(self, usuario: Usuario) -> None:

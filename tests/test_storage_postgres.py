@@ -330,7 +330,7 @@ def test_desvincular_nao_alcanca_o_perfil_de_outra_pessoa(
     assert chat is not None
 
 
-def test_excluir_conta_apaga_o_usuario_e_o_perfil_em_cascata(
+def test_excluir_marca_e_para_de_entregar_sem_apagar_ainda(
     conexao: psycopg.Connection, usuario: Usuario
 ):
     como_dono(conexao, usuario)
@@ -338,6 +338,55 @@ def test_excluir_conta_apaga_o_usuario_e_o_perfil_em_cascata(
     conexao.execute("select public.excluir_minha_conta()")
 
     conexao.execute("select set_config('role', 'postgres', true)")
+    ativo, chat, excluida = conexao.execute(
+        "select ativo, telegram_chat_id, excluida_em from perfis where id = %s", (usuario.id,)
+    ).fetchone()
+    assert ativo is False
+    assert chat is None
+    assert excluida is not None
+
+
+def test_cancelar_devolve_o_perfil_ao_ar(conexao: psycopg.Connection, usuario: Usuario):
+    como_dono(conexao, usuario)
+    conexao.execute("select public.excluir_minha_conta()")
+
+    conexao.execute("select public.cancelar_exclusao_da_minha_conta()")
+
+    conexao.execute("select set_config('role', 'postgres', true)")
+    ativo, excluida = conexao.execute(
+        "select ativo, excluida_em from perfis where id = %s", (usuario.id,)
+    ).fetchone()
+    assert ativo is True
+    assert excluida is None
+
+
+def test_a_carencia_protege_a_conta_recem_excluida(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    como_dono(conexao, usuario)
+    conexao.execute("select public.excluir_minha_conta()")
+    conexao.execute("select set_config('role', 'postgres', true)")
+
+    assert repositorio.apagar_contas_excluidas(60) == 0
+    assert (
+        conexao.execute("select count(*) from perfis where id = %s", (usuario.id,)).fetchone()[0]
+        == 1
+    )
+
+
+def test_vencida_a_carencia_a_conta_e_apagada_em_cascata(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    repositorio = RepositorioPostgres(conexao)
+    como_dono(conexao, usuario)
+    conexao.execute("select public.excluir_minha_conta()")
+    conexao.execute("select set_config('role', 'postgres', true)")
+    conexao.execute(
+        "update perfis set excluida_em = now() - interval '61 days' where id = %s", (usuario.id,)
+    )
+
+    assert repositorio.apagar_contas_excluidas(60) == 1
     assert (
         conexao.execute("select count(*) from perfis where id = %s", (usuario.id,)).fetchone()[0]
         == 0

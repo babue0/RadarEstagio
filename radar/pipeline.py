@@ -42,6 +42,7 @@ class ParametrosDaExecucao(BaseModel):
     nota_minima: int = Field(ge=0, le=100)
     falhas_ate_pausar: int = Field(ge=1)
     dias_de_silencio_ate_avisar: int = Field(ge=1)
+    dias_ate_apagar_conta_excluida: int = Field(ge=1)
     url_de_rastreio: str = ""
 
 
@@ -70,6 +71,7 @@ def executar(
     pontuador: Pontuador = pontuar_vagas,
     enriquecer: Enriquecedor = manter_descricoes_como_estao,
 ) -> ResumoDaExecucao:
+    apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida)
     usuarios = repositorio.listar_ativos()
     coletadas = coletor.coletar()
     unicas = remover_duplicatas(coletadas)
@@ -112,6 +114,16 @@ def executar(
 def substituir_enriquecidas(unicas: list[Vaga], candidatas: list[Vaga]) -> list[Vaga]:
     por_id = {vaga.id_externo: vaga for vaga in candidatas}
     return [por_id.get(vaga.id_externo, vaga) for vaga in unicas]
+
+
+def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> None:
+    try:
+        apagadas = repositorio.apagar_contas_excluidas(dias_de_carencia)
+    except ErroDeArmazenamento as erro:
+        logger.warning("contas excluídas não foram apagadas: %s", erro)
+        return
+    if apagadas:
+        logger.info("%d contas apagadas após %d dias de carência", apagadas, dias_de_carencia)
 
 
 def candidatas_de_algum_perfil(vagas: list[Vaga], usuarios: list[Usuario]) -> list[Vaga]:
