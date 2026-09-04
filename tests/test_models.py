@@ -74,7 +74,7 @@ def test_perfil_de_exemplo_e_valido():
     assert perfil.modalidade is Modalidade.PRESENCIAL
     assert perfil.periodo >= 1
     assert perfil.habilidades
-    assert perfil.nome_da_cidade() == "São Paulo"
+    assert perfil.nome_da_cidade() == "Rio de Janeiro"
 
 
 def test_usuario_exige_chat_id_preenchido():
