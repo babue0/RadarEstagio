@@ -69,3 +69,17 @@ def remover_republicacoes(vagas: list[Vaga]) -> list[Vaga]:
         else:
             escolhidas[repetida] = mais_completa(escolhidas[repetida], vaga)
     return escolhidas
+
+
+def remover_republicacoes_de(vagas: list[Vaga], ja_conhecidas: list[Vaga]) -> list[Vaga]:
+    conhecidas_por_anuncio: dict[str, list[Vaga]] = {}
+    for conhecida in ja_conhecidas:
+        conhecidas_por_anuncio.setdefault(chave_de_anuncio(conhecida), []).append(conhecida)
+    return [
+        vaga
+        for vaga in vagas
+        if not any(
+            descricoes_semelhantes(vaga, conhecida)
+            for conhecida in conhecidas_por_anuncio.get(chave_de_anuncio(vaga), [])
+        )
+    ]

@@ -6,6 +6,7 @@ from radar.filtering.duplicatas import (
     descricoes_semelhantes,
     mais_completa,
     remover_duplicatas,
+    remover_republicacoes_de,
 )
 
 
@@ -153,3 +154,34 @@ def test_remover_duplicatas_mantem_mesmo_titulo_com_descricoes_diferentes():
     )
 
     assert remover_duplicatas([primeira, segunda]) == [primeira, segunda]
+
+
+def test_remover_republicacoes_de_descarta_anuncio_igual_ao_ja_conhecido():
+    enviada = vaga("Estagio Programador - Rio de Janeiro - Rj", "Divulga Vagas", descricao=ANUNCIO)
+    republicada = vaga(
+        "Estagio Programador - Rio de Janeiro - Rj - Vaga",
+        "BuscarVagas",
+        descricao=ANUNCIO_COM_SALARIO,
+        numero=2,
+    )
+    inedita = vaga("Estágio em Dados", "Outra Empresa", descricao=ANUNCIO, numero=3)
+
+    assert remover_republicacoes_de([republicada, inedita], [enviada]) == [inedita]
+
+
+def test_remover_republicacoes_de_mantem_mesmo_titulo_com_descricao_diferente():
+    enviada = vaga("Estágio em TI", "A", descricao=ANUNCIO)
+    outra = vaga(
+        "Estágio em TI",
+        "B",
+        descricao="Suporte a usuários, manutenção de redes e atendimento interno na sede.",
+        numero=2,
+    )
+
+    assert remover_republicacoes_de([outra], [enviada]) == [outra]
+
+
+def test_remover_republicacoes_de_sem_conhecidas_mantem_tudo():
+    candidatas = [vaga("Estágio em TI", "A", descricao=ANUNCIO)]
+
+    assert remover_republicacoes_de(candidatas, []) == candidatas
