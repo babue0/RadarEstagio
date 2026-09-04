@@ -134,6 +134,13 @@ contrato completo para o front está em `docs/contrato-front.md`.
   menção ou "Co-Authored-By" de Claude/Anthropic nos commits.
 - **Commits atômicos**: cada commit representa uma mudança coesa e completa. Sempre
   seguir o ciclo `git add` → `git commit` → `git push` ao final de um commit.
+- **Commits pequenos, fatiados por decisão**: uma mudança que atravessa camadas vira uma
+  sequência de commits (o refactor do módulo em um, a etapa nova do pipeline em outro, a
+  religação da CLI em outro, migration e docs separados), nunca um commit único
+  multi-assunto. Os testes de cada fatia entram no commit da própria fatia.
+- **Suíte verde antes de cada commit**: rodar `uv run pytest -q` em um comando separado e
+  conferir o resultado; nunca encadear teste e commit com pipe no meio (`pytest | tail`
+  engole o código de saída e deixa commit passar com teste quebrado).
 - **Conventional Commits** (conventionalcommits.org) em toda mensagem de commit:
   - Formato da primeira linha: `tipo(escopo): descrição`. Escopo é opcional e nomeia a
     camada ou módulo afetado (`collectors`, `settings`, `ci`...).
