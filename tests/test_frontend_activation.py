@@ -144,3 +144,13 @@ def test_perfil_marcado_para_exclusao_nao_aceita_update_do_site():
     assert 'drop policy "usuario edita o proprio perfil" on public.perfis' in sql
     assert "using (auth.uid() = user_id and excluida_em is null)" in sql
     assert "with check (auth.uid() = user_id and excluida_em is null)" in sql
+
+
+def test_cancelar_a_exclusao_leva_de_volta_ao_vinculo_do_telegram():
+    js = (RAIZ / "web/assets/app.js").read_text()
+    handler = js.split(
+        'querySelector("#cancel-deletion").addEventListener'
+    )[1].split("});")[0]
+
+    assert "mostrarEstadoDoPerfil(profile)" in handler
+    assert "showAccount(profile)" not in handler
