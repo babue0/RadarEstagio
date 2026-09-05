@@ -29,11 +29,13 @@ declare
 begin
   if jsonb_typeof(cadastro) is distinct from 'object'
     or cadastro->'aceitou_termos' is distinct from 'true'::jsonb
-    or cadastro->>'versao_dos_termos' is distinct from '2026-09-05'
+    or jsonb_typeof(cadastro->'versao_dos_termos') is distinct from 'string'
+    or coalesce(cadastro->>'versao_dos_termos', '') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
     or jsonb_typeof(cadastro->'aceita_emails') is distinct from 'boolean'
     or jsonb_typeof(perfil) is distinct from 'object' then
     raise exception 'cadastro ou aceite inválido' using errcode = '22023';
   end if;
+  perform (cadastro->>'versao_dos_termos')::date;
   if jsonb_typeof(perfil->'curso') is distinct from 'string'
     or length(btrim(perfil->>'curso')) not between 2 and 200
     or jsonb_typeof(perfil->'cidade') is distinct from 'string'

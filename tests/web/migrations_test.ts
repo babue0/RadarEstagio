@@ -82,7 +82,7 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     assert.equal(await count("perfis"), 1);
     await db.query(
       "insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values ($1,$2,now(),$3)",
-      [outro, "outro@example.com", { cadastro_radar: cadastro }],
+      [outro, "outro@example.com", { cadastro_radar: { ...cadastro, versao_dos_termos: "2026-09-06" } }],
     );
     await db.query(
       "update perfis set cidade = 'Cidade privada' where user_id = $1",
@@ -156,6 +156,13 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       await assert.rejects(() =>
         db.query("select validar_cadastro_radar($1)", [invalid])
       );
+    }
+    const versaoNova = (await db.query<{ versao_dos_termos: string }>(
+      "select versao_dos_termos from perfis where user_id = $1", [outro],
+    )).rows[0].versao_dos_termos;
+    assert.equal(versaoNova, "2026-09-06");
+    for (const versao of ["", "qualquer", "2026-02-31", 20260905, null]) {
+      await assert.rejects(() => db.query("select validar_cadastro_radar($1)", [{ ...cadastro, versao_dos_termos: versao }]));
     }
     await db.exec("set role anon");
     await assert.rejects(() => db.exec("select baixar_meus_dados()"));

@@ -60,7 +60,9 @@ Inclua também os retornos de recuperação `http://localhost:8000/?fluxo=recupe
 secreta do Turnstile e a chave do Resend pertencem ao servidor, nunca a este arquivo.
 
 Os textos ainda são rascunhos. Antes de liberar cadastros públicos, finalize os documentos e
-alinhe sua versão com `VERSAO_DOS_TERMOS` e a validação da migration de consentimento.
+alinhe sua versão com `VERSAO_DOS_TERMOS`, em formato de data `AAAA-MM-DD`. O banco valida
+o formato e a data e preserva a versão enviada, sem exigir uma versão fixa. Novas versões
+do documento não exigem migration; a versão aceita por contas existentes não é alterada.
 
 Excluir a conta **não apaga na hora**: marca a data, para a entrega e solta o Telegram. O
 apagamento definitivo é feito pelo job diário depois de 60 dias, e até lá a pessoa pode entrar e
