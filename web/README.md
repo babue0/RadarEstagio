@@ -16,9 +16,10 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
 - persiste o perfil no Supabase e abre o vínculo com o Telegram por token aleatório;
 - reconhece quando o webhook concluiu o vínculo;
 - registra os eventos do funil sem bloquear o cadastro quando a telemetria falha;
-- diz, no rodapé e no cadastro, quais dados guarda e para que servem, sem prometer tela de
-  edição ou exclusão enquanto ela não existir.
-- ainda não oferece edição, pausa ou retomada do perfil; essas ações ficam para a Fase 3.
+- diz, no rodapé e no cadastro, quais dados guarda e para que servem;
+- dá ao dono da conta um painel para editar o perfil, pausar e retomar as entregas, desvincular o
+  Telegram e excluir a conta;
+- na exclusão, mostra a data do apagamento definitivo e oferece cancelar enquanto o prazo corre.
 
 Quando a confirmação de e-mail está ativa no Supabase, os campos do perfil ficam temporariamente
 no `localStorage`, na chave `radar-perfil-pendente`, até o usuário voltar pelo link de confirmação.
@@ -33,10 +34,15 @@ RLS e pelas permissões de coluna das migrations. Nunca use a chave `service_rol
 No Supabase Auth, adicione a URL publicada do site e `http://localhost:8000` à lista de Redirect
 URLs. A confirmação de e-mail retorna ao site, que conclui a criação do perfil automaticamente.
 
-Antes de publicar, aplique em ordem todas as migrations de `0001` a `0012`. A `0005` instrumenta
+Antes de publicar, aplique em ordem todas as migrations de `0001` a `0013`. A `0005` instrumenta
 o funil, a `0006` adiciona áreas de interesse ao perfil, a `0007` persiste os requisitos técnicos
-extraídos das vagas, a `0011` dá a cada envio o token do link rastreável e a `0012` remove as
-colunas de preferências múltiplas, que nunca tiveram quem lesse ou escrevesse.
+extraídos das vagas, a `0011` dá a cada envio o token do link rastreável, a `0012` remove as
+colunas de preferências múltiplas, que nunca tiveram quem lesse ou escrevesse, e a `0013` entrega
+as funções do painel da conta e a exclusão em duas etapas.
+
+Excluir a conta **não apaga na hora**: marca a data, para a entrega e solta o Telegram. O
+apagamento definitivo é feito pelo job diário depois de 60 dias, e até lá a pessoa pode entrar e
+cancelar — precisando vincular o Telegram outra vez.
 
 ## Como abrir
 
