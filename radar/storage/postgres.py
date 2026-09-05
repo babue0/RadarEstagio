@@ -12,6 +12,7 @@ from radar.domain.models import (
     Modalidade,
     Perfil,
     Recomendacao,
+    RecusasDoUsuario,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -19,6 +20,9 @@ from radar.domain.models import (
 from radar.storage.errors import ErroDeArmazenamento
 
 logger = logging.getLogger(__name__)
+
+RECUSAS_POR_AREA_PARA_DESCONTAR = 2
+AREAS_CONHECIDAS = frozenset(area.value for area in AreaDeInteresse)
 
 SQL_USUARIOS_ATIVOS = """
     select p.id, p.curso, p.periodo, p.habilidades, p.cidade, p.modalidade, p.telegram_chat_id,
@@ -34,8 +38,7 @@ SQL_USUARIOS_ATIVOS = """
 """
 
 SQL_PERFIS_SEM_VINCULO = (
-    "select count(*) from perfis "
-    "where ativo and excluida_em is null and telegram_chat_id is null"
+    "select count(*) from perfis where ativo and excluida_em is null and telegram_chat_id is null"
 )
 
 SQL_AVALIACOES_EXISTENTES = """
@@ -80,6 +83,30 @@ SQL_VAGAS_ENVIADAS_RECENTES = """
     join vagas v on v.id = e.vaga_id
     where e.perfil_id = %(perfil_id)s
       and e.enviada_em > now() - interval '30 days'
+"""
+
+SQL_AREAS_RECUSADAS = """
+    select area
+    from eventos_produto e
+    join vagas v on v.id = e.vaga_id,
+         jsonb_array_elements_text(v.extracao -> 'areas_da_vaga') area
+    where e.perfil_id = %(perfil_id)s
+      and e.nome = 'vaga_irrelevante'
+      and e.propriedades ->> 'motivo' = 'motivo_area'
+      and e.ocorrido_em > now() - interval '30 days'
+    group by area
+    having count(distinct e.vaga_id) >= %(limiar)s
+"""
+
+SQL_VAGAS_RECUSADAS_COMO_REPETIDAS = """
+    select v.fonte, v.id_externo, v.titulo, v.empresa, v.localizacao, v.descricao, v.url,
+           v.publicada_em, v.modalidade
+    from eventos_produto e
+    join vagas v on v.id = e.vaga_id
+    where e.perfil_id = %(perfil_id)s
+      and e.nome = 'vaga_irrelevante'
+      and e.propriedades ->> 'motivo' = 'motivo_repetida'
+      and e.ocorrido_em > now() - interval '30 days'
 """
 
 SQL_GUARDAR_VAGA = """
@@ -307,6 +334,27 @@ class RepositorioPostgres:
                 f"Falha ao ler as vagas enviadas: {descrever(erro)}"
             ) from erro
         return [converter_em_vaga_enviada(linha) for linha in linhas]
+
+    def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
+        try:
+            with self._conexao.cursor(row_factory=dict_row) as cursor:
+                areas = cursor.execute(
+                    SQL_AREAS_RECUSADAS,
+                    {"perfil_id": usuario.id, "limiar": RECUSAS_POR_AREA_PARA_DESCONTAR},
+                ).fetchall()
+                repetidas = cursor.execute(
+                    SQL_VAGAS_RECUSADAS_COMO_REPETIDAS, {"perfil_id": usuario.id}
+                ).fetchall()
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(f"Falha ao ler as recusas: {descrever(erro)}") from erro
+        return RecusasDoUsuario(
+            areas=[
+                AreaDeInteresse(linha["area"])
+                for linha in areas
+                if linha["area"] in AREAS_CONHECIDAS
+            ],
+            vagas_repetidas=[converter_em_vaga_enviada(linha) for linha in repetidas],
+        )
 
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str

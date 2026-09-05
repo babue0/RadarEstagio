@@ -5,6 +5,7 @@ from radar.domain.models import (
     FunilDaCoorte,
     PerguntaDeFeedback,
     Recomendacao,
+    RecusasDoUsuario,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -37,6 +38,8 @@ class RepositorioDeAvaliacoes(Protocol):
     def ids_ja_enviadas(self, usuario: Usuario) -> set[tuple[str, str]]: ...
 
     def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]: ...
+
+    def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario: ...
 
     def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]: ...
 

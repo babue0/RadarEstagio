@@ -119,6 +119,11 @@ class ResultadoMatch(BaseModel):
     alerta_pegadinha: str | None = None
 
 
+class RecusasDoUsuario(BaseModel):
+    areas: list[AreaDeInteresse] = Field(default_factory=list)
+    vagas_repetidas: list[Vaga] = Field(default_factory=list)
+
+
 class Recomendacao(BaseModel):
     resultado: ResultadoMatch
     token: UUID = Field(default_factory=uuid4)

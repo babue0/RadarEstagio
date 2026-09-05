@@ -1,4 +1,11 @@
-from radar.domain.models import ExtracaoDaVaga, Recomendacao, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import (
+    ExtracaoDaVaga,
+    Recomendacao,
+    RecusasDoUsuario,
+    ResultadoMatch,
+    Usuario,
+    Vaga,
+)
 
 
 class RepositorioEmMemoria:
@@ -22,6 +29,9 @@ class RepositorioEmMemoria:
 
     def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]:
         return []
+
+    def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
+        return RecusasDoUsuario()
 
     def guardar_avaliacoes(
         self, usuario: Usuario, avaliadas: list[ResultadoMatch], modelo: str
