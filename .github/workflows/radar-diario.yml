@@ -2,6 +2,11 @@ name: Radar diário
 
 on:
   workflow_dispatch:
+    inputs:
+      perfil:
+        description: atende somente o perfil informado (entrega imediata do vínculo)
+        required: false
+        default: ""
 
 jobs:
   enviar-vagas:
@@ -21,8 +26,14 @@ jobs:
         run: uv sync --frozen --no-dev
 
       - name: Executar o radar
-        run: uv run --no-dev python -m radar
+        run: |
+          if [ -n "$PERFIL" ]; then
+            uv run --no-dev python -m radar rodar --perfil "$PERFIL"
+          else
+            uv run --no-dev python -m radar rodar
+          fi
         env:
+          PERFIL: ${{ inputs.perfil }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
