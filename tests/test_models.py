@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from radar.domain.models import Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
+from radar.domain.models import ExtracaoDaVaga, Modalidade, Perfil, ResultadoMatch, Usuario, Vaga
 from radar.domain.perfil_fixo import perfil_de_exemplo
 
 
@@ -80,3 +80,17 @@ def test_perfil_de_exemplo_e_valido():
 def test_usuario_exige_chat_id_preenchido():
     with pytest.raises(ValidationError):
         Usuario(id=uuid4(), perfil=perfil_de_exemplo(), chat_id="")
+
+
+def test_modalidade_reconhecida_aceita_acentos_e_caixa():
+    extracao = ExtracaoDaVaga(id_vaga="1", area_de_tecnologia="compativel", modalidade="Híbrido")
+
+    assert extracao.modalidade_reconhecida() is Modalidade.HIBRIDO
+
+
+def test_modalidade_desconhecida_ou_ausente_vira_nenhuma():
+    sem = ExtracaoDaVaga(id_vaga="1", area_de_tecnologia="compativel")
+    invalida = ExtracaoDaVaga(id_vaga="1", area_de_tecnologia="compativel", modalidade="a combinar")
+
+    assert sem.modalidade_reconhecida() is None
+    assert invalida.modalidade_reconhecida() is None

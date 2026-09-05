@@ -1,3 +1,4 @@
+import unicodedata
 from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
@@ -53,7 +54,19 @@ class ExtracaoDaVaga(BaseModel):
     habilidades_obrigatorias: list[str] = Field(default_factory=list)
     habilidades_principais: list[str] = Field(default_factory=list)
     habilidades_desejaveis: list[str] = Field(default_factory=list)
+    modalidade: str | None = None
     alerta_pegadinha: str | None = None
+
+    def modalidade_reconhecida(self) -> Modalidade | None:
+        if not self.modalidade:
+            return None
+        sem_acentos = (
+            unicodedata.normalize("NFKD", self.modalidade).encode("ascii", "ignore").decode("ascii")
+        )
+        try:
+            return Modalidade(sem_acentos.strip().casefold())
+        except ValueError:
+            return None
 
 
 class Perfil(BaseModel):

@@ -21,6 +21,9 @@ relação é indireta ou incerta e "incompativel" quando é de outra área.
 "seguranca", "suporte_tecnico", "qa_testes". Desenvolvimento de software em geral (backend, \
 APIs, sistemas) conta como "desenvolvimento_web". Liste todas as que se aplicam; use lista \
 vazia quando nenhuma se aplicar com clareza.
+- modalidade: "remoto", "hibrido" ou "presencial" quando a vaga declarar o regime de \
+trabalho com clareza no texto; null quando não declarar. Nunca deduza pela cidade nem pela \
+empresa.
 - cursos_aceitos: os cursos de graduação ou nível técnico que a vaga lista como aceitos, um por \
 item, com o nome como aparece no anúncio e sem os sufixos "e áreas afins" ou "ou correlatas". \
 Use lista vazia quando a vaga não listar curso algum.
