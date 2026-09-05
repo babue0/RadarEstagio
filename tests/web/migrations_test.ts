@@ -42,9 +42,11 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       versao_dos_termos: "2026-09-05",
       sessao_id: sessao,
     };
-    const count = async (table) =>
+    const count = async (table: string) =>
       Number(
-        (await db.query(`select count(*) n from public.${table}`)).rows[0].n,
+        (await db.query<{ n: number }>(
+          `select count(*) n from public.${table}`,
+        )).rows[0].n,
       );
     await db.query(
       "insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3)",
@@ -62,14 +64,21 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     );
     assert.equal(await count("perfis"), 1);
     assert.equal(await count("cadastros_pendentes"), 0);
-    let saved =
-      (await db.query("select * from perfis where user_id = $1", [dono]))
-        .rows[0];
+    let saved = (await db.query<
+      {
+        id: string;
+        cidade: string;
+        aceita_emails: boolean;
+        versao_dos_termos: string;
+        termos_aceitos_em: string;
+      }
+    >("select * from perfis where user_id = $1", [dono]))
+      .rows[0];
     assert.equal(saved.cidade, "Recife, PE");
     assert.equal(saved.aceita_emails, false);
     assert.equal(saved.versao_dos_termos, "2026-09-05");
     assert.ok(saved.termos_aceitos_em);
-    const events = (await db.query(
+    const events = (await db.query<{ nome: string; sessao_id: string }>(
       "select nome, sessao_id from eventos_produto where user_id = $1",
       [dono],
     )).rows;
@@ -82,16 +91,19 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
     assert.equal(await count("perfis"), 1);
     await db.query(
       "insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values ($1,$2,now(),$3)",
-      [outro, "outro@example.com", { cadastro_radar: { ...cadastro, versao_dos_termos: "2026-09-06" } }],
+      [outro, "outro@example.com", {
+        cadastro_radar: { ...cadastro, versao_dos_termos: "2026-09-06" },
+      }],
     );
     await db.query(
       "update perfis set cidade = 'Cidade privada' where user_id = $1",
       [outro],
     );
-    const metadata = (await db.query(
-      "select raw_user_meta_data from auth.users where id = $1",
-      [outro],
-    )).rows[0].raw_user_meta_data;
+    const metadata =
+      (await db.query<{ raw_user_meta_data: Record<string, unknown> }>(
+        "select raw_user_meta_data from auth.users where id = $1",
+        [outro],
+      )).rows[0].raw_user_meta_data;
     assert.equal(metadata.cadastro_radar, undefined);
     const feedback = () =>
       db.query(
@@ -128,8 +140,14 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       )
     );
     await db.exec("update perfis set aceita_emails = true");
-    const download =
-      (await db.query("select baixar_meus_dados() dados")).rows[0].dados;
+    const download = (await db.query<
+      {
+        dados: {
+          conta: { email: string };
+          perfil: { aceita_emails: boolean; token_vinculo?: string };
+        };
+      }
+    >("select baixar_meus_dados() dados")).rows[0].dados;
     assert.equal(download.conta.email, "dono@example.com");
     assert.equal(download.perfil.aceita_emails, true);
     assert.equal(download.perfil.token_vinculo, undefined);
@@ -158,11 +176,17 @@ Deno.test("cadastro, confirmação, permissões e exportação com PostgreSQL is
       );
     }
     const versaoNova = (await db.query<{ versao_dos_termos: string }>(
-      "select versao_dos_termos from perfis where user_id = $1", [outro],
+      "select versao_dos_termos from perfis where user_id = $1",
+      [outro],
     )).rows[0].versao_dos_termos;
     assert.equal(versaoNova, "2026-09-06");
     for (const versao of ["", "qualquer", "2026-02-31", 20260905, null]) {
-      await assert.rejects(() => db.query("select validar_cadastro_radar($1)", [{ ...cadastro, versao_dos_termos: versao }]));
+      await assert.rejects(() =>
+        db.query("select validar_cadastro_radar($1)", [{
+          ...cadastro,
+          versao_dos_termos: versao,
+        }])
+      );
     }
     await db.exec("set role anon");
     await assert.rejects(() => db.exec("select baixar_meus_dados()"));

@@ -24,41 +24,89 @@ const profile = {
   telegram_chat_id: null,
 };
 
+type Session = { user: typeof user };
+type Profile = Omit<typeof profile, "telegram_chat_id"> & {
+  telegram_chat_id: string | null;
+};
+type Payload = Record<string, unknown>;
+interface Signup {
+  email: string;
+  password: string;
+  options: {
+    captchaToken?: string;
+    data: {
+      cadastro_radar: {
+        perfil: Profile;
+        aceita_emails: boolean;
+        versao_dos_termos: string;
+      };
+    };
+  };
+}
+type Call =
+  | ["signup", Signup]
+  | ["login", { email: string; password: string }]
+  | ["resend", { email: string }]
+  | ["password", { password: string }]
+  | ["reset", string, Payload]
+  | ["logout"]
+  | ["insert", string, Payload]
+  | ["update", string, Payload]
+  | ["rpc", string, Payload];
+type AuthCallback = (event: string) => void;
+type TestWindow = InstanceType<typeof JSDOM>["window"];
+
+function called<K extends Call[0]>(
+  calls: Call[],
+  name: K,
+): Extract<Call, [K, ...unknown[]]> {
+  const call = calls.find((entry) => entry[0] === name);
+  assert.ok(call, `chamada ${name} ausente`);
+  return call as Extract<Call, [K, ...unknown[]]>;
+}
+
 function app(
   {
     session = null,
     savedProfile = null,
     url = "https://radarestagio.com/",
     key = "",
+  }: {
+    session?: Session | null;
+    savedProfile?: Profile | null;
+    url?: string;
+    key?: string;
   } = {},
 ) {
   const dom = new JSDOM(html, { url, runScripts: "outside-only" });
   const w = dom.window;
-  const calls = [];
-  let authCallback;
+  const calls: Call[] = [];
+  let authCallback: AuthCallback = () => {
+    throw new Error("callback não registrado");
+  };
   const client = {
     auth: {
       getSession: async () => ({ data: { session } }),
-      onAuthStateChange: (callback) => {
+      onAuthStateChange: (callback: AuthCallback) => {
         authCallback = callback;
       },
-      signUp: async (args) => {
+      signUp: async (args: Signup) => {
         calls.push(["signup", args]);
         return { data: { session: null } };
       },
-      signInWithPassword: async (args) => {
+      signInWithPassword: async (args: { email: string; password: string }) => {
         calls.push(["login", args]);
         return { data: { session: { user } } };
       },
-      resend: async (args) => {
+      resend: async (args: { email: string }) => {
         calls.push(["resend", args]);
         return {};
       },
-      resetPasswordForEmail: async (email, options) => {
+      resetPasswordForEmail: async (email: string, options: Payload) => {
         calls.push(["reset", email, options]);
         return {};
       },
-      updateUser: async (args) => {
+      updateUser: async (args: { password: string }) => {
         calls.push(["password", args]);
         return {};
       },
@@ -67,15 +115,15 @@ function app(
         return {};
       },
     },
-    from: (table) => {
+    from: (table: string) => {
       const query = {
         select: () => query,
         eq: () => query,
-        insert: async (args) => {
+        insert: async (args: Payload) => {
           calls.push(["insert", table, args]);
           return {};
         },
-        update: (args) => {
+        update: (args: Payload) => {
           calls.push(["update", table, args]);
           return query;
         },
@@ -84,7 +132,7 @@ function app(
       };
       return query;
     },
-    rpc: async (name, args) => {
+    rpc: async (name: string, args: Payload) => {
       calls.push(["rpc", name, args]);
       return { data: {} };
     },
@@ -102,7 +150,7 @@ function app(
     calls,
     client,
     close: () => w.close(),
-    authEvent: (event) => authCallback(event),
+    authEvent: (event: string) => authCallback(event),
   };
 }
 
@@ -110,7 +158,7 @@ async function settle() {
   await new Promise((resolve) => setTimeout(resolve, 15));
 }
 
-function fill(w) {
+function fill(w: TestWindow) {
   const form = w.document.querySelector("#signup-form");
   for (
     const [key, value] of Object.entries({
@@ -138,7 +186,7 @@ Deno.test("cadastro exige aceite e envia perfil e sessão sem guardar senha loca
     form.elements.aceitou_termos.checked = true;
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
-    const signup = a.calls.find(([name]) => name === "signup")[1];
+    const signup = called(a.calls, "signup")[1];
     assert.equal(
       signup.options.data.cadastro_radar.perfil.cidade,
       "Recife, PE",
@@ -212,9 +260,8 @@ Deno.test("edição após login mostra preferências e salva sem pedir novo acei
     assert.equal(form.elements.aceitou_termos.required, false);
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
-    const update = a.calls.find(([name, table]) =>
-      name === "update" && table === "perfis"
-    );
+    const update = called(a.calls, "update");
+    assert.equal(update[1], "perfis");
     assert.equal(update[2].cidade, "Natal, RN");
     assert.equal(update[2].versao_dos_termos, undefined);
     assert.equal(a.calls.some(([name]) => name === "signup"), false);
@@ -232,7 +279,7 @@ Deno.test("preferência de e-mail pode ser revogada e falha preserva o valor ant
     checkbox.dispatchEvent(new a.w.Event("change"));
     await settle();
     assert.equal(
-      a.calls.find(([name]) => name === "update")[2].aceita_emails,
+      called(a.calls, "update")[2].aceita_emails,
       false,
     );
     assert.equal(checkbox.checked, false);
@@ -252,10 +299,10 @@ Deno.test("preferência de e-mail pode ser revogada e falha preserva o valor ant
 Deno.test("CAPTCHA válido segue na autenticação e é descartado após tentativa", async () => {
   const a = app({ key: "chave-publica" });
   try {
-    let widget;
+    let widget: { callback: (token: string) => void } | undefined;
     let resets = 0;
     a.w.turnstile = {
-      render: (_, options) => {
+      render: (_: string, options: { callback: (token: string) => void }) => {
         widget = options;
         return 1;
       },
@@ -264,12 +311,13 @@ Deno.test("CAPTCHA válido segue na autenticação e é descartado após tentati
       },
     };
     a.w.radarCaptchaReady();
+    assert.ok(widget);
     widget.callback("token-valido");
     const form = fill(a.w);
     form.dispatchEvent(new a.w.Event("submit", { cancelable: true }));
     await settle();
     assert.equal(
-      a.calls.find(([name]) => name === "signup")[1].options.captchaToken,
+      called(a.calls, "signup")[1].options.captchaToken,
       "token-valido",
     );
     assert.equal(resets, 1);
@@ -295,7 +343,7 @@ Deno.test("reenvio usa e-mail editado e bloqueia clique repetido por um minuto",
     await settle();
     const resend = a.calls.filter(([name]) => name === "resend");
     assert.equal(resend.length, 1);
-    assert.equal(resend[0][1].email, "corrigido@example.com");
+    assert.equal(called(a.calls, "resend")[1].email, "corrigido@example.com");
   } finally {
     a.close();
   }

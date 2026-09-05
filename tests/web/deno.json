@@ -1,5 +1,5 @@
 {
-  "tasks": { "test": "deno test -A --no-check" },
+  "tasks": { "test": "deno test -A" },
   "imports": {
     "jsdom": "npm:jsdom@26.1.0",
     "pglite": "npm:@electric-sql/pglite@0.3.14",
