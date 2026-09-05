@@ -14,10 +14,10 @@ def test_landing_nao_promete_chegada_antecipada_ou_edicao_inexistente():
 def test_landing_e_cadastro_dizem_para_que_servem_os_dados():
     html = (RAIZ / "web/index.html").read_text()
 
-    assert "Usa isso só para comparar vagas com o seu perfil" in html
-    assert "Nada é vendido nem compartilhado com terceiros" in html
-    assert "servem só para comparar vagas com o seu perfil" in html
-    assert "Nada é vendido nem compartilhado." in html
+    assert "selecionar e entregar vagas, manter sua conta e medir o uso" in html
+    assert "Supabase, Telegram e GitHub Actions" in html
+    assert "Seu perfil serve para selecionar vagas" in html
+    assert "Nada é vendido nem compartilhado" not in html
 
 
 def test_aviso_de_privacidade_aponta_para_o_painel_que_passou_a_existir():
