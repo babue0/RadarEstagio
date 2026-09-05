@@ -70,9 +70,10 @@ def executar(
     agora: datetime,
     pontuador: Pontuador = pontuar_vagas,
     enriquecer: Enriquecedor = manter_descricoes_como_estao,
+    apenas_o_perfil: UUID | None = None,
 ) -> ResumoDaExecucao:
     apagar_contas_no_prazo(repositorio, parametros.dias_ate_apagar_conta_excluida)
-    usuarios = repositorio.listar_ativos()
+    usuarios = selecionar_usuarios(repositorio.listar_ativos(), apenas_o_perfil)
     coletadas = coletor.coletar()
     unicas = remover_duplicatas(coletadas)
     candidatas = enriquecer(candidatas_de_algum_perfil(unicas, usuarios))
@@ -124,6 +125,15 @@ def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> N
         return
     if apagadas:
         logger.info("%d contas apagadas após %d dias de carência", apagadas, dias_de_carencia)
+
+
+def selecionar_usuarios(usuarios: list[Usuario], apenas_o_perfil: UUID | None) -> list[Usuario]:
+    if apenas_o_perfil is None:
+        return usuarios
+    escolhidos = [usuario for usuario in usuarios if usuario.id == apenas_o_perfil]
+    if not escolhidos:
+        logger.warning("perfil %s não está ativo ou não tem Telegram vinculado", apenas_o_perfil)
+    return escolhidos
 
 
 def candidatas_de_algum_perfil(vagas: list[Vaga], usuarios: list[Usuario]) -> list[Vaga]:

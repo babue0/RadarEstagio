@@ -428,6 +428,46 @@ def test_vaga_ja_enviada_nao_e_reavaliada_nem_repetida():
     assert "Empresa 1" not in notificador.textos[0]
 
 
+def test_apenas_o_perfil_informado_e_atendido():
+    primeiro = usuario()
+    segundo = usuario(id_usuario=UUID(int=2), chat_id="456")
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso([primeiro, segundo])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+        apenas_o_perfil=segundo.id,
+    )
+
+    assert set(resumo.enviadas_por_usuario) == {segundo.id}
+    assert notificador.chats == ["456"]
+
+
+def test_perfil_inexistente_nao_atende_ninguem():
+    notificador = NotificadorFalso()
+    repositorio = RepositorioFalso([usuario()])
+
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+        apenas_o_perfil=UUID(int=99),
+    )
+
+    assert resumo.enviadas_por_usuario == {}
+    assert notificador.chats == []
+
+
 def test_avaliacao_toda_bloqueada_nao_manda_mensagem_enganosa():
     selecionadas, notificador, _ = rodar([vaga(1), vaga(2)], {})
 

@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 from datetime import UTC, datetime
+from uuid import UUID
 
 import httpx
 from pydantic import ValidationError
@@ -160,7 +161,10 @@ def url_de_rastreio_utilizavel(settings: Settings) -> str:
 
 
 def executar_fluxo(
-    settings: Settings, cliente_http: httpx.Client, repositorio: Repositorio
+    settings: Settings,
+    cliente_http: httpx.Client,
+    repositorio: Repositorio,
+    apenas_o_perfil: UUID | None = None,
 ) -> None:
     notificador = NotificadorTelegram(settings.telegram_bot_token, cliente_http)
     extrator = montar_extrator(settings)
@@ -177,11 +181,12 @@ def executar_fluxo(
                 nota_minima=settings.nota_minima,
                 falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
                 dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
-            dias_ate_apagar_conta_excluida=settings.dias_ate_apagar_conta_excluida,
+                dias_ate_apagar_conta_excluida=settings.dias_ate_apagar_conta_excluida,
                 url_de_rastreio=url_de_rastreio_utilizavel(settings),
             ),
             agora,
             enriquecer=EnriquecedorDeDescricoes(cliente_http).enriquecer,
+            apenas_o_perfil=apenas_o_perfil,
         )
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         avisar_operacao(settings, notificador, formatar_falha_da_execucao(agora.date(), str(erro)))
@@ -250,7 +255,12 @@ def configurar_logging() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(prog="radar", description="Radar de Estágio")
     subcomandos = parser.add_subparsers(dest="comando")
-    subcomandos.add_parser("rodar", help="executa o fluxo completo e envia a mensagem (padrão)")
+    comando_rodar = subcomandos.add_parser(
+        "rodar", help="executa o fluxo completo e envia a mensagem (padrão)"
+    )
+    comando_rodar.add_argument(
+        "--perfil", type=UUID, default=None, help="atende somente o perfil informado"
+    )
     subcomandos.add_parser(
         "verificar", help="confere se as variáveis de ambiente estão preenchidas"
     )
@@ -275,9 +285,12 @@ def main() -> None:
     if settings is None:
         sys.exit(1)
 
-    comando = COMANDOS[argumentos.comando or COMANDO_PADRAO]
+    nome_do_comando = argumentos.comando or COMANDO_PADRAO
     try:
-        comando(settings)
+        if nome_do_comando == "rodar":
+            rodar(settings, getattr(argumentos, "perfil", None))
+        else:
+            COMANDOS[nome_do_comando](settings)
     except (ErroDeColeta, ErroDeAvaliacao, ErroDeNotificacao, ErroDeArmazenamento) as erro:
         print(erro, file=sys.stderr)
         sys.exit(1)
