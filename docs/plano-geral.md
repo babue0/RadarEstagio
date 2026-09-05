@@ -194,7 +194,7 @@ canais identificados. Só faz sentido depois das fases C e D.
 | Dados pessoais no histórico do git | trocar o arquivo não apagou o histórico; reescrever quebra os clones — decisão do grupo |
 | Apagar conta abandonada | fora do escopo agora; revisitar depois do piloto |
 | Sprint 2 (busca imediata após o vínculo) | **decidido em 05/09: entra antes do piloto**, com a janela de 06:23 a 07:23 como exceção. Virou a fase D |
-| Remetente do e-mail | domínio comprado; falta decidir se o Resend entra antes do piloto — hoje o cadastro não sustenta a coorte |
+| Remetente do e-mail | **decidido em 05/09: o Resend entra antes do piloto.** Sem remetente próprio o cadastro não sustenta 10 a 20 pessoas na mesma tarde |
 
 ## 6. Onde está cada coisa
 
