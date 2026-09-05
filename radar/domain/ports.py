@@ -28,6 +28,8 @@ class Notificador(Protocol):
 class RepositorioDeUsuarios(Protocol):
     def listar_ativos(self) -> list[Usuario]: ...
 
+    def pode_entregar(self, usuario: Usuario) -> bool: ...
+
 
 class RepositorioDeAvaliacoes(Protocol):
     def avaliacoes_existentes(

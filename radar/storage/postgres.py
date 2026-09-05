@@ -34,8 +34,7 @@ SQL_USUARIOS_ATIVOS = """
 """
 
 SQL_PERFIS_SEM_VINCULO = (
-    "select count(*) from perfis "
-    "where ativo and excluida_em is null and telegram_chat_id is null"
+    "select count(*) from perfis where ativo and excluida_em is null and telegram_chat_id is null"
 )
 
 SQL_AVALIACOES_EXISTENTES = """
@@ -224,6 +223,19 @@ class RepositorioPostgres:
         if sem_vinculo:
             logger.info("%d perfis ativos ainda sem Telegram vinculado", sem_vinculo)
         return [converter_em_usuario(linha) for linha in linhas]
+
+    def pode_entregar(self, usuario: Usuario) -> bool:
+        try:
+            with self._conexao.cursor() as cursor:
+                return cursor.execute(
+                    "select exists(select 1 from perfis where id = %s and ativo "
+                    "and excluida_em is null and telegram_chat_id = %s)",
+                    (usuario.id, usuario.chat_id),
+                ).fetchone()[0]
+        except psycopg.Error as erro:
+            raise ErroDeArmazenamento(
+                f"Falha ao conferir destinatário: {descrever(erro)}"
+            ) from erro
 
     def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
         if not vagas:
