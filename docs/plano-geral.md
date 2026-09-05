@@ -191,10 +191,12 @@ canais identificados. Só faz sentido depois das fases C e D.
 | Assunto | Situação |
 |---|---|
 | Viés do ranking: anúncio raso tira nota maior | decidido esperar dado do piloto; evidência já registrada na seção 7 da auditoria |
-| Dados pessoais no histórico do git | trocar o arquivo não apagou o histórico; reescrever quebra os clones — decisão do grupo |
+| Dados pessoais no histórico do git | **decidido em 05/09: fica como está.** O perfil real do usuário nº 1 segue legível nos commits de 25/08 a 04/09, mas é curso, período, cidade e stack — sem nome, contato ou credencial. Reescrever obrigaria todo mundo a reclonar para remover dado de baixa sensibilidade. Conferido: nenhum `chat_id`, token ou e-mail de usuário no histórico |
 | Apagar conta abandonada | fora do escopo agora; revisitar depois do piloto |
 | Sprint 2 (busca imediata após o vínculo) | **decidido em 05/09: entra antes do piloto**, com a janela de 06:23 a 07:23 como exceção. Virou a fase D |
 | Remetente do e-mail | **decidido em 05/09: o Resend entra antes do piloto.** Sem remetente próprio o cadastro não sustenta 10 a 20 pessoas na mesma tarde |
+| Domínio em nome de quem | **decidido em 05/09: conta pessoal do Igor.** Registrar por escrito quem paga a renovação e o que acontece com o domínio quando a disciplina terminar |
+| `.agents/skills` no repositório público | **decidido em 05/09: fica.** Fecha a pendência antiga; as licenças de origem estão no `.agents/skills/README.md` |
 
 ## 6. Onde está cada coisa
 
