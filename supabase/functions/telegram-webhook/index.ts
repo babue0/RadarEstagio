@@ -1,5 +1,9 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
+  type PerfilDoDestinatario,
+  podeProcessarInteracao,
+} from "../_shared/privacidade.ts";
+import {
   type AtualizacaoDoTelegram,
   chatIdDaMensagem,
   extrairPedidoDeVinculo,
@@ -54,6 +58,7 @@ async function vincularChat(
       atualizado_em: new Date().toISOString(),
     })
     .eq("token_vinculo", token)
+    .is("excluida_em", null)
     .select("id");
   if (error?.code === CODIGO_DE_VALOR_DUPLICADO) return "chat_de_outra_conta";
   if (error) throw error;
@@ -100,16 +105,21 @@ async function chamarTelegram(metodo: string, corpo: unknown): Promise<void> {
   });
 }
 
-async function envioDoToken(token: string): Promise<EnvioDoToken | null> {
+async function envioDoToken(
+  token: string,
+  chatId: string,
+): Promise<EnvioDoToken | null> {
   const { data, error } = await supabase
     .from("envios")
-    .select("perfil_id, vaga_id, perfis (user_id)")
+    .select(
+      "perfil_id, vaga_id, perfis (user_id, ativo, excluida_em, telegram_chat_id)",
+    )
     .eq("token", token)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const perfil = data.perfis as unknown as { user_id: string } | null;
-  if (!perfil) return null;
+  const perfil = data.perfis as unknown as PerfilDoDestinatario | null;
+  if (!perfil || !podeProcessarInteracao(perfil, chatId)) return null;
   return {
     perfilId: data.perfil_id,
     userId: perfil.user_id,
@@ -167,6 +177,8 @@ async function tratarClique(
   consulta: ConsultaDeFeedback,
   teclado: BotaoDoTeclado[][],
 ): Promise<string> {
+  const envio = await envioDoToken(consulta.token, consulta.chatId);
+  if (!envio) return AVISO_DE_CONSULTA_DESCONHECIDA;
   if (consulta.acao === ACAO_DE_RECUSA) {
     await perguntarOMotivo(consulta);
     return "";
@@ -176,8 +188,6 @@ async function tratarClique(
     return AVISO_DE_TUDO_CERTO;
   }
   if (!eMotivo(consulta.acao)) return AVISO_DE_CONSULTA_DESCONHECIDA;
-  const envio = await envioDoToken(consulta.token);
-  if (!envio) return AVISO_DE_CONSULTA_DESCONHECIDA;
   await registrarRecusa(envio, consulta.acao);
   await voltarAosNumeros(consulta, teclado);
   return AVISO_DE_RECUSA_REGISTRADA;

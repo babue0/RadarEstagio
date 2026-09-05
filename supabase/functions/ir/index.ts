@@ -1,5 +1,9 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { redirecionarPara, tokenDaRequisicao } from "./redirecionamento.ts";
+import {
+  type PerfilDoDestinatario,
+  podeProcessarInteracao,
+} from "../_shared/privacidade.ts";
 
 interface EnvioDaVaga {
   perfilId: string;
@@ -23,14 +27,16 @@ const supabase = createClient(
 async function envioDoToken(token: string): Promise<EnvioDaVaga | null> {
   const { data, error } = await supabase
     .from("envios")
-    .select("perfil_id, vaga_id, vagas (url), perfis (user_id)")
+    .select(
+      "perfil_id, vaga_id, vagas (url), perfis (user_id, ativo, excluida_em, telegram_chat_id)",
+    )
     .eq("token", token)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const vaga = data.vagas as unknown as { url: string } | null;
-  const perfil = data.perfis as unknown as { user_id: string } | null;
-  if (!vaga || !perfil) return null;
+  const perfil = data.perfis as unknown as PerfilDoDestinatario | null;
+  if (!vaga || !perfil || !podeProcessarInteracao(perfil)) return null;
   return {
     perfilId: data.perfil_id,
     userId: perfil.user_id,
