@@ -61,16 +61,42 @@ serviram", e o "Todas serviram" apenas apaga a mensagem, sem gravar evento. O "C
 deliberadamente deixado de fora do teclado diário, para a pergunta do dia seguinte — que ainda não
 existe.
 
-Duas saídas, e a escolha muda o produto:
+Duas saídas foram consideradas, e nenhuma delas foi a escolhida:
 
-- **"Todas serviram" passa a gravar `vaga_util`** para as vagas do dia. Barato, mas é sinal fraco:
+- **"Todas serviram" passa a gravar `vaga_util`** para as vagas do dia. Barato, mas sinal fraco:
   não reclamar não é o mesmo que ter servido.
-- **A pergunta do dia seguinte**, só para as vagas que a pessoa abriu: *"ontem você abriu X.
-  Serviu?"* com 👍, 👎 e "já me candidatei". Sinal forte, porque só pergunta onde houve interesse
-  real, e é onde o "Candidatei-me" faz sentido. Depende de `vaga_aberta` estar funcionando.
+- **A pergunta do dia seguinte**, só para as vagas que a pessoa abriu. Sinal forte, mas depende de
+  `vaga_aberta` estar no ar e acrescenta uma segunda notificação por dia.
 
-Recomendação: a segunda, aceitando que a North Star só fica medível depois que o link rastreável
-estiver no ar. A primeira como paliativo se o piloto começar antes.
+**Decidido em 05/09: o feedback é por vaga, dentro da própria mensagem.** Os números deixam de
+significar recusa e passam a abrir o feedback daquela vaga. A mensagem diária termina em "Deixe seu
+feedback 👇" com um número por recomendação, e o clique abre uma segunda mensagem, com a vaga e
+seis opções:
+
+| Botão | O que grava |
+|---|---|
+| 👍 Essa serviu | `vaga_util` |
+| 👎 A nota não fez sentido | `vaga_irrelevante` · `motivo_nota` |
+| 👎 Não é da minha área | `vaga_irrelevante` · `motivo_area` |
+| 👎 Pedem demais | `vaga_irrelevante` · `motivo_exigencia` |
+| 👎 Local ou modalidade | `vaga_irrelevante` · `motivo_logistica` |
+| 👎 Já vi essa | `vaga_irrelevante` · `motivo_repetida` |
+
+**Não precisa de migration**: `vaga_util` já está no enum da `0005` e o motivo vai em
+`propriedades`, que é `jsonb` sem restrição de conteúdo. É mudança só de código, na
+`telegram-webhook` e no formatador da mensagem.
+
+`motivo_nota` não existia em nenhuma das duas saídas descartadas e é o ganho menos óbvio da
+escolha. Ele é o sinal que a seção 7 da `auditoria-rcd.md` exige para mexer nos pesos do ranking:
+a recusa de hoje não distingue "a vaga não serve para mim" de "a vaga serve, a nota é que está
+errada", e só a segunda justifica ajustar peso.
+
+**`candidatura_iniciada` fica sem emissor, e isso é deliberado.** O botão "Já me candidatei" saiu
+do teclado porque quem se candidata também acha que a vaga serviu — o 👍 cobre a North Star
+sozinho. O custo é que **Candidatura atribuída**, definida no `CONTEXT.md`, deixa de ser medível, e
+a definição de vaga útil lá ("feedback positivo **ou** início de candidatura") passa a valer só
+pela primeira metade. Alinhar o `CONTEXT.md` a isso, ou recuperar a captura junto da pergunta do
+dia seguinte, se o piloto mostrar que faz falta.
 
 ## 4. O que falta, em ordem
 
