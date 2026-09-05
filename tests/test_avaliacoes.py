@@ -48,6 +48,27 @@ def resultado_da(extracao_da_vaga: ExtracaoDaVaga, candidato: Perfil | None = No
     return pontuar(vaga(), extracao_da_vaga, candidato or perfil())
 
 
+def test_modalidade_extraida_preenche_vaga_sem_modalidade():
+    resultado = resultado_da(extracao(modalidade="presencial"))
+
+    assert resultado.vaga.modalidade is Modalidade.PRESENCIAL
+
+
+def test_modalidade_da_fonte_prevalece_sobre_a_extraida():
+    resultado = pontuar(
+        vaga(modalidade=Modalidade.HIBRIDO), extracao(modalidade="remoto"), perfil()
+    )
+
+    assert resultado.vaga.modalidade is Modalidade.HIBRIDO
+
+
+def test_modalidade_extraida_entra_na_logistica_da_nota():
+    sem_modalidade = resultado_da(extracao())
+    presencial_extraida = resultado_da(extracao(modalidade="presencial"))
+
+    assert presencial_extraida.nota > sem_modalidade.nota
+
+
 def test_stack_desejavel_sem_correspondencia_recebe_nota_baixa():
     requisitos = ["PHP", "MySQL", "SQL", "HTML5", "JavaScript", "REST", "VueJS", "AJAX", "jQuery"]
 

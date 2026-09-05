@@ -112,6 +112,7 @@ def pontuar_vagas(
 
 
 def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMatch:
+    vaga = _com_modalidade_extraida(vaga, extracao)
     niveis = derivar_niveis(extracao, perfil)
     requisitos_atendidos, requisitos_nao_atendidos = _classificar_habilidades(extracao, perfil)
     pontos_a_favor, pontos_contra = montar_pontos(extracao, niveis)
@@ -126,6 +127,15 @@ def pontuar(vaga: Vaga, extracao: ExtracaoDaVaga, perfil: Perfil) -> ResultadoMa
         pontos_contra=_juntar_sem_repetir(pontos_contra),
         alerta_pegadinha=extracao.alerta_pegadinha,
     )
+
+
+def _com_modalidade_extraida(vaga: Vaga, extracao: ExtracaoDaVaga) -> Vaga:
+    if vaga.modalidade is not None:
+        return vaga
+    extraida = extracao.modalidade_reconhecida()
+    if extraida is None:
+        return vaga
+    return vaga.model_copy(update={"modalidade": extraida})
 
 
 def _calcular_nota(
