@@ -1,6 +1,6 @@
 # Plano geral
 
-**Data:** 04/09/2026
+**Data:** 05/09/2026
 
 O que existe, o que falta e em que ordem. Os detalhes de cada frente moram nos documentos
 apontados na seção 6; aqui é o mapa que amarra os três planos que hoje vivem separados.
@@ -12,12 +12,15 @@ O código dos sprints 0 e 1 e de quase todo o 3 está no `main`. **Quase nada di
 | | Estado |
 |---|---|
 | Job diário | funcionando; entrega vaga todo dia às 07:23 |
-| Custo de IA | resolvido; não cresce com o número de usuários |
+| Custo de IA | resolvido para coorte homogênea: a mesma vaga não é reextraída. Perfil de cidade ou área nova **amplia o conjunto elegível** — medir antes do piloto |
 | Landing | **não hospedada em lugar nenhum** |
 | Edge Function `telegram-webhook` | publicada em 29/08; a versão com feedback **não foi republicada** |
 | Edge Function `ir` | escrita, **nunca publicada** |
 | Webhook do Telegram | `allowed_updates` já inclui `callback_query`, corrigido em 04/09 |
-| Painel da conta | escrito na PR #9, migration não aplicada |
+| Painel da conta | no ar no `main`; a `0013` **foi aplicada em 05/09** |
+| Exclusão em duas etapas | pronta e aplicada: marca, para de entregar, apaga em 60 dias |
+| Domínio | **comprado** (Cloudflare Registrar), ainda não apontado para lugar nenhum |
+| Confirmação de e-mail | remetente ainda é o do Supabase; **não sustenta 10 a 20 cadastros no mesmo dia** |
 
 A distância entre "está no `main`" e "o estudante usa" é toda de infraestrutura, não de código.
 
@@ -91,17 +94,25 @@ domínio ─┬─ contato@ ───── política de privacidade completa
    `emailRedirectTo` da confirmação não volta para a página publicada
 3. Criar `URL_DA_LANDING` no Supabase e `URL_DE_RASTREIO` nos secrets do GitHub
 4. Publicar a função `ir` e **republicar** a `telegram-webhook` com o feedback
-5. Comprar o domínio quando quiser, e repetir os passos 2 e 3 com o endereço definitivo
+5. ~~Comprar o domínio~~ — feito em 05/09. Publicar direto no domínio próprio dispensa refazer os
+   passos 2 e 3 depois
 
-Nada disso é código. A migration `0013` **não entra aqui**: ela é reescrita na fase B, com os 60
-dias, e só então é aplicada.
+Nada disso é código. A migration `0013` **saiu desta fase**: foi reescrita com os 60 dias,
+revisada, corrigida e aplicada em 05/09.
+
+**O domínio mudou o peso do e-mail.** Enquanto o plano supunha o endereço provisório, o remetente
+do Supabase era ruim mas tolerável. Agora que o cadastro pode ir ao ar num domínio próprio, o
+limite de poucos e-mails por hora do remetente compartilhado passa a ser o que separa o piloto de
+funcionar: numa tarde com 10 a 20 estudantes se cadastrando, a maioria não recebe a confirmação.
+Entrar é imune — `signInWithPassword` não passa por e-mail nem por redirect —, mas ninguém entra
+antes de se cadastrar.
 
 ### Fase B — cadastro, consentimento e documentos
 
-Detalhado em `plano-cadastro-e-privacidade.md`. Resumo da ordem: escrever os dois documentos,
-publicá-los, migration do consentimento e da exclusão em duas etapas, o passo diário que apaga
-depois de 60 dias, o cadastro com os dois checkboxes e o olho na senha, o gatilho que cria o perfil
-na confirmação, a tela de reenvio, o Turnstile e o botão de baixar os dados.
+Detalhado em `plano-cadastro-e-privacidade.md`. **Esta fase começou pelo fim**: a exclusão em duas
+etapas, o apagamento diário e os textos do painel saíram em 05/09 e estão aplicados. O que sobrou é
+o bloco do consentimento — os dois documentos, as colunas de aceite, os checkboxes, o gatilho que
+cria o perfil na confirmação, a tela de reenvio, o Turnstile, baixar os dados e recuperar a senha.
 
 ### Fase C — fechar a medição
 
@@ -110,6 +121,16 @@ na confirmação, a tela de reenvio, o Turnstile e o botão de baixar os dados.
    perfis criados e ignora visita, etapas do cadastro e confirmação; conta utilidade e candidatura
    separadamente, sem formar a união que define vaga útil; e não recorta por semana, que a North
    Star exige. Implementar os emissores não conserta isso sozinho.
+
+   Mais duas correções, achadas em 05/09 na revisão contra as skills:
+
+   - **`vagas_abertas` conta cliques, não vagas.** É `count(*)` sobre os eventos, e o próprio
+     `metricas.md` diz que clique repetido gera linha repetida de propósito. Uma pessoa abrindo a
+     mesma vaga três vezes vira três.
+   - **O critério de mexer no ranking não tem denominador.** A seção 7 da auditoria reage a
+     `vaga_irrelevante` concentrado em anúncio raso, mas a consulta não conta quantas recomendações
+     de cada grupo foram entregues — uma categoria concentra recusa por concentrar entrega. Sem o
+     denominador, a evidência não sustenta a decisão que ela deveria destravar.
 9. Rodar com dado real e conferir
 
 Sem a fase C o piloto roda e não mede o que importa.
@@ -133,6 +154,7 @@ bloqueador explicitamente e registra o porquê. Deixar implícito é o pior dos 
 | Dados pessoais no histórico do git | trocar o arquivo não apagou o histórico; reescrever quebra os clones — decisão do grupo |
 | Apagar conta abandonada | fora do escopo agora; revisitar depois do piloto |
 | Sprint 2 (busca imediata após o vínculo) | não começou; meta de 15 minutos até a primeira entrega segue não atendida |
+| Remetente do e-mail | domínio comprado; falta decidir se o Resend entra antes do piloto — hoje o cadastro não sustenta a coorte |
 
 ## 6. Onde está cada coisa
 
