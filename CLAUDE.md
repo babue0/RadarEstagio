@@ -44,6 +44,14 @@ Python; dependências em `pyproject.toml`. O que o manifesto e o código não di
 - **Leitura do funil**: `python -m radar metricas` imprime, direto do banco, o funil da coorte dos
   últimos 30 dias, a quebra das recusas por motivo e o custo de extração por usuário ativado. As
   consultas equivalentes estão em `docs/metricas.md`.
+- **Entrega imediata (fase D, 05/09/2026)**: ao gravar o `chat_id`, a `telegram-webhook`
+  dispara o workflow com o input `perfil` e o pipeline atende só o recém-vinculado
+  (`rodar --perfil <id>`), sem tocar os demais. Vínculo entre 06:23 e 07:23 de Brasília
+  espera o diário. Usa o endpoint de `workflow_dispatch` porque o token existente
+  (`GITHUB_DISPATCH_TOKEN` nos secrets do Supabase) tem permissão de Actions, não de
+  conteúdo — o `repository_dispatch` do plano exigiria token novo. Com as extrações
+  compartilhadas, a primeira entrega custa zero requisição de IA. Sem o token, o vínculo
+  segue normal e a primeira busca fica para o diário.
 - **Agendamento**: o workflow do GitHub Actions só tem `workflow_dispatch`. Quem dispara às
   07:23 de Brasília é um job no cron-job.org chamando a API `dispatches` com fine-grained
   token — o `schedule` nativo ficou 2 dias sem disparar e foi removido.
