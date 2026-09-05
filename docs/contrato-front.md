@@ -26,8 +26,11 @@ await supabase.rpc("excluir_minha_conta");            // devolve a data da marca
 await supabase.rpc("cancelar_exclusao_da_minha_conta");
 ```
 
-**Excluir não apaga na hora.** Marca `perfis.excluida_em` e nada mais: a entrega para porque o job
-diário ignora perfil marcado, não porque algum campo foi destruído. O apagamento definitivo
+**Excluir não apaga na hora.** Marca `perfis.excluida_em`, solta o `telegram_chat_id` e rotaciona o
+`token_vinculo`. A entrega para porque o job diário ignora perfil marcado; o chat é solto porque a
+coluna é `unique` e mantê-lo reservaria o Telegram da pessoa por 60 dias, bloqueando até uma conta
+nova dela mesma. Quem cancelar precisa vincular o Telegram de novo — o painel já mostra isso
+sozinho, porque perfil sem chat cai no estado de não vinculado. O apagamento definitivo
 acontece 60 dias depois, no mesmo job. Enquanto isso o perfil continua legível e a sessão continua
 válida — sem ela a pessoa não teria como voltar para cancelar.
 
@@ -35,7 +38,9 @@ válida — sem ela a pessoa não teria como voltar para cancelar.
 `entregas_pausadas` para quem saiu de vez, e cancelar devolveria ao ar quem tinha pausado antes.
 
 O front deve ler `excluida_em` junto do resto do perfil e mostrar o estado; um perfil marcado não
-deve oferecer pausar, desvincular nem excluir de novo.
+deve oferecer pausar, desvincular, editar nem excluir de novo. **A policy de update recusa
+qualquer escrita em perfil marcado**, então uma aba antiga que insista recebe erro em vez de gravar
+— esconder os botões é cortesia, não é o que garante a regra.
 
 Desvincular também rotaciona o `token_vinculo`, então um link de vínculo lido antes deixa de
 valer — releia o perfil depois de chamar.

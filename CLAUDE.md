@@ -257,8 +257,10 @@ modalidade e, em empate, a de descrição mais longa.
   `grant` — `telegram_chat_id` é do webhook e `auth.users` o cliente não apaga — então são funções
   `security definer` filtrando por `auth.uid()`, na migration `0013`. Desvincular rotaciona o
   `token_vinculo` junto, senão o link antigo continuaria valendo.
-- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` só marca
-  `excluida_em`; quem para a entrega é o `excluida_em is null` na consulta dos perfis. O apagamento
+- **Exclusão de conta é em duas etapas** (04/09/2026): `excluir_minha_conta()` marca `excluida_em`
+  e solta o chat do Telegram, porque a coluna é `unique` e segurá-la reservaria o chat por 60 dias
+  contra uma conta nova da própria pessoa. Quem para a entrega é o `excluida_em is null` na consulta
+  dos perfis, e a policy de update recusa escrita em perfil marcado. O apagamento
   definitivo vem no job diário, depois de `DIAS_ATE_APAGAR_CONTA_EXCLUIDA`, e leva junto os eventos
   anteriores ao login, que só têm `sessao_id` e nenhuma cascata alcança. A sessão **não** é
   encerrada ao pedir: sem ela a pessoa não voltaria para cancelar.
