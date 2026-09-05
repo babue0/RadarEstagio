@@ -16,7 +16,7 @@ def test_cadastro_persiste_perfil_e_monta_vinculo():
     javascript = (RAIZ / "web/assets/app.js").read_text()
 
     assert '.from("perfis")' in javascript
-    assert ".insert({ user_id: userId, ...profile })" in javascript
+    assert 'rpc("concluir_meu_cadastro"' in javascript
     assert "signUp" in javascript
     assert "signInWithPassword" in javascript
     assert "?start=${token}" in javascript
@@ -58,7 +58,7 @@ def test_falha_ao_salvar_perfil_mantem_recuperacao_e_mensagem_humana():
 
     assert "function humanizeError(error" in javascript
     assert "profilePending" in javascript
-    assert "Seus dados continuam salvos neste navegador" in javascript
+    assert "Entre novamente para concluir o perfil" in javascript
     assert "setFormMessage(error.message)" not in javascript
     assert "humanizeError(error, { profilePending: true })" in javascript
 
