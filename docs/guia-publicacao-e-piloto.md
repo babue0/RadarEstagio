@@ -6,8 +6,8 @@ rascunhos, sem vigência.
 
 Estado das configurações feitas pelo Igor durante a orientação:
 
-- Domínio comprado e Email Routing habilitado; regra de contato preparada. Falta confirmar o
-  recebimento e a rotina de resposta com Ian e Miguel.
+- Domínio comprado e Email Routing habilitado. Igor confirmou o teste do contato funcionando
+  em 05/09; falta combinar a rotina de resposta com Ian e Miguel.
 - Domínio verificado no Resend e SMTP personalizado salvo no Supabase. Falta testar entrega real.
 - Site URL e retornos básicos configurados. Acrescentar o retorno de recuperação descrito abaixo.
 - Hospedagem e integração GitHub adiadas. Organização compartilhada será retomada depois.
@@ -17,7 +17,9 @@ Estado das configurações feitas pelo Igor durante a orientação:
 Use sempre o projeto Supabase **`xrhvjwemmylwbqgluebc`**, da região de São Paulo. O projeto
 `bnzogphdvpubtkcflcue` não é o banco do Radar.
 
-## 1. Criar o contato — pode fazer agora
+## 1. Contato — recebimento testado e funcionando
+
+Igor confirmou o teste em 05/09. O procedimento abaixo fica como referência de configuração.
 
 No Cloudflare, abra **Email Service → Email Routing**, selecione `radarestagio.com` e cadastre
 o domínio. Adicione e verifique o e-mail pessoal de destino. Em **Routing Rules**, crie
@@ -28,7 +30,7 @@ Envie uma mensagem de outra conta para `contato@radarestagio.com`; confira a cai
 O encaminhamento resolve o recebimento. Combine com Ian e Miguel quem acompanhará e responderá
 as mensagens. O envio automático da confirmação será configurado separadamente no Resend.
 
-**Concluído quando:** a mensagem chega e vocês conseguem responder ao remetente.
+**Recebimento concluído.** Combine quem responderá e acompanhará os pedidos.
 
 ## 2. Revisar os documentos e combinar a manutenção
 

@@ -17,11 +17,11 @@ O passo 1 da seção 4 do [plano de cadastro](plano-cadastro-e-privacidade.md) d
 “Escrever os dois documentos; Igor e Ian revisam antes de qualquer código”. Os textos para
 essa revisão são os [Termos de Uso](termos-de-uso.md) e a
 [Política de Privacidade](politica-de-privacidade.md). Não são documentos publicados nem textos
-em vigor. O usuário confirmou o domínio `radarestagio.com` e os responsáveis Igor Costa, Ian Dias e Miguel Esteves. O endereço escolhido para contato é `contato@radarestagio.com`; o encaminhamento foi preparado e falta confirmar o teste de recebimento.
+em vigor. O usuário confirmou o domínio `radarestagio.com` e os responsáveis Igor Costa, Ian Dias e Miguel Esteves. O endereço escolhido para contato é `contato@radarestagio.com`; o recebimento foi testado e confirmado por Igor em 05/09.
 
 ## O que revisar agora
 
-- Criar `contato@radarestagio.com` (caixa ou encaminhamento) e verificar seu recebimento antes da publicação.
+- Recebimento em `contato@radarestagio.com` confirmado; combinar a rotina de atendimento.
 - Revisar a descrição do serviço, das recomendações e das limitações das fontes.
 - Revisar a retenção de 60 dias para arrependimento e o tratamento de pedidos de eliminação
   que não desejem aguardar esse prazo. A existência do prazo no código não comprova, sozinha,
