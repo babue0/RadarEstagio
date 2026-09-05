@@ -2,11 +2,13 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from radar.domain.models import (
+    AreaDeInteresse,
     ExtracaoDaVaga,
     Modalidade,
     NivelCompatibilidade,
     Perfil,
     PerguntaDeFeedback,
+    RecusasDoUsuario,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -117,11 +119,13 @@ class RepositorioFalso(RepositorioEmMemoria):
         enviadas: set[tuple[str, str]] = frozenset(),
         falha_ao_gravar: bool = False,
         enviadas_recentes: list[Vaga] = (),
+        recusas: RecusasDoUsuario | None = None,
     ) -> None:
         super().__init__(usuarios)
         self._guardadas = list(guardadas)
         self._enviadas = set(enviadas)
         self._enviadas_recentes = list(enviadas_recentes)
+        self._recusas = recusas or RecusasDoUsuario()
         self._falha_ao_gravar = falha_ao_gravar
         self.avaliacoes_gravadas: list[tuple[UUID, list[str], str]] = []
         self.envios_gravados: list[tuple[UUID, list[str]]] = []
@@ -155,6 +159,9 @@ class RepositorioFalso(RepositorioEmMemoria):
 
     def vagas_enviadas_recentemente(self, usuario: Usuario) -> list[Vaga]:
         return list(self._enviadas_recentes)
+
+    def recusas_do_usuario(self, usuario: Usuario) -> RecusasDoUsuario:
+        return self._recusas
 
     def guardar_avaliacoes(self, usuario, avaliadas, modelo) -> None:
         if self._falha_ao_gravar:
@@ -397,6 +404,48 @@ def test_erro_no_telegram_de_um_usuario_nao_bloqueia_os_outros():
     assert notificador.chats == ["123"]
     assert list(resumo.enviadas_por_usuario) == [ID_OUTRO_USUARIO]
     assert [registro[0] for registro in repositorio.envios_gravados] == [ID_OUTRO_USUARIO]
+
+
+def test_vaga_marcada_como_ja_vista_bloqueia_os_sosias():
+    descricao = (
+        "Dar apoio ao time de desenvolvimento nas rotinas do site, com estudo de "
+        "requisitos, ajustes de paginas, testes manuais, correcao de defeitos simples "
+        "e acompanhamento das entregas semanais junto ao coordenador da area."
+    )
+    recusada = vaga(1).model_copy(update={"descricao": descricao})
+    sosia = vaga(2).model_copy(
+        update={"titulo": recusada.titulo + " - Vaga", "descricao": descricao}
+    )
+    repositorio = RepositorioFalso(
+        [usuario()], recusas=RecusasDoUsuario(vagas_repetidas=[recusada])
+    )
+
+    selecionadas, _, _ = rodar([sosia], {"2": 90}, repositorio=repositorio)
+
+    assert selecionadas == []
+
+
+def test_areas_recusadas_chegam_ao_pontuador():
+    capturados = []
+
+    def pontuador_espiao(vagas, extracoes, perfil):
+        capturados.append(perfil.areas_recusadas)
+        return []
+
+    repositorio = RepositorioFalso(
+        [usuario()], recusas=RecusasDoUsuario(areas=[AreaDeInteresse.DADOS_IA])
+    )
+    executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        pontuador_espiao,
+    )
+
+    assert capturados == [[AreaDeInteresse.DADOS_IA]]
 
 
 def test_republicacao_de_vaga_ja_enviada_em_outro_dia_nao_e_reenviada():

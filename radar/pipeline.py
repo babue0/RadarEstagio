@@ -9,6 +9,7 @@ from radar.domain.models import (
     ExtracaoDaVaga,
     Perfil,
     Recomendacao,
+    RecusasDoUsuario,
     ResultadoMatch,
     Usuario,
     Vaga,
@@ -127,6 +128,13 @@ def apagar_contas_no_prazo(repositorio: Repositorio, dias_de_carencia: int) -> N
         logger.info("%d contas apagadas após %d dias de carência", apagadas, dias_de_carencia)
 
 
+def com_areas_recusadas(usuario: Usuario, recusas: RecusasDoUsuario) -> Usuario:
+    if not recusas.areas:
+        return usuario
+    perfil = usuario.perfil.model_copy(update={"areas_recusadas": recusas.areas})
+    return usuario.model_copy(update={"perfil": perfil})
+
+
 def selecionar_usuarios(usuarios: list[Usuario], apenas_o_perfil: UUID | None) -> list[Usuario]:
     if apenas_o_perfil is None:
         return usuarios
@@ -181,13 +189,16 @@ def atender_usuario(
     pontuador: Pontuador,
 ) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
+    recusas = repositorio.recusas_do_usuario(usuario)
+    usuario = com_areas_recusadas(usuario, recusas)
     candidatas = [
         vaga
         for vaga in filtrar(vagas, usuario.perfil)
         if (vaga.fonte, vaga.id_externo) not in ja_enviadas
     ]
     candidatas = remover_republicacoes_de(
-        candidatas, repositorio.vagas_enviadas_recentemente(usuario)
+        candidatas,
+        repositorio.vagas_enviadas_recentemente(usuario) + recusas.vagas_repetidas,
     )
     guardadas = aplicar_regras_objetivas(
         repositorio.avaliacoes_existentes(usuario, candidatas), usuario.perfil
