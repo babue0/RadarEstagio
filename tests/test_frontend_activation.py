@@ -90,25 +90,38 @@ def test_dono_desvincula_o_telegram_e_o_token_e_rotacionado():
     assert "where user_id = auth.uid()" in sql
 
 
-def test_exclusao_da_conta_exige_sessao_e_para_de_entregar_na_hora():
+def test_exclusao_da_conta_exige_sessao_e_so_marca_a_data():
     sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+    corpo = sql.split("create function public.excluir_minha_conta()")[1].split("$$;")[0]
 
-    assert "create function public.excluir_minha_conta()" in sql
-    assert "dono uuid := auth.uid()" in sql
-    assert "raise exception 'sem sessão'" in sql
-    assert "ativo = false" in sql
-    assert "telegram_chat_id = null" in sql
-    assert "excluida_em = coalesce(excluida_em, now())" in sql
+    assert "dono uuid := auth.uid()" in corpo
+    assert "raise exception 'sem sessão'" in corpo
+    assert "excluida_em = coalesce(excluida_em, now())" in corpo
+    assert "ativo" not in corpo
     assert "delete from auth.users" not in sql
+
+
+def test_a_entrega_diaria_ignora_quem_pediu_exclusao():
+    codigo = (RAIZ / "radar/storage/postgres.py").read_text()
+
+    assert "where p.ativo and p.excluida_em is null" in codigo
+
+
+def test_a_limpeza_por_sessao_so_alcanca_evento_sem_dono():
+    codigo = (RAIZ / "radar/storage/postgres.py").read_text()
+    consulta = codigo.split("SQL_APAGAR_EVENTOS_ANONIMOS")[1].split('"""')[1]
+
+    assert "user_id is null" in consulta
 
 
 def test_exclusao_pode_ser_cancelada_enquanto_o_prazo_nao_venceu():
     sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
 
-    assert "create function public.cancelar_exclusao_da_minha_conta()" in sql
-    assert "excluida_em = null" in sql
-    assert "ativo = true" in sql
-    assert "where user_id = auth.uid() and excluida_em is not null" in sql
+    corpo = sql.split("create function public.cancelar_exclusao_da_minha_conta()")[1]
+
+    assert "excluida_em = null" in corpo
+    assert "ativo" not in corpo.split("$$;")[0]
+    assert "where user_id = auth.uid() and excluida_em is not null" in corpo
 
 
 def test_controle_do_perfil_e_fechado_a_visitante_anonimo():
@@ -123,3 +136,21 @@ def test_controle_do_perfil_e_fechado_a_visitante_anonimo():
         assert f"grant execute on function public.{funcao}() to authenticated" in sql
         assert "security definer" in sql
         assert "set search_path = ''" in sql
+
+
+def test_perfil_marcado_para_exclusao_nao_aceita_update_do_site():
+    sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+
+    assert 'drop policy "usuario edita o proprio perfil" on public.perfis' in sql
+    assert "using (auth.uid() = user_id and excluida_em is null)" in sql
+    assert "with check (auth.uid() = user_id and excluida_em is null)" in sql
+
+
+def test_cancelar_a_exclusao_leva_de_volta_ao_vinculo_do_telegram():
+    js = (RAIZ / "web/assets/app.js").read_text()
+    handler = js.split(
+        'querySelector("#cancel-deletion").addEventListener'
+    )[1].split("});")[0]
+
+    assert "mostrarEstadoDoPerfil(profile)" in handler
+    assert "showAccount(profile)" not in handler

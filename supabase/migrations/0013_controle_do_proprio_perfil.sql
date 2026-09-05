@@ -34,9 +34,9 @@ begin
     raise exception 'sem sessão';
   end if;
   update public.perfis
-  set ativo = false,
+  set excluida_em = coalesce(excluida_em, now()),
       telegram_chat_id = null,
-      excluida_em = coalesce(excluida_em, now()),
+      token_vinculo = gen_random_uuid(),
       atualizado_em = now()
   where user_id = dono
   returning excluida_em into marcada;
@@ -53,7 +53,6 @@ as $$
 begin
   update public.perfis
   set excluida_em = null,
-      ativo = true,
       atualizado_em = now()
   where user_id = auth.uid() and excluida_em is not null;
 end;
@@ -65,3 +64,9 @@ revoke all on function public.cancelar_exclusao_da_minha_conta() from public, an
 grant execute on function public.desvincular_meu_telegram() to authenticated;
 grant execute on function public.excluir_minha_conta() to authenticated;
 grant execute on function public.cancelar_exclusao_da_minha_conta() to authenticated;
+
+drop policy "usuario edita o proprio perfil" on public.perfis;
+create policy "usuario edita o proprio perfil"
+  on public.perfis for update
+  using (auth.uid() = user_id and excluida_em is null)
+  with check (auth.uid() = user_id and excluida_em is null);

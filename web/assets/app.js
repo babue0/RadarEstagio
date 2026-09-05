@@ -628,7 +628,7 @@ document.querySelector("#cancel-deletion").addEventListener("click", async () =>
     const { error } = await getClient().rpc("cancelar_exclusao_da_minha_conta");
     if (error) throw error;
     const profile = await perfilAtual();
-    showAccount(profile);
+    mostrarEstadoDoPerfil(profile);
   } catch (error) {
     setAccountMessage(humanizeError(error));
   }
