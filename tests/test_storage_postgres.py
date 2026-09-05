@@ -338,11 +338,12 @@ def test_excluir_marca_e_para_de_entregar_sem_apagar_ainda(
     conexao.execute("select public.excluir_minha_conta()")
 
     conexao.execute("select set_config('role', 'postgres', true)")
-    ativo, excluida = conexao.execute(
-        "select ativo, excluida_em from perfis where id = %s", (usuario.id,)
+    ativo, chat, excluida = conexao.execute(
+        "select ativo, telegram_chat_id, excluida_em from perfis where id = %s", (usuario.id,)
     ).fetchone()
     assert excluida is not None
     assert ativo is True
+    assert chat is None
     assert RepositorioPostgres(conexao).listar_ativos() == []
 
 

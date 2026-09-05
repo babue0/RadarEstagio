@@ -107,6 +107,13 @@ def test_a_entrega_diaria_ignora_quem_pediu_exclusao():
     assert "where p.ativo and p.excluida_em is null" in codigo
 
 
+def test_a_limpeza_por_sessao_so_alcanca_evento_sem_dono():
+    codigo = (RAIZ / "radar/storage/postgres.py").read_text()
+    consulta = codigo.split("SQL_APAGAR_EVENTOS_ANONIMOS")[1].split('"""')[1]
+
+    assert "user_id is null" in consulta
+
+
 def test_exclusao_pode_ser_cancelada_enquanto_o_prazo_nao_venceu():
     sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
 

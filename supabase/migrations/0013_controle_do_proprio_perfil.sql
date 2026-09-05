@@ -35,6 +35,8 @@ begin
   end if;
   update public.perfis
   set excluida_em = coalesce(excluida_em, now()),
+      telegram_chat_id = null,
+      token_vinculo = gen_random_uuid(),
       atualizado_em = now()
   where user_id = dono
   returning excluida_em into marcada;
