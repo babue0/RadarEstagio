@@ -14,8 +14,11 @@ com o Telegram, matching de compatibilidade por IA, entrega da mensagem ranquead
 agendamento diário, deduplicação e histórico entre execuções, ativação operacional registrada
 na primeira recomendação entregue e funil instrumentado da landing à primeira recomendação.
 
-Ainda não disponível: feedback influenciando o ranking, painel web de métricas e novas fontes
-além de Adzuna e Gupy.
+Ainda não disponível: painel web de métricas e novas fontes além de Adzuna e Gupy. O feedback
+já molda o ranking na v1 (05/09/2026): "já vi essa" alimenta o filtro de republicação do
+usuário, e subárea com 2+ recusas por "não é da minha área" em 30 dias perde o fator de
+interesse (teto 65 e aviso próprio), tudo por usuário e sem IA; "pedem demais", "local ou
+modalidade" e o reforço positivo de "vaga útil" ficam para a v2, com dados do piloto.
 
 Pendências da Fase 2: validar o produto com estudantes. A cota do Gemini deixou de ser pendência
 em 03/09/2026: a extração passou a ser por vaga e reaproveitada entre usuários, então o custo não
