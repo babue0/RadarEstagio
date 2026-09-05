@@ -1,16 +1,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { redirecionarPara, tokenDaRequisicao } from "./redirecionamento.ts";
-import {
-  type PerfilDoDestinatario,
-  podeProcessarInteracao,
-} from "../_shared/privacidade.ts";
-
-interface EnvioDaVaga {
-  perfilId: string;
-  userId: string;
-  vagaId: number;
-  url: string;
-}
+import { type PerfilDoDestinatario } from "../_shared/privacidade.ts";
+import { destinoDoEnvio, type EnvioDaVaga } from "./navegacao.ts";
 
 const urlDaLandingConfigurada = Deno.env.get("URL_DA_LANDING");
 if (!urlDaLandingConfigurada) {
@@ -36,12 +27,13 @@ async function envioDoToken(token: string): Promise<EnvioDaVaga | null> {
   if (!data) return null;
   const vaga = data.vagas as unknown as { url: string } | null;
   const perfil = data.perfis as unknown as PerfilDoDestinatario | null;
-  if (!vaga || !perfil || !podeProcessarInteracao(perfil)) return null;
+  if (!vaga || !perfil) return null;
   return {
     perfilId: data.perfil_id,
     userId: perfil.user_id,
     vagaId: data.vaga_id,
     url: vaga.url,
+    perfil,
   };
 }
 
@@ -63,14 +55,7 @@ async function destinoDoToken(
   const token = tokenDaRequisicao(url);
   if (!token) return urlDaLanding;
   const envio = await envioDoToken(token);
-  if (!envio) return urlDaLanding;
-  if (!registrar) return envio.url;
-  try {
-    await registrarVagaAberta(envio);
-  } catch (erro) {
-    console.error("vaga_aberta não foi registrada", erro);
-  }
-  return envio.url;
+  return destinoDoEnvio(envio, urlDaLanding, registrar, registrarVagaAberta);
 }
 
 Deno.serve(async (requisicao) => {
