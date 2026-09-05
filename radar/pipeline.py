@@ -203,9 +203,13 @@ def atender_usuario(
         len(novas),
         len(selecionadas),
     )
+    if not destinatario_ainda_ativo(repositorio, usuario):
+        return None
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
     if not selecionadas:
         avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora)
+        return None
+    if not destinatario_ainda_ativo(repositorio, usuario):
         return None
     try:
         notificador.enviar(
@@ -216,7 +220,8 @@ def atender_usuario(
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
         pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
         return None
-    perguntar_o_que_nao_serviu(notificador, usuario, selecionadas)
+    if destinatario_ainda_ativo(repositorio, usuario):
+        perguntar_o_que_nao_serviu(notificador, usuario, selecionadas)
     try:
         repositorio.registrar_envios(usuario, selecionadas)
     except ErroDeArmazenamento as erro:
@@ -224,6 +229,14 @@ def atender_usuario(
             "usuário %s: mensagem enviada, mas o envio não foi gravado: %s", usuario.id, erro
         )
     return selecionadas
+
+
+def destinatario_ainda_ativo(repositorio: Repositorio, usuario: Usuario) -> bool:
+    try:
+        return repositorio.pode_entregar(usuario)
+    except ErroDeArmazenamento as erro:
+        logger.warning("destinatário %s não pôde ser revalidado: %s", usuario.id, erro)
+        return False
 
 
 def perguntar_o_que_nao_serviu(
@@ -252,6 +265,8 @@ def avisar_que_nao_houve_vaga(
     agora: datetime,
 ) -> None:
     dias = dias_de_silencio_a_relatar(usuario, agora, parametros.dias_de_silencio_ate_avisar)
+    if not destinatario_ainda_ativo(repositorio, usuario):
+        return
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora.date(), dias))
     except ErroDeNotificacao as erro:

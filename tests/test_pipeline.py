@@ -293,6 +293,53 @@ def test_envia_vagas_ordenadas_por_nota():
     assert texto.index("Empresa 2") < texto.index("Empresa 3") < texto.index("Empresa 1")
 
 
+def test_nao_envia_se_conta_sai_durante_a_coleta():
+    repositorio = RepositorioFalso([usuario()])
+    notificador = NotificadorFalso()
+
+    class ColetorComSaida(ColetorFalso):
+        def coletar(self):
+            repositorio._usuarios.clear()
+            return super().coletar()
+
+    executar(
+        ColetorComSaida([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+    assert not notificador.textos
+    assert not notificador.perguntas
+    assert not repositorio.avaliacoes_gravadas
+    assert not repositorio.envios_gravados
+
+
+def test_nao_envia_para_chat_trocado_durante_a_avaliacao():
+    class RepositorioComNovoChat(RepositorioFalso):
+        def guardar_avaliacoes(self, usuario, avaliadas, modelo):
+            super().guardar_avaliacoes(usuario, avaliadas, modelo)
+            self._usuarios = [usuario.model_copy(update={"chat_id": "outro"})]
+
+    repositorio = RepositorioComNovoChat([usuario()])
+    selecionadas, notificador, _ = rodar([vaga(1)], {"1": 90}, repositorio=repositorio)
+    assert not selecionadas
+    assert not notificador.textos
+    assert not repositorio.envios_gravados
+
+
+def test_falha_na_revalidacao_impede_tambem_aviso_sem_vagas():
+    class RepositorioIndisponivel(RepositorioFalso):
+        def pode_entregar(self, usuario):
+            raise ErroDeArmazenamento("banco indisponível")
+
+    _, notificador, _ = rodar([], {}, repositorio=RepositorioIndisponivel([usuario()]))
+    assert not notificador.textos
+    assert not notificador.perguntas
+
+
 def test_corta_na_quantidade_configurada():
     selecionadas, notificador, _ = rodar(
         [vaga(1), vaga(2), vaga(3)], {"1": 40, "2": 90, "3": 70}, quantidade=2
