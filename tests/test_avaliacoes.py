@@ -204,6 +204,39 @@ def test_match_total_de_habilidades_fora_do_interesse_fica_limitado_a_65():
     assert resultado.avisos_objetivos == ["Fora das suas áreas de interesse"]
 
 
+def test_area_recusada_zera_o_interesse_e_limita_a_65_com_aviso():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_recusadas = [AreaDeInteresse.DADOS_IA]
+
+    resultado = resultado_da(
+        extracao(habilidades_obrigatorias=["Python"], areas_da_vaga=["dados_ia"]), candidato
+    )
+
+    assert resultado.nota <= 65
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+
+
+def test_area_recusada_vale_mesmo_sem_interesses_declarados():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_de_interesse = []
+    candidato.areas_recusadas = [AreaDeInteresse.SUPORTE_TECNICO]
+
+    resultado = resultado_da(extracao(areas_da_vaga=["suporte_tecnico"]), candidato)
+
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+
+
+def test_area_recusada_prevalece_sobre_o_interesse_declarado():
+    candidato = perfil(habilidades=["Python"])
+    candidato.areas_de_interesse = [AreaDeInteresse.DADOS_IA]
+    candidato.areas_recusadas = [AreaDeInteresse.DADOS_IA]
+
+    resultado = resultado_da(extracao(areas_da_vaga=["dados_ia"]), candidato)
+
+    assert resultado.nota <= 65
+    assert resultado.avisos_objetivos == ["Área que você recusou nos últimos dias"]
+
+
 def test_perfil_sem_interesses_nao_e_penalizado_por_area_da_vaga():
     resultado = resultado_da(extracao(areas_da_vaga=["infraestrutura_redes"]))
 

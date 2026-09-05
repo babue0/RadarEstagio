@@ -76,6 +76,7 @@ class Perfil(BaseModel):
     cidade: str
     modalidade: Modalidade
     areas_de_interesse: list[AreaDeInteresse] = Field(default_factory=list)
+    areas_recusadas: list[AreaDeInteresse] = Field(default_factory=list)
 
     def nome_da_cidade(self) -> str:
         return self.cidade.split(",")[0].strip()
