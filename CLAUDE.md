@@ -273,6 +273,12 @@ modalidade e, em empate, a de descrição mais longa.
   existiram sem leitor nem escritor e saíram na migration `0012` (04/09/2026); só voltam junto da
   tela que as escreva, e se o piloto mostrar que alguém quer mais de uma cidade.
 - Com o webhook do `/start` ativo, **`getUpdates` deixa de funcionar nesse bot**.
+- O `TELEGRAM_WEBHOOK_SECRET` vive em três lugares que precisam do MESMO valor: o
+  `setWebhook` no Telegram, os secrets do Supabase (`supabase secrets set`) e os `.env`
+  locais. Divergência vira 401 silencioso em todo update (aconteceu em 04-05/09/2026: um
+  re-registro usou o segredo de um `.env` dessincronizado e cliques/vínculos se perderam
+  por ~12 h). Ao mexer no webhook, conferir `getWebhookInfo` depois: `last_error_message`
+  vazio e `pending_update_count` zerando.
 - O `setWebhook` precisa de `allowed_updates=["message","callback_query"]` (corrigido em
   04/09/2026): o registro original só aceitava `message` e o Telegram descartava os cliques
   dos botões de feedback antes de chegarem à função. Ao re-registrar o webhook, sempre
