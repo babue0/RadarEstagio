@@ -177,7 +177,7 @@ def executar_fluxo(
                 nota_minima=settings.nota_minima,
                 falhas_ate_pausar=settings.falhas_de_envio_ate_pausar,
                 dias_de_silencio_ate_avisar=settings.dias_de_silencio_ate_avisar,
-            dias_ate_apagar_conta_excluida=settings.dias_ate_apagar_conta_excluida,
+                dias_ate_apagar_conta_excluida=settings.dias_ate_apagar_conta_excluida,
                 url_de_rastreio=url_de_rastreio_utilizavel(settings),
             ),
             agora,
@@ -188,7 +188,9 @@ def executar_fluxo(
         raise
     print(
         f"{resumo.vagas_enviadas()} vagas enviadas para {resumo.atendidos()} usuários "
-        f"em {extrator.requisicoes} requisições ao avaliador"
+        f"em {extrator.requisicoes} requisições ao avaliador; "
+        f"{resumo.usuarios_com_falha_de_revalidacao} usuários com falha de revalidação, "
+        f"{resumo.usuarios_sem_entrega_por_falha_de_revalidacao} sem entrega por essa falha"
     )
     avisar_operacao(
         settings,
@@ -200,6 +202,8 @@ def executar_fluxo(
             resumo.vagas_enviadas(),
             resumo.vagas_coletadas,
             extrator.requisicoes,
+            resumo.usuarios_com_falha_de_revalidacao,
+            resumo.usuarios_sem_entrega_por_falha_de_revalidacao,
         ),
     )
 

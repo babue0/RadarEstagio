@@ -92,7 +92,8 @@ A Fase 1 não usava banco. O Passo 9 (Fase 2) adicionou o Supabase como opcional
 `perfis`, `vagas`, `avaliacoes`, `envios` e `eventos_produto`, todas com RLS; `perfis` limita
 o usuário à própria linha e `eventos_produto` limita o navegador ao catálogo web permitido.
 O pipeline só conhece `Repositorio`; a falha de leitura dos usuários é a única fatal,
-erros ao enviar ou gravar de um usuário viram aviso. Nunca alterar tabela pelo painel — só
+erros ao enviar ou gravar de um usuário viram aviso. Revalidação indisponível bloqueia a mensagem daquele destinatário por
+privacidade e aparece no resumo de operação; os demais usuários continuam. Nunca alterar tabela pelo painel — só
 por migration em `supabase/migrations/`.
 
 ### Bibliotecas
@@ -283,7 +284,8 @@ modalidade e, em empate, a de descrição mais longa.
   do clique deixa de valer depois do vínculo.
 - Pendência externa: configurar o redirect do Auth para `http://localhost:8000`.
 - No pipeline, a falha de leitura dos usuários é a única fatal; erros ao enviar ou gravar de um
-  usuário viram aviso.
+  usuário viram aviso. Falhas de revalidação são contadas por usuário no resumo e bloqueiam a
+  mensagem afetada; o resumo distingue quem ficou sem entrega de quem já recebeu antes da falha.
 - **A avaliação é gravada antes do envio** e os `envios` depois: falha do Telegram não descarta o
   que a IA já custou. Falhas seguidas incrementam `perfis.falhas_de_envio` e, ao atingir
   `FALHAS_DE_ENVIO_ATE_PAUSAR`, o perfil sai de `ativo` emitindo `entregas_pausadas`.

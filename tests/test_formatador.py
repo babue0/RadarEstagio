@@ -316,3 +316,9 @@ def test_falha_da_execucao_escapa_a_mensagem_do_erro():
 
     assert "26/08/2026 falhou" in texto
     assert "Gemini &lt;429&gt; &amp; cota" in texto
+
+
+def test_resumo_avisa_operacao_sobre_revalidacao_indisponivel():
+    texto = formatar_resumo_da_execucao(DATA_DE_TESTE, 12, 9, 31, 480, 18, 3, 2)
+    assert "Usuários com falha de revalidação: 3" in texto
+    assert "Sem entrega por falha de revalidação: 2" in texto

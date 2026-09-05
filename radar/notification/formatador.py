@@ -103,6 +103,8 @@ def formatar_resumo_da_execucao(
     vagas_enviadas: int,
     vagas_coletadas: int,
     requisicoes: int,
+    falhas_de_revalidacao: int = 0,
+    sem_entrega_por_revalidacao: int = 0,
 ) -> str:
     return (
         f"🛠️ <b>Radar — execução de {data.strftime('%d/%m/%Y')}</b>\n"
@@ -110,7 +112,9 @@ def formatar_resumo_da_execucao(
         f"Receberam recomendação: {atendidos}\n"
         f"Vagas enviadas: {vagas_enviadas}\n"
         f"Vagas coletadas: {vagas_coletadas}\n"
-        f"Requisições ao avaliador: {requisicoes}"
+        f"Requisições ao avaliador: {requisicoes}\n"
+        f"Usuários com falha de revalidação: {falhas_de_revalidacao}\n"
+        f"Sem entrega por falha de revalidação: {sem_entrega_por_revalidacao}"
     )
 
 

@@ -688,3 +688,52 @@ def test_a_execucao_apaga_as_contas_que_venceram_a_carencia():
     executar_com(repositorio, [vaga(1)], {"1": 70})
 
     assert repositorio.carencias_aplicadas == [60]
+
+
+def test_resumo_conta_falha_de_revalidacao_sem_interromper_outros_usuarios():
+    class RepositorioComFalhaParcial(RepositorioFalso):
+        def pode_entregar(self, destinatario):
+            if destinatario.id == ID_USUARIO:
+                raise ErroDeArmazenamento("indisponível")
+            return super().pode_entregar(destinatario)
+
+    repositorio = RepositorioComFalhaParcial([usuario(), usuario(ID_OUTRO_USUARIO, "456")])
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        NotificadorFalso(),
+        repositorio,
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+    assert resumo.usuarios_com_falha_de_revalidacao == 1
+    assert resumo.usuarios_sem_entrega_por_falha_de_revalidacao == 1
+    assert resumo.atendidos() == 1
+    assert ID_OUTRO_USUARIO in resumo.enviadas_por_usuario
+
+
+def test_falha_apos_entrega_nao_apaga_sucesso_do_resumo():
+    class RepositorioComFalhaNoFeedback(RepositorioFalso):
+        consultas = 0
+
+        def pode_entregar(self, destinatario):
+            self.consultas += 1
+            if self.consultas == 3:
+                raise ErroDeArmazenamento("indisponível")
+            return True
+
+    notificador = NotificadorFalso()
+    resumo = executar(
+        ColetorFalso([vaga(1)]),
+        ExtratorFalso({"1": 90}),
+        notificador,
+        RepositorioComFalhaNoFeedback([usuario()]),
+        parametros(),
+        AGORA_DE_TESTE,
+        PontuadorFalso({"1": 90}),
+    )
+    assert resumo.usuarios_com_falha_de_revalidacao == 1
+    assert resumo.usuarios_sem_entrega_por_falha_de_revalidacao == 0
+    assert resumo.atendidos() == 1
+    assert not notificador.perguntas
