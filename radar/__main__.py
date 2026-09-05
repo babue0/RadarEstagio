@@ -218,12 +218,12 @@ def avisar_operacao(settings: Settings, notificador: NotificadorTelegram, texto:
         print(f"Resumo da execução não foi entregue: {erro}", file=sys.stderr)
 
 
-def rodar(settings: Settings) -> None:
+def rodar(settings: Settings, apenas_o_perfil: UUID | None = None) -> None:
     with (
         httpx.Client(timeout=TIMEOUT_HTTP_EM_SEGUNDOS) as cliente_http,
         abrir_repositorio(settings) as repositorio,
     ):
-        executar_fluxo(settings, cliente_http, repositorio)
+        executar_fluxo(settings, cliente_http, repositorio, apenas_o_perfil)
 
 
 def testar_local(settings: Settings) -> None:
