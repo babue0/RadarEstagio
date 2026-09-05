@@ -1,5 +1,14 @@
 # Plano — cadastro, consentimento e privacidade
 
+
+> Atualização de execução — 05/09: deploy adiado pelo Igor. O bloco de cadastro e privacidade
+> está implementado localmente (migrations `0014`–`0016`, frontend e proteção das entregas),
+> ainda sem aplicação remota. Resend foi verificado e o SMTP salvo pelo Igor, mas a entrega real
+> não foi testada. Os documentos permanecem em revisão. As descrições de lacunas abaixo
+> registram o diagnóstico original; o estado atual e os passos externos estão no
+> [guia de publicação e piloto](guia-publicacao-e-piloto.md). Feedback, métricas e entrega
+> imediata permanecem pendentes.
+
 **Data:** 05/09/2026 (revisto)
 
 **Escopo:** o cadastro de ponta a ponta, os dois documentos legais e o que a LGPD exige do
