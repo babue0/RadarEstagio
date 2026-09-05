@@ -193,6 +193,11 @@ Pesos em `matching/avaliacoes.py`. O que motivou cada trava:
   nome exato era ignorado e a variante pesava — uma vaga de dados caiu para 68 penalizada por
   Google Docs, Drive e Excel. A normalização é por alias, não por pedaço de palavra, para
   `WordPress` não virar `Word`.
+- **Modalidade extraída preenche a lacuna da fonte** (05/09/2026): a Adzuna não traz
+  modalidade estruturada, então a IA extrai o regime declarado no texto ("remoto",
+  "hibrido", "presencial", null se o anúncio não diz — nunca deduzido pela cidade). A
+  modalidade da fonte prevalece; a extraída vale na logística, na trava de perfil remoto e
+  no rótulo da mensagem. Valor fora do vocabulário vira null sem derrubar o lote.
 - **Tecnologias comparadas por nome normalizado e exato**, de modo que `Java` não corresponde a
   `JavaScript`.
 - **Área de interesse** (01/09/2026): a IA classifica a vaga em subáreas de um catálogo fechado
