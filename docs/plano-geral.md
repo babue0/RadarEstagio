@@ -61,16 +61,42 @@ serviram", e o "Todas serviram" apenas apaga a mensagem, sem gravar evento. O "C
 deliberadamente deixado de fora do teclado diário, para a pergunta do dia seguinte — que ainda não
 existe.
 
-Duas saídas, e a escolha muda o produto:
+Duas saídas foram consideradas, e nenhuma delas foi a escolhida:
 
-- **"Todas serviram" passa a gravar `vaga_util`** para as vagas do dia. Barato, mas é sinal fraco:
+- **"Todas serviram" passa a gravar `vaga_util`** para as vagas do dia. Barato, mas sinal fraco:
   não reclamar não é o mesmo que ter servido.
-- **A pergunta do dia seguinte**, só para as vagas que a pessoa abriu: *"ontem você abriu X.
-  Serviu?"* com 👍, 👎 e "já me candidatei". Sinal forte, porque só pergunta onde houve interesse
-  real, e é onde o "Candidatei-me" faz sentido. Depende de `vaga_aberta` estar funcionando.
+- **A pergunta do dia seguinte**, só para as vagas que a pessoa abriu. Sinal forte, mas depende de
+  `vaga_aberta` estar no ar e acrescenta uma segunda notificação por dia.
 
-Recomendação: a segunda, aceitando que a North Star só fica medível depois que o link rastreável
-estiver no ar. A primeira como paliativo se o piloto começar antes.
+**Decidido em 05/09: o feedback é por vaga, dentro da própria mensagem.** Os números deixam de
+significar recusa e passam a abrir o feedback daquela vaga. A mensagem diária termina em "Deixe seu
+feedback 👇" com um número por recomendação, e o clique abre uma segunda mensagem, com a vaga e
+seis opções:
+
+| Botão | O que grava |
+|---|---|
+| 👍 Essa serviu | `vaga_util` |
+| 👎 A nota não fez sentido | `vaga_irrelevante` · `motivo_nota` |
+| 👎 Não é da minha área | `vaga_irrelevante` · `motivo_area` |
+| 👎 Pedem demais | `vaga_irrelevante` · `motivo_exigencia` |
+| 👎 Local ou modalidade | `vaga_irrelevante` · `motivo_logistica` |
+| 👎 Já vi essa | `vaga_irrelevante` · `motivo_repetida` |
+
+**Não precisa de migration**: `vaga_util` já está no enum da `0005` e o motivo vai em
+`propriedades`, que é `jsonb` sem restrição de conteúdo. É mudança só de código, na
+`telegram-webhook` e no formatador da mensagem.
+
+`motivo_nota` não existia em nenhuma das duas saídas descartadas e é o ganho menos óbvio da
+escolha. Ele é o sinal que a seção 7 da `auditoria-rcd.md` exige para mexer nos pesos do ranking:
+a recusa de hoje não distingue "a vaga não serve para mim" de "a vaga serve, a nota é que está
+errada", e só a segunda justifica ajustar peso.
+
+**`candidatura_iniciada` fica sem emissor, e isso é deliberado.** O botão "Já me candidatei" saiu
+do teclado porque quem se candidata também acha que a vaga serviu — o 👍 cobre a North Star
+sozinho. O custo é que **Candidatura atribuída**, definida no `CONTEXT.md`, deixa de ser medível, e
+a definição de vaga útil lá ("feedback positivo **ou** início de candidatura") passa a valer só
+pela primeira metade. Alinhar o `CONTEXT.md` a isso, ou recuperar a captura junto da pergunta do
+dia seguinte, se o piloto mostrar que faz falta.
 
 ## 4. O que falta, em ordem
 
@@ -135,26 +161,42 @@ cria o perfil na confirmação, a tela de reenvio, o Turnstile, baixar os dados 
 
 Sem a fase C o piloto roda e não mede o que importa.
 
-### Fase D — piloto
+### Fase D — entrega imediata (sprint 2)
+
+**Decidido em 05/09: o sprint 2 entra antes do piloto.** A auditoria trata a demora até a primeira
+entrega — hoje até 24 horas, contra a meta de 15 minutos — como bloqueador, e o
+`plano-melhorias-rcd.md` exige que os limites sejam aprovados antes de começar. Dispensar o
+bloqueador em silêncio era a pior das saídas possíveis.
+
+A regra acordada: **quem vincula o Telegram recebe a primeira mensagem na hora.** O gatilho é o
+clique no botão do Telegram, não o cadastro nem o login — antes dele não existe `chat_id` para onde
+enviar. A exceção é quem vincula na hora anterior ao disparo diário, entre **06:23 e 07:23** de
+Brasília: esse espera o job das 07:23, para não receber duas mensagens na mesma manhã.
+
+10. Fazer a `telegram-webhook` disparar a execução ao gravar o `chat_id`, respeitando a janela
+11. Rodar o pipeline para um perfil só, sem afetar a execução diária dos demais
+
+O trabalho não está em `radar/` e não é trivial: hoje **nada roda sob demanda**, o job é um cron no
+GitHub Actions. Quem descobre o vínculo é a Edge Function `telegram-webhook`, então é ela que
+precisa disparar um `repository_dispatch` no Actions — o que exige um token com permissão de
+escrita, o mesmo obstáculo que devolveu 403 na rotina da nuvem.
+
+### Fase E — piloto
 
 Descrito no sprint 4 de `auditoria-rcd.md`: 10 a 20 estudantes, duas semanas, cinco entrevistas,
-canais identificados. Só faz sentido depois da fase C.
-
-**Uma decisão precisa ser tomada antes.** A auditoria trata a demora até a primeira entrega — hoje
-até 24 horas, contra a meta de 15 minutos — como bloqueador do piloto, e o
-`plano-melhorias-rcd.md` exige que os limites sejam aprovados antes de começar. Este plano coloca o
-piloto depois da fase C sem resolver isso. Ou o sprint 2 entra antes, ou o grupo dispensa o
-bloqueador explicitamente e registra o porquê. Deixar implícito é o pior dos três.
+canais identificados. Só faz sentido depois das fases C e D.
 
 ## 5. Decisões em aberto
 
 | Assunto | Situação |
 |---|---|
 | Viés do ranking: anúncio raso tira nota maior | decidido esperar dado do piloto; evidência já registrada na seção 7 da auditoria |
-| Dados pessoais no histórico do git | trocar o arquivo não apagou o histórico; reescrever quebra os clones — decisão do grupo |
+| Dados pessoais no histórico do git | **decidido em 05/09: fica como está.** O perfil real do usuário nº 1 segue legível nos commits de 25/08 a 04/09, mas é curso, período, cidade e stack — sem nome, contato ou credencial. Reescrever obrigaria todo mundo a reclonar para remover dado de baixa sensibilidade. Conferido: nenhum `chat_id`, token ou e-mail de usuário no histórico |
 | Apagar conta abandonada | fora do escopo agora; revisitar depois do piloto |
-| Sprint 2 (busca imediata após o vínculo) | não começou; meta de 15 minutos até a primeira entrega segue não atendida |
-| Remetente do e-mail | domínio comprado; falta decidir se o Resend entra antes do piloto — hoje o cadastro não sustenta a coorte |
+| Sprint 2 (busca imediata após o vínculo) | **decidido em 05/09: entra antes do piloto**, com a janela de 06:23 a 07:23 como exceção. Virou a fase D |
+| Remetente do e-mail | **decidido em 05/09: o Resend entra antes do piloto.** Sem remetente próprio o cadastro não sustenta 10 a 20 pessoas na mesma tarde |
+| Domínio em nome de quem | **decidido em 05/09: conta pessoal do Igor.** Registrar por escrito quem paga a renovação e o que acontece com o domínio quando a disciplina terminar |
+| `.agents/skills` no repositório público | **decidido em 05/09: fica.** Fecha a pendência antiga; as licenças de origem estão no `.agents/skills/README.md` |
 
 ## 6. Onde está cada coisa
 

@@ -186,7 +186,7 @@ defeitos reais que a primeira não viu, o que vale repetir nas próximas.
 | O quê | Trava o quê |
 |---|---|
 | ~~Domínio~~ | **comprado em 05/09.** Falta criar o endereço de contato e apontar o DNS |
-| Resend | **deixou de ser cosmético.** Com o domínio na mão, o remetente compartilhado do Supabase é o que impede o cadastro de sustentar 10 a 20 pessoas na mesma tarde: são poucos e-mails por hora e caem em spam. Entrar não depende de e-mail; cadastrar sim |
+| Resend | **decidido em 05/09: entra antes do piloto.** Com o domínio na mão, o remetente compartilhado do Supabase é o que impede o cadastro de sustentar 10 a 20 pessoas na mesma tarde: são poucos e-mails por hora e caem em spam. Entrar não depende de e-mail; cadastrar sim |
 | Chaves do Turnstile | pública no `web/config.js`, secreta no Supabase |
 
 O passo 8 fica pronto e inerte até as chaves do Turnstile existirem — mesma situação da Edge
