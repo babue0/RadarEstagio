@@ -20,6 +20,18 @@ const HORARIO_DA_BUSCA = "todo dia por volta das 7h20 da manhã";
 const MENSAGEM_SEM_SESSAO = "Sua sessão expirou. Feche e entre de novo para continuar.";
 const MENSAGEM_SEM_PERFIL = "Não encontramos seu perfil. Feche e entre de novo.";
 const DIAS_ATE_APAGAR = 60;
+const VERSAO_DOS_TERMOS = "2026-09-05";
+let assistanceMode = null;
+let recoverySession = false;
+let resendAvailableAt = 0;
+let resendTimer = null;
+let captchaWidget = null;
+let captchaToken = "";
+const authReturn = new URLSearchParams(window.location.hash.slice(1));
+const authQuery = new URLSearchParams(window.location.search);
+const returningFromAuth = authReturn.has("access_token") || authQuery.has("code");
+const returningFromRecovery = authReturn.get("type") === "recovery" || authQuery.get("fluxo") === "recuperar";
+const authLinkError = authReturn.get("error_code") || authQuery.get("error_code") || authReturn.get("error") || authQuery.get("error");
 const pendingProfileKey = "radar-perfil-pendente";
 const eventSessionKey = "radar-sessao-eventos";
 const landingViewKey = "radar-landing-vista";
@@ -36,6 +48,7 @@ const mensagensValidacao = {
   cidade: "Informe uma cidade válida para continuar.",
   modalidade: "Escolha uma modalidade para continuar.",
   email: "Digite um e-mail válido para continuar.",
+  aceitou_termos: "Aceite os Termos de Uso e a Política de Privacidade para continuar.",
   senha: "Use uma senha com pelo menos 8 caracteres para continuar.",
 };
 
@@ -49,6 +62,12 @@ function getClient() {
   }
   radarClient = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  });
+  radarClient.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      recoverySession = true;
+      window.setTimeout(() => showAssistance("new-password"), 0);
+    }
   });
   return radarClient;
 }
@@ -114,6 +133,7 @@ function validateStep(step) {
     `.form-step[data-step="${step}"] input:not([type="hidden"]), .form-step[data-step="${step}"] select`,
   )];
   const invalid = fields.find((field) => {
+    if (authMode === "login" && !["email", "senha"].includes(field.name)) return false;
     if (field.name === "cidade" && field.value.trim().length < 2) return true;
     if (field.name === "modalidade" && !modalidadesAceitas.has(form.elements.modalidade.value)) return true;
     return !field.checkValidity();
@@ -122,6 +142,11 @@ function validateStep(step) {
     setFormMessage(mensagensValidacao[invalid.name] ?? "Revise os campos antes de continuar.");
     invalid.reportValidity();
     invalid.focus();
+    return false;
+  }
+  if (step === 3 && authMode === "signup" && !editandoPerfilExistente && !form.elements.aceitou_termos.checked) {
+    setFormMessage(mensagensValidacao.aceitou_termos);
+    form.elements.aceitou_termos.focus();
     return false;
   }
   return true;
@@ -174,7 +199,7 @@ function humanizeError(error, { profilePending = false } = {}) {
   }
   if (error?.name === "RadarValidationError") return error.message;
   if (profilePending) {
-    return "Sua conta foi criada, mas o perfil ainda não foi salvo. Seus dados continuam salvos neste navegador. Tente enviar novamente.";
+    return "Sua conta foi criada, mas o perfil ainda não foi salvo. Entre novamente para concluir o perfil.";
   }
   if (code === "user_already_exists" || code === "email_exists" || message.includes("user already registered")) {
     return "Já existe uma conta com esse e-mail. Escolha “Entrar” ou use outro e-mail.";
@@ -225,6 +250,12 @@ function setSubmitting(submitting) {
 
 function setAuthMode(mode) {
   authMode = mode;
+  document.querySelector("#signup-consent").hidden = mode !== "signup";
+  form.elements.aceitou_termos.required = mode === "signup";
+  document.querySelectorAll('.form-step[data-step="3"] .field-grid > .field').forEach((field) => {
+    field.hidden = mode === "login";
+  });
+  document.querySelector("#previous-step").hidden = mode === "login";
   const password = form.elements.senha;
   password.autocomplete = mode === "signup" ? "new-password" : "current-password";
   toggleAuthMode.textContent = mode === "signup" ? "Entrar" : "Criar conta";
@@ -241,18 +272,26 @@ function sairDoModoEdicao() {
   accountSwitch.hidden = false;
   form.elements.email.required = true;
   form.elements.senha.required = true;
+  document.querySelector("#signup-consent").hidden = authMode !== "signup";
+  form.elements.aceitou_termos.required = authMode === "signup";
 }
 
 function entrarNoModoEdicao() {
+  setAuthMode("signup");
   editandoPerfilExistente = true;
   credenciais.hidden = true;
   accountSwitch.hidden = true;
   form.elements.email.required = false;
   form.elements.senha.required = false;
+  document.querySelector("#signup-consent").hidden = true;
+  form.elements.aceitou_termos.required = false;
   submitProfile.textContent = "Salvar alterações";
 }
 
 function resetDialogView() {
+  assistanceMode = null;
+  document.querySelector("#auth-assistance").hidden = true;
+  document.querySelector("#captcha-container").hidden = false;
   sairDoModoEdicao();
   form.hidden = false;
   successState.hidden = true;
@@ -307,10 +346,6 @@ function profileFromForm() {
   return profile;
 }
 
-function savePendingProfile(profile) {
-  localStorage.setItem(pendingProfileKey, JSON.stringify(profile));
-}
-
 function readPendingProfile() {
   try {
     return JSON.parse(localStorage.getItem(pendingProfileKey));
@@ -324,6 +359,9 @@ function clearPendingProfile() {
 }
 
 function showSuccess({ kicker, title, copy, token, linked = false }) {
+  accountState.hidden = true;
+  document.querySelector("#auth-assistance").hidden = true;
+  document.querySelector("#captcha-container").hidden = true;
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = false;
@@ -342,15 +380,13 @@ function showSuccess({ kicker, title, copy, token, linked = false }) {
 }
 
 function showConfirmation(email) {
-  showSuccess({
-    kicker: "Confirme seu e-mail",
-    title: "Falta só confirmar sua conta.",
-    copy: `Enviamos um link para ${email}. Abra-o neste navegador para salvar o perfil e ativar o Telegram.`,
-  });
+  showAssistance("resend", email);
+  setFormMessage("Se o cadastro foi aceito, você receberá um link. Confirme em qualquer aparelho para continuar.");
+  startResendCooldown();
 }
 
 function mostrarEstadoDoPerfil(profile) {
-  if (profile.telegram_chat_id) {
+  if (profile.telegram_chat_id || profile.excluida_em) {
     showAccount(profile);
     return;
   }
@@ -402,6 +438,11 @@ function estadoDasEntregas(profile) {
 }
 
 function showAccount(profile) {
+  document.querySelector("#auth-assistance").hidden = true;
+  document.querySelector("#captcha-container").hidden = true;
+  document.querySelector("#account-emails").checked = Boolean(profile.aceita_emails);
+  document.querySelector("#account-emails").disabled = Boolean(profile.excluida_em);
+  document.querySelector("#edit-profile").hidden = Boolean(profile.excluida_em);
   form.hidden = true;
   progressWrap.hidden = true;
   successState.hidden = true;
@@ -472,47 +513,56 @@ async function currentSession() {
 async function loadProfile(userId) {
   const { data, error } = await getClient()
     .from("perfis")
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em")
+    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em,aceita_emails,termos_aceitos_em,versao_dos_termos")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
   return data;
 }
 
-async function persistProfile(userId, profile) {
-  const existing = await loadProfile(userId);
-  const fields = { ...profile, atualizado_em: new Date().toISOString() };
-  const query = existing
-    ? getClient().from("perfis").update(fields).eq("user_id", userId)
-    : getClient().from("perfis").insert({ user_id: userId, ...profile });
-  const { data, error } = await query
-    .select("curso,periodo,habilidades,cidade,modalidade,areas_de_interesse,telegram_chat_id,token_vinculo,ativo,excluida_em")
-    .single();
-  if (error) throw error;
-  clearPendingProfile();
-  void registerEvent("perfil_salvo");
-  return data;
+function cadastroFromProfile(profile) {
+  return {
+    perfil: profile,
+    aceitou_termos: form.elements.aceitou_termos.checked,
+    aceita_emails: form.elements.aceita_emails.checked,
+    versao_dos_termos: VERSAO_DOS_TERMOS,
+    sessao_id: eventSessionId(),
+  };
 }
 
-async function authenticate(email, password) {
-  if (authMode === "login") {
-    const { data, error } = await getClient().auth.signInWithPassword({ email, password });
+async function persistProfile(userId, profile) {
+  const existing = await loadProfile(userId);
+  if (existing) {
+    const { error } = await getClient().from("perfis")
+      .update({ ...profile, atualizado_em: new Date().toISOString() }).eq("user_id", userId).select("user_id").single();
+    if (error) throw error;
+  } else {
+    const { error } = await getClient().rpc("concluir_meu_cadastro", { cadastro: cadastroFromProfile(profile) });
+    if (error) throw error;
+  }
+  clearPendingProfile();
+  void registerEvent("perfil_salvo");
+  return loadProfile(userId);
+}
+
+async function authenticate(email, password, profile) {
+  const token = requireCaptcha();
+  try {
+    if (authMode === "login") {
+      const { data, error } = await getClient().auth.signInWithPassword({ email, password, options: { captchaToken: token } });
+      if (error) throw error;
+      return data.session;
+    }
+    const { data, error } = await getClient().auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: authRedirect(), captchaToken: token, data: { cadastro_radar: cadastroFromProfile(profile) } },
+    });
     if (error) throw error;
     return data.session;
+  } finally {
+    resetCaptcha();
   }
-  const emailRedirectTo = window.location.href.split("#")[0].split("?")[0];
-  const { data, error } = await getClient().auth.signUp({
-    email,
-    password,
-    options: { emailRedirectTo },
-  });
-  if (error) throw error;
-  if (data.user?.identities?.length === 0) {
-    const login = await getClient().auth.signInWithPassword({ email, password });
-    if (login.error) throw login.error;
-    return login.data.session;
-  }
-  return data.session;
 }
 
 async function refreshActivationStatus() {
@@ -536,25 +586,48 @@ async function openSignup() {
     form.elements.email.value = session.user.email ?? "";
     const profile = await loadProfile(session.user.id);
     if (profile) mostrarEstadoDoPerfil(profile);
+    else prepareMissingProfile(session);
   } catch (error) {
     setFormMessage(humanizeError(error));
   }
 }
 
 async function resumeConfirmedSignup() {
-  const pending = readPendingProfile();
-  if (!pending) return;
   try {
     const session = await currentSession();
+    if (authLinkError) {
+      showAssistance(returningFromRecovery ? "reset" : "resend");
+      setFormMessage("Esse link expirou ou já foi usado. Solicite um novo abaixo.");
+      return;
+    }
+    if (returningFromRecovery || recoverySession) {
+      if (session && recoverySession) showAssistance("new-password");
+      else if (!session) showAssistance("reset");
+      return;
+    }
     if (!session) return;
+    const profile = await loadProfile(session.user.id);
+    if (!returningFromAuth && !readPendingProfile()) return;
+    clearPendingProfile();
     openDialog();
-    const profile = await persistProfile(session.user.id, pending);
-    mostrarEstadoDoPerfil(profile);
+    if (profile) mostrarEstadoDoPerfil(profile);
+    else prepareMissingProfile(session);
   } catch (error) {
     resetDialogView();
     openDialog();
     setFormMessage(humanizeError(error, { profilePending: true }));
   }
+}
+
+function prepareMissingProfile(session) {
+  resetDialogView();
+  setAuthMode("signup");
+  form.elements.email.value = session.user.email ?? "";
+  credenciais.hidden = true;
+  form.elements.email.required = false;
+  form.elements.senha.required = false;
+  accountSwitch.hidden = true;
+  setFormMessage("Seu e-mail está confirmado. Complete seu perfil para continuar.");
 }
 
 function completeProfileStep() {
@@ -698,30 +771,39 @@ form.addEventListener("submit", async (event) => {
   setFormMessage();
   setSubmitting(true);
   try {
-    const profile = profileFromForm();
-    savePendingProfile(profile);
+    const profile = authMode === "login" ? null : profileFromForm();
     const existingSession = await currentSession();
     if (editandoPerfilExistente && !existingSession) {
       sairDoModoEdicao();
       setFormMessage(MENSAGEM_SEM_SESSAO);
       return;
     }
-    if (existingSession && existingSession.user.email !== email) {
+    if (!editandoPerfilExistente && existingSession && existingSession.user.email !== email) {
       const { error } = await getClient().auth.signOut();
       if (error) throw error;
     }
-    const session = existingSession?.user.email === email
+    const session = editandoPerfilExistente || existingSession?.user.email === email
       ? existingSession
-      : await authenticate(email, password);
+      : await authenticate(email, password, profile);
     form.elements.senha.value = "";
     if (!session) {
       showConfirmation(email);
+      return;
+    }
+    const existing = await loadProfile(session.user.id);
+    if (existing && !editandoPerfilExistente) {
+      mostrarEstadoDoPerfil(existing);
+      return;
+    }
+    if (authMode === "login") {
+      prepareMissingProfile(session);
       return;
     }
     profileSaveStarted = true;
     const savedProfile = await persistProfile(session.user.id, profile);
     mostrarEstadoDoPerfil(savedProfile);
   } catch (error) {
+    if (error?.code === "email_not_confirmed") showAssistance("resend", email);
     setFormMessage(humanizeError(error, { profilePending: profileSaveStarted }));
   } finally {
     setSubmitting(false);
@@ -745,11 +827,226 @@ dialog.addEventListener("close", () => { document.body.style.overflow = ""; });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && dialog.open) closeSignup();
-  if (event.key === "Enter" && dialog.open && currentStep === 1 && event.target.matches("input, select")) {
+  if (event.key === "Enter" && dialog.open && !form.hidden && currentStep === 1 && event.target.matches("input, select")) {
     event.preventDefault();
     completeProfileStep();
   }
 });
+
+function authRedirect() {
+  return window.location.origin + window.location.pathname;
+}
+
+function requireCaptcha() {
+  if (!window.RADAR_CONFIG.turnstileSiteKey) return undefined;
+  if (!captchaToken) throw validationError("Conclua a verificação de segurança antes de continuar.");
+  return captchaToken;
+}
+
+function resetCaptcha() {
+  captchaToken = "";
+  if (captchaWidget !== null) window.turnstile?.reset(captchaWidget);
+}
+
+function setupCaptcha() {
+  if (!window.RADAR_CONFIG.turnstileSiteKey) return;
+  window.radarCaptchaReady = () => {
+    captchaWidget = window.turnstile.render("#captcha-container", {
+      sitekey: window.RADAR_CONFIG.turnstileSiteKey,
+      callback: (token) => { captchaToken = token; },
+      "expired-callback": () => { captchaToken = ""; },
+      "error-callback": () => {
+        captchaToken = "";
+        setFormMessage("A verificação de segurança falhou. Confira sua conexão e tente novamente.");
+      },
+    });
+  };
+  const script = document.createElement("script");
+  script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=radarCaptchaReady&render=explicit";
+  script.async = true;
+  script.onerror = () => setFormMessage("Não foi possível carregar a verificação de segurança. Recarregue a página.");
+  document.head.append(script);
+}
+
+function updateResendButton() {
+  if (assistanceMode !== "resend") return;
+  const remaining = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
+  const button = document.querySelector("#assistance-submit");
+  button.disabled = remaining > 0;
+  button.textContent = remaining > 0 ? `Reenviar em ${remaining}s` : "Reenviar confirmação";
+  if (!remaining && resendTimer) {
+    window.clearInterval(resendTimer);
+    resendTimer = null;
+  }
+}
+
+function startResendCooldown() {
+  resendAvailableAt = Date.now() + 60000;
+  if (resendTimer) window.clearInterval(resendTimer);
+  resendTimer = window.setInterval(updateResendButton, 1000);
+  updateResendButton();
+}
+
+function showAssistance(mode, email = "") {
+  assistanceMode = mode;
+  form.hidden = true;
+  progressWrap.hidden = true;
+  successState.hidden = true;
+  accountState.hidden = true;
+  document.querySelector("#auth-assistance").hidden = false;
+  document.querySelector("#captcha-container").hidden = mode === "new-password";
+  const definingPassword = mode === "new-password";
+  const emailInput = document.querySelector("#assistance-email");
+  const passwordInput = document.querySelector("#assistance-password");
+  document.querySelector("#assistance-email-field").hidden = definingPassword;
+  document.querySelector("#assistance-password-field").hidden = !definingPassword;
+  emailInput.required = !definingPassword;
+  passwordInput.required = definingPassword;
+  emailInput.value = email || emailInput.value || form.elements.email.value;
+  passwordInput.value = "";
+  const content = {
+    resend: ["Confirme seu e-mail", "Abra o link em qualquer aparelho. Se precisar, corrija o endereço e solicite outro link.", "Reenviar confirmação"],
+    reset: ["Recuperar senha", "Informe o e-mail da sua conta para receber um link de recuperação.", "Enviar link de recuperação"],
+    "new-password": ["Defina sua nova senha", "Use uma senha com pelo menos 8 caracteres.", "Salvar nova senha"],
+  }[mode];
+  document.querySelector("#assistance-title").textContent = content[0];
+  document.querySelector("#assistance-copy").textContent = content[1];
+  document.querySelector("#assistance-submit").textContent = content[2];
+  document.querySelector("#assistance-submit").disabled = false;
+  setFormMessage();
+  updateResendButton();
+  openDialog();
+  (definingPassword ? passwordInput : emailInput).focus();
+}
+
+document.querySelector("#forgot-password").addEventListener("click", () => showAssistance("reset"));
+document.querySelector("#open-resend").addEventListener("click", () => showAssistance("resend"));
+document.querySelector("#assistance-back").addEventListener("click", () => {
+  resetDialogView();
+  setAuthMode("login");
+  showStep(3);
+});
+
+document.querySelector("#assistance-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const mode = assistanceMode;
+  if (mode === "resend" && Date.now() < resendAvailableAt) return;
+  const button = document.querySelector("#assistance-submit");
+  if (button.disabled) return;
+  button.disabled = true;
+  setFormMessage();
+  try {
+    const email = document.querySelector("#assistance-email").value.trim();
+    if (mode === "new-password") {
+      if (!recoverySession || !(await currentSession())) throw validationError("Solicite um novo link de recuperação para definir sua senha.");
+      const password = document.querySelector("#assistance-password").value;
+      if (password.length < 8) throw validationError(mensagensValidacao.senha);
+      const { error } = await getClient().auth.updateUser({ password });
+      if (error) throw error;
+      document.querySelector("#assistance-password").value = "";
+      recoverySession = false;
+      window.history.replaceState(null, "", window.location.pathname);
+      const { error: logoutError } = await getClient().auth.signOut();
+      if (logoutError) throw logoutError;
+      resetDialogView();
+      setAuthMode("login");
+      showStep(3);
+      setFormMessage("Senha atualizada. Entre com sua nova senha.");
+      return;
+    }
+    const token = requireCaptcha();
+    const result = mode === "resend"
+      ? await getClient().auth.resend({ type: "signup", email, options: { emailRedirectTo: authRedirect(), captchaToken: token } })
+      : await getClient().auth.resetPasswordForEmail(email, { redirectTo: authRedirect() + "?fluxo=recuperar", captchaToken: token });
+    if (result.error) {
+      if (result.error.status === 429 && mode === "resend") startResendCooldown();
+      throw result.error;
+    }
+    if (mode === "resend") startResendCooldown();
+    setFormMessage("Se houver uma conta elegível para esse endereço, você receberá o link. Confira também o spam.");
+  } catch (error) {
+    setFormMessage(humanizeError(error));
+  } finally {
+    resetCaptcha();
+    button.disabled = false;
+    updateResendButton();
+  }
+});
+
+document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = button.dataset.togglePassword === "senha"
+      ? form.elements.senha : document.querySelector("#assistance-password");
+    const showing = input.type === "password";
+    input.type = showing ? "text" : "password";
+    button.textContent = showing ? "Ocultar senha" : "Mostrar senha";
+    button.setAttribute("aria-pressed", String(showing));
+  });
+});
+
+document.querySelector("#account-emails").addEventListener("change", async (event) => {
+  const input = event.target;
+  const requested = input.checked;
+  input.disabled = true;
+  try {
+    const session = await currentSession();
+    if (!session) throw validationError(MENSAGEM_SEM_SESSAO);
+    const { data, error } = await getClient().from("perfis").update({ aceita_emails: requested })
+      .eq("user_id", session.user.id).select("aceita_emails").single();
+    if (error) throw error;
+    input.checked = data.aceita_emails;
+    setAccountMessage("Preferência de e-mails atualizada.");
+  } catch (error) {
+    input.checked = !requested;
+    setAccountMessage(humanizeError(error));
+  } finally {
+    input.disabled = false;
+  }
+});
+
+document.querySelector("#download-data").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const { data, error } = await getClient().rpc("baixar_meus_dados");
+    if (error) throw error;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "meus-dados-radar.json";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setAccountMessage("Seus dados foram preparados para download.");
+  } catch (error) {
+    setAccountMessage(humanizeError(error));
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector("#success-account").addEventListener("click", async () => {
+  try {
+    showAccount(await perfilAtual());
+  } catch (error) {
+    setFormMessage(humanizeError(error));
+  }
+});
+
+document.querySelector("#logout-account").addEventListener("click", async () => {
+  const { error } = await getClient().auth.signOut();
+  if (error) { setAccountMessage(humanizeError(error)); return; }
+  clearPendingProfile();
+  form.reset();
+  selectedSkills.clear();
+  renderSkills();
+  resetDialogView();
+  setAuthMode("login");
+  showStep(3);
+});
+
+setupCaptcha();
 
 if (!landingJaContadaNestaSessao()) {
   void registerEvent("landing_visualizada", { pagina: window.location.pathname });

@@ -149,8 +149,9 @@
         <p>Um projeto acadêmico de Igor Costa, Ian Dias e Miguel Esteves.</p>
         <p>© 2026 Radar de Estágio</p>
       </div>
+      <nav class="container legal-links" aria-label="Documentos legais"><a href="termos.html">Termos de Uso (em revisão)</a><a href="privacidade.html">Política de Privacidade (em revisão)</a></nav>
       <div class="container footer-privacy">
-        <p><strong>Seus dados.</strong> O Radar guarda curso, período, habilidades, cidade, modalidade, e-mail e o identificador da sua conversa no Telegram. Usa isso só para comparar vagas com o seu perfil e entregar as compatíveis. Nada é vendido nem compartilhado com terceiros, e as vagas vêm de portais públicos. Para corrigir, pausar ou apagar seus dados, entre na sua conta pelo botão de cadastro.</p>
+        <p><strong>Seus dados.</strong> O Radar guarda curso, período, habilidades, cidade, modalidade, e-mail e o identificador da sua conversa no Telegram. Usa esses dados para selecionar e entregar vagas, manter sua conta e medir o uso do serviço. Fornecedores como Supabase, Telegram e GitHub Actions participam desse processamento. Para corrigir, pausar ou apagar seus dados, entre na sua conta pelo botão de cadastro.</p>
       </div>
     </footer>
 
@@ -162,7 +163,7 @@
           <p class="eyebrow eyebrow-light"><span></span> Ative seu radar</p>
           <h2 id="signup-title">Seu perfil deixa cada busca mais certeira.</h2>
           <p>Preencha uma vez. O sistema usa essas informações para comparar as vagas com o que você procura.</p>
-          <div class="privacy-note"><span aria-hidden="true">●</span> Curso, período, habilidades, cidade e modalidade servem só para comparar vagas com o seu perfil. O e-mail é o acesso à sua conta e o Telegram é por onde as vagas chegam. Nada é vendido nem compartilhado.</div>
+          <div class="privacy-note"><span aria-hidden="true">●</span> Seu perfil serve para selecionar vagas. O e-mail dá acesso à conta e o Telegram recebe as recomendações. Usamos fornecedores para operar o serviço. Consulte a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade (em revisão, abre em outra aba)</a>.</div>
         </div>
         <div class="dialog-form-area">
           <div class="progress-wrap" aria-label="Progresso do cadastro">
@@ -233,15 +234,31 @@
                 </div><small>Vagas dessas áreas ganham prioridade; fora delas, a nota cai e a vaga avisa.</small></div>
                 <div class="credenciais" id="credenciais">
                 <label class="field field-full"><span>E-mail</span><input name="email" type="email" autocomplete="email" required placeholder="voce@email.com" /></label>
-                <label class="field field-full"><span>Senha</span><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /></label>
+                <label class="field field-full"><span>Senha</span><span class="password-field"><input name="senha" type="password" autocomplete="new-password" minlength="8" required placeholder="Pelo menos 8 caracteres" /><button type="button" data-toggle-password="senha" aria-pressed="false">Mostrar senha</button></span></label>
               </div>
               </div>
+              <div id="signup-consent" class="consent-fields">
+                <label><input type="checkbox" name="aceitou_termos" required /> <span>Aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> (abrem em outra aba).</span></label>
+                <label><input type="checkbox" name="aceita_emails" /> <span>Quero receber e-mails ocasionais do Radar.</span></label>
+              </div>
+              <div class="auth-help"><button type="button" id="forgot-password">Esqueci minha senha</button><button type="button" id="open-resend">Não recebi a confirmação</button></div>
               <p class="account-switch" id="account-switch">Já possui uma conta? <button type="button" id="toggle-auth-mode">Entrar</button></p>
               <div class="form-actions"><button class="button button-ghost" type="button" id="previous-step">← Voltar</button><button class="button button-primary" type="submit" id="submit-profile">Criar conta e continuar <span aria-hidden="true">→</span></button></div>
             </fieldset>
           </form>
+          <section id="auth-assistance" hidden aria-labelledby="assistance-title">
+            <h2 id="assistance-title">Confirme seu e-mail</h2>
+            <p id="assistance-copy"></p>
+            <form id="assistance-form">
+              <label class="field" id="assistance-email-field"><span>E-mail</span><input id="assistance-email" type="email" autocomplete="email" required /></label>
+              <label class="field" id="assistance-password-field" hidden><span>Nova senha</span><input id="assistance-password" type="password" autocomplete="new-password" minlength="8" /><button type="button" data-toggle-password="assistance-password" aria-pressed="false">Mostrar senha</button></label>
+              <button class="button button-primary" id="assistance-submit" type="submit">Reenviar confirmação</button>
+            </form>
+            <button class="button button-ghost" id="assistance-back" type="button">Voltar para entrar</button>
+          </section>
+          <div id="captcha-container"></div>
           <section class="success-state" id="success-state" aria-live="polite" hidden>
-            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Fechar</button></div>
+            <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow"><span></span> <span id="success-kicker">Perfil salvo</span></p><h2 id="success-title">Agora, ative as entregas.</h2><p id="success-copy">Vincule seu Telegram para receber as vagas selecionadas pelo Radar.</p><div class="success-actions"><button class="button button-ghost" id="success-account" type="button">Minha conta</button><a class="button button-primary" id="telegram-link" target="_blank" rel="noopener">Vincular e ativar no Telegram <span aria-hidden="true">→</span></a><button class="button button-ghost" type="button" id="finish-signup">Fechar</button></div>
           </section>
           <section class="account-state" id="account-state" aria-live="polite" hidden>
             <p class="eyebrow"><span></span> Sua conta</p>
@@ -258,6 +275,8 @@
               <button class="text-link" type="button" id="delete-account">Excluir minha conta e meus dados</button>
               <button class="button button-primary" type="button" id="cancel-deletion" hidden>Cancelar a exclusão</button>
             </div>
+            <label class="consent-fields"><span><input type="checkbox" id="account-emails" /> Quero receber e-mails ocasionais do Radar.</span></label>
+            <button class="button button-ghost" type="button" id="download-data">Baixar meus dados</button>
             <div class="account-confirm" id="account-confirm" hidden>
               <p id="account-confirm-copy"></p>
               <div class="account-actions">
@@ -265,6 +284,7 @@
                 <button class="button button-ghost" type="button" id="account-confirm-no">Cancelar</button>
               </div>
             </div>
+            <button class="button button-ghost" type="button" id="logout-account">Sair da conta</button>
             <button class="button button-ghost" type="button" id="close-account">Fechar</button>
           </section>
         </div>

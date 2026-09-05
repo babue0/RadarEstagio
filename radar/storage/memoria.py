@@ -15,6 +15,9 @@ class RepositorioEmMemoria:
     def listar_ativos(self) -> list[Usuario]:
         return list(self._usuarios)
 
+    def pode_entregar(self, usuario: Usuario) -> bool:
+        return any(u.id == usuario.id and u.chat_id == usuario.chat_id for u in self._usuarios)
+
     def extracoes_existentes(self, vagas: list[Vaga]) -> dict[str, ExtracaoDaVaga]:
         return {}
 

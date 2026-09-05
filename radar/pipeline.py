@@ -47,8 +47,24 @@ class ParametrosDaExecucao(BaseModel):
     url_de_rastreio: str = ""
 
 
+class RevalidacaoDeDestinatarios:
+    def __init__(self, repositorio: Repositorio) -> None:
+        self.repositorio = repositorio
+        self.falhas: set[UUID] = set()
+
+    def permite(self, usuario: Usuario) -> bool:
+        try:
+            return self.repositorio.pode_entregar(usuario)
+        except ErroDeArmazenamento as erro:
+            self.falhas.add(usuario.id)
+            logger.warning("destinatário %s não pôde ser revalidado: %s", usuario.id, erro)
+            return False
+
+
 class ResumoDaExecucao(BaseModel):
     usuarios: int
+    usuarios_com_falha_de_revalidacao: int = 0
+    usuarios_sem_entrega_por_falha_de_revalidacao: int = 0
     vagas_coletadas: int
     vagas_unicas: int
     vagas_candidatas: int
@@ -90,6 +106,7 @@ def executar(
         extrator, repositorio, candidatas, parametros.modelo
     )
     enviadas_por_usuario: dict[UUID, list[Recomendacao]] = {}
+    revalidacao = RevalidacaoDeDestinatarios(repositorio)
     for usuario in usuarios:
         selecionadas = atender_usuario(
             usuario,
@@ -100,11 +117,16 @@ def executar(
             parametros,
             agora,
             pontuador,
+            revalidacao,
         )
         if selecionadas is not None:
             enviadas_por_usuario[usuario.id] = selecionadas
     return ResumoDaExecucao(
         usuarios=len(usuarios),
+        usuarios_com_falha_de_revalidacao=len(revalidacao.falhas),
+        usuarios_sem_entrega_por_falha_de_revalidacao=len(
+            revalidacao.falhas - enviadas_por_usuario.keys()
+        ),
         vagas_coletadas=len(coletadas),
         vagas_unicas=len(unicas),
         vagas_candidatas=len(candidatas),
@@ -187,6 +209,7 @@ def atender_usuario(
     parametros: ParametrosDaExecucao,
     agora: datetime,
     pontuador: Pontuador,
+    revalidacao: RevalidacaoDeDestinatarios,
 ) -> list[Recomendacao] | None:
     ja_enviadas = repositorio.ids_ja_enviadas(usuario)
     recusas = repositorio.recusas_do_usuario(usuario)
@@ -224,9 +247,13 @@ def atender_usuario(
         len(novas),
         len(selecionadas),
     )
+    if not revalidacao.permite(usuario):
+        return None
     gravar_avaliacoes(repositorio, usuario, novas, parametros.modelo)
     if not selecionadas:
-        avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora)
+        avisar_que_nao_houve_vaga(notificador, repositorio, usuario, parametros, agora, revalidacao)
+        return None
+    if not revalidacao.permite(usuario):
         return None
     try:
         notificador.enviar(
@@ -237,7 +264,8 @@ def atender_usuario(
         logger.warning("usuário %s ficou sem mensagem: %s", usuario.id, erro)
         pausar_apos_falhas_seguidas(repositorio, usuario, parametros.falhas_ate_pausar)
         return None
-    perguntar_o_que_nao_serviu(notificador, usuario, selecionadas)
+    if revalidacao.permite(usuario):
+        perguntar_o_que_nao_serviu(notificador, usuario, selecionadas)
     try:
         repositorio.registrar_envios(usuario, selecionadas)
     except ErroDeArmazenamento as erro:
@@ -271,8 +299,11 @@ def avisar_que_nao_houve_vaga(
     usuario: Usuario,
     parametros: ParametrosDaExecucao,
     agora: datetime,
+    revalidacao: RevalidacaoDeDestinatarios,
 ) -> None:
     dias = dias_de_silencio_a_relatar(usuario, agora, parametros.dias_de_silencio_ate_avisar)
+    if not revalidacao.permite(usuario):
+        return
     try:
         notificador.enviar(usuario.chat_id, formatar_mensagem_sem_vagas(agora.date(), dias))
     except ErroDeNotificacao as erro:

@@ -2,6 +2,12 @@
 
 Landing page responsiva do projeto, com apresentação da proposta e fluxo de cadastro do perfil.
 
+`termos.html` e `privacidade.html` estão disponíveis no rodapé, como versões para revisão e
+sem vigência. O aviso permanece até a revisão dos textos, a ativação do contato e a entrega
+das funcionalidades descritas. Essas páginas não carregam autenticação ou métricas.
+
+As configurações externas estão no [guia de publicação e piloto](../docs/guia-publicacao-e-piloto.md).
+
 ## Experiência
 
 - comunica o problema e a promessa do Radar na primeira dobra;
@@ -21,9 +27,14 @@ Landing page responsiva do projeto, com apresentação da proposta e fluxo de ca
   Telegram e excluir a conta;
 - na exclusão, mostra a data do apagamento definitivo e oferece cancelar enquanto o prazo corre.
 
-Quando a confirmação de e-mail está ativa no Supabase, os campos do perfil ficam temporariamente
-no `localStorage`, na chave `radar-perfil-pendente`, até o usuário voltar pelo link de confirmação.
-A senha nunca é armazenada pelo site.
+O cadastro exige aceite dos documentos e oferece e-mails opcionais, inicialmente desmarcados.
+O perfil segue nos metadados do cadastro e o banco guarda uma cópia protegida até a confirmação.
+O gatilho cria o perfil com a versão aceita e a sessão de origem, inclusive quando a confirmação
+acontece em outro aparelho. Novos cadastros não guardam o perfil no `localStorage`.
+
+Há reenvio com endereço editável e espera de 60 segundos, recuperação de senha, exportação JSON
+e controle de e-mails no painel. A exportação inclui dados associados à conta; eventos anônimos
+de um navegador compartilhado não são atribuídos automaticamente ao dono do download.
 
 ## Configuração
 
@@ -34,11 +45,24 @@ RLS e pelas permissões de coluna das migrations. Nunca use a chave `service_rol
 No Supabase Auth, adicione a URL publicada do site e `http://localhost:8000` à lista de Redirect
 URLs. A confirmação de e-mail retorna ao site, que conclui a criação do perfil automaticamente.
 
-Antes de publicar, aplique em ordem todas as migrations de `0001` a `0013`. A `0005` instrumenta
+Antes de publicar, revise e aplique em ordem as migrations até `0016`. As novas `0014` a `0016`
+foram testadas localmente, mas não aplicadas no projeto remoto nesta etapa. A `0005` instrumenta
 o funil, a `0006` adiciona áreas de interesse ao perfil, a `0007` persiste os requisitos técnicos
 extraídos das vagas, a `0011` dá a cada envio o token do link rastreável, a `0012` remove as
 colunas de preferências múltiplas, que nunca tiveram quem lesse ou escrevesse, e a `0013` entrega
-as funções do painel da conta e a exclusão em duas etapas.
+as funções do painel da conta e a exclusão em duas etapas. A `0014` entrega consentimento e
+criação do perfil na confirmação, a `0015` exportação e a `0016` proteção das interações após
+pausa, exclusão ou desvínculo. A `0013` aplicada não foi alterada.
+
+Inclua também os retornos de recuperação `http://localhost:8000/?fluxo=recuperar` e
+`https://radarestagio.com/?fluxo=recuperar` na configuração do Auth quando usados.
+`turnstileSiteKey` fica vazio até configurar o widget e a verificação no Supabase. A chave
+secreta do Turnstile e a chave do Resend pertencem ao servidor, nunca a este arquivo.
+
+Os textos ainda são rascunhos. Antes de liberar cadastros públicos, finalize os documentos e
+alinhe sua versão com `VERSAO_DOS_TERMOS`, em formato de data `AAAA-MM-DD`. O banco valida
+o formato e a data e preserva a versão enviada, sem exigir uma versão fixa. Novas versões
+do documento não exigem migration; a versão aceita por contas existentes não é alterada.
 
 Excluir a conta **não apaga na hora**: marca a data, para a entrega e solta o Telegram. O
 apagamento definitivo é feito pelo job diário depois de 60 dias, e até lá a pessoa pode entrar e
@@ -59,8 +83,8 @@ O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a sta
 
 - O escopo atual é uma landing page com cadastro, não um dashboard.
 - A implementação usa HTML, CSS e JavaScript, sem framework, build ou dependências.
-- O site usa Supabase Auth e escreve diretamente na tabela `perfis`; não existe API Python entre
-  os dois componentes.
+- O site usa Supabase Auth; cria perfis por gatilho ou RPC autenticada e edita campos permitidos
+  em `perfis`. Não existe API Python entre os dois componentes.
 - A sessão de eventos é um UUID aleatório no `localStorage`; propriedades não recebem e-mail,
   curso, cidade ou outros campos livres do perfil.
 - O front não pedirá `@username` nem `chat_id` do Telegram.
@@ -68,3 +92,10 @@ O protótipo usa apenas HTML, CSS e JavaScript. Ele não escolhe nem exige a sta
   usuário real do Telegram ao perfil cadastrado.
 - React, Next.js, Astro, roteador e biblioteca de estado só serão reconsiderados se o escopo do
   frontend crescer de forma concreta.
+
+## Testes locais
+
+`deno task --config tests/web/deno.json test` executa os fluxos de tela com JSDOM e todas as
+migrations em PostgreSQL isolado via PGlite. Não usa o banco real nem dispara e-mails. A suíte
+Python continua em `uv run pytest -q`. A conferência visual e a entrega real de e-mails são
+etapas separadas do guia de publicação.
