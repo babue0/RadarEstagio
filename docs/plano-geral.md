@@ -161,16 +161,30 @@ cria o perfil na confirmação, a tela de reenvio, o Turnstile, baixar os dados 
 
 Sem a fase C o piloto roda e não mede o que importa.
 
-### Fase D — piloto
+### Fase D — entrega imediata (sprint 2)
+
+**Decidido em 05/09: o sprint 2 entra antes do piloto.** A auditoria trata a demora até a primeira
+entrega — hoje até 24 horas, contra a meta de 15 minutos — como bloqueador, e o
+`plano-melhorias-rcd.md` exige que os limites sejam aprovados antes de começar. Dispensar o
+bloqueador em silêncio era a pior das saídas possíveis.
+
+A regra acordada: **quem vincula o Telegram recebe a primeira mensagem na hora.** O gatilho é o
+clique no botão do Telegram, não o cadastro nem o login — antes dele não existe `chat_id` para onde
+enviar. A exceção é quem vincula na hora anterior ao disparo diário, entre **06:23 e 07:23** de
+Brasília: esse espera o job das 07:23, para não receber duas mensagens na mesma manhã.
+
+10. Fazer a `telegram-webhook` disparar a execução ao gravar o `chat_id`, respeitando a janela
+11. Rodar o pipeline para um perfil só, sem afetar a execução diária dos demais
+
+O trabalho não está em `radar/` e não é trivial: hoje **nada roda sob demanda**, o job é um cron no
+GitHub Actions. Quem descobre o vínculo é a Edge Function `telegram-webhook`, então é ela que
+precisa disparar um `repository_dispatch` no Actions — o que exige um token com permissão de
+escrita, o mesmo obstáculo que devolveu 403 na rotina da nuvem.
+
+### Fase E — piloto
 
 Descrito no sprint 4 de `auditoria-rcd.md`: 10 a 20 estudantes, duas semanas, cinco entrevistas,
-canais identificados. Só faz sentido depois da fase C.
-
-**Uma decisão precisa ser tomada antes.** A auditoria trata a demora até a primeira entrega — hoje
-até 24 horas, contra a meta de 15 minutos — como bloqueador do piloto, e o
-`plano-melhorias-rcd.md` exige que os limites sejam aprovados antes de começar. Este plano coloca o
-piloto depois da fase C sem resolver isso. Ou o sprint 2 entra antes, ou o grupo dispensa o
-bloqueador explicitamente e registra o porquê. Deixar implícito é o pior dos três.
+canais identificados. Só faz sentido depois das fases C e D.
 
 ## 5. Decisões em aberto
 
@@ -179,7 +193,7 @@ bloqueador explicitamente e registra o porquê. Deixar implícito é o pior dos 
 | Viés do ranking: anúncio raso tira nota maior | decidido esperar dado do piloto; evidência já registrada na seção 7 da auditoria |
 | Dados pessoais no histórico do git | trocar o arquivo não apagou o histórico; reescrever quebra os clones — decisão do grupo |
 | Apagar conta abandonada | fora do escopo agora; revisitar depois do piloto |
-| Sprint 2 (busca imediata após o vínculo) | não começou; meta de 15 minutos até a primeira entrega segue não atendida |
+| Sprint 2 (busca imediata após o vínculo) | **decidido em 05/09: entra antes do piloto**, com a janela de 06:23 a 07:23 como exceção. Virou a fase D |
 | Remetente do e-mail | domínio comprado; falta decidir se o Resend entra antes do piloto — hoje o cadastro não sustenta a coorte |
 
 ## 6. Onde está cada coisa
