@@ -1,6 +1,6 @@
 # Plano — cadastro, consentimento e privacidade
 
-**Data:** 04/09/2026
+**Data:** 05/09/2026 (revisto)
 
 **Escopo:** o cadastro de ponta a ponta, os dois documentos legais e o que a LGPD exige do
 produto. Nasceu da conversa sobre o e-mail de confirmação parecer amador e cresceu para cobrir
@@ -11,7 +11,7 @@ tudo que fica entre a landing e a primeira vaga entregue.
 | # | Assunto | Decisão |
 |---|---|---|
 | 1 | Controlador dos dados | Os três integrantes do projeto |
-| 2 | Canal de contato | Criado junto com o domínio; até lá o documento fica com espaço reservado |
+| 2 | Canal de contato | Domínio comprado em 05/09; falta criar o endereço e preencher o espaço reservado |
 | 3 | Retenção | Enquanto a conta existir. Excluir apaga em cascata o que está ligado à conta |
 | 4 | Portabilidade | Botão de baixar os próprios dados, por função no banco |
 | 5 | Menor de idade | Fora do escopo; o documento não trata |
@@ -63,20 +63,36 @@ quebrado.
 
 ### Exclusão com arrependimento
 
+**Implementado e aplicado em 05/09**, com uma diferença importante do que este plano previa:
+`ativo` **não** é tocado.
+
 ```
 clica em excluir
    ↓  imediato
-ativo = false             sai do where ativo do job
-telegram_chat_id = null   nada mais chega no Telegram
-excluida_em = now()
+excluida_em = now()       sai do where do job, que exige excluida_em is null
+telegram_chat_id = null   nada mais chega no Telegram; token_vinculo roda junto
    ↓  60 dias
 auth.users apagado; a cascata leva perfil, avaliações, envios e eventos ligados à conta
+mais os eventos anônimos daquelas sessões, que cascata nenhuma alcança
 ```
+
+**Por que `ativo` ficou de fora.** Ele já significava duas coisas — pausa pedida pelo dono e pausa
+por falha de envio. Usá-lo também para exclusão fazia o gatilho da `0005` emitir `entregas_pausadas`
+para quem saiu de vez, misturando churn definitivo com pausa temporária no funil; e o cancelamento,
+que punha `ativo = true` sem saber o estado anterior, religava quem tinha pausado antes de excluir.
+
+**Por que o chat é solto.** `telegram_chat_id` é `unique`. Segurá-lo durante a carência reservava o
+Telegram da pessoa por 60 dias contra uma conta nova dela mesma, com "chat de outra conta" e sem
+saída. O preço é que quem cancelar precisa vincular o Telegram de novo — decisão do Igor em 05/09.
+
+A policy de update também passou a recusar escrita em perfil marcado: esconder botão é cortesia,
+não é o que garante a regra.
 
 A primeira etapa é o que a pessoa pediu: parar de processar. A segunda é o apagamento definitivo.
 Entre as duas ela pode entrar e cancelar.
 
-**Três coisas que "parar na hora" ainda não cobre**, e que precisam entrar junto:
+**O que "parar na hora" ainda não cobre.** A quarta já foi resolvida; as três primeiras seguem
+abertas e foram reconfirmadas pela revisão de 05/09:
 
 - O pipeline lê os usuários **antes** de coletar e guarda o `chat_id` em memória. Quem exclui
   durante a execução ainda recebe a mensagem daquele dia. Revalidar antes de enviar.
@@ -86,9 +102,10 @@ Entre as duas ela pode entrar e cancelar.
   `vaga_irrelevante` e respondem no Telegram sem verificar exclusão, `ativo` ou se o `chat_id`
   ainda está vinculado. Clicar num botão antigo continuaria processando dado de quem pediu para
   sair.
-- Os eventos anteriores ao login têm só `sessao_id`, com `user_id` e `perfil_id` nulos. **Nenhuma
-  cascata os alcança.** A rotina dos 60 dias precisa apagá-los pelo `sessao_id` das sessões
-  ligadas àquela conta, senão "apagamos tudo" é falso.
+- ~~Os eventos anteriores ao login têm só `sessao_id` e nenhuma cascata os alcança.~~ **Resolvido
+  em 05/09.** A rotina apaga por `sessao_id`, mas **só os que estão sem dono**: o `sessao_id` mora
+  no `localStorage` e sobrevive a logout, então duas contas no mesmo navegador dividem sessão, e a
+  primeira versão levava junto o funil de quem emprestou o computador.
 
 Os 60 dias precisam de justificativa perante a LGPD — guardar dado "por precaução" não basta.
 Permitir o arrependimento é a justificativa, e vai escrita na política.
@@ -129,11 +146,17 @@ os dados. O documento não promete nada além disso.
 
 ## 4. Ordem de implementação
 
+**A ordem foi quebrada na prática**: o bloco da exclusão saiu primeiro, porque era o que já tinha
+migration escrita, e o bloco do consentimento não começou. O que está feito, feito, e o resto segue
+a ordem original.
+
 1. Escrever os dois documentos; Igor e Ian revisam antes de qualquer código
 2. `web/termos.html` e `web/privacidade.html`, linkados no rodapé
 3. Migration: `aceita_emails`, `termos_aceitos_em`, versão dos termos, `excluida_em`; a
    `excluir_minha_conta()` deixa de apagar e passa a marcar; função para cancelar a exclusão
-4. Passo diário que apaga o que passou dos 60 dias
+   — **metade feita em 05/09**: `excluida_em`, marcar e cancelar estão na `0013`, aplicada. As três
+   colunas de consentimento não existem
+4. ~~Passo diário que apaga o que passou dos 60 dias~~ — **feito**
 5. Cadastro: os dois checkboxes, o olho na senha, o perfil em `options.data`
 6. Gatilho que cria o perfil na confirmação
 7. Tela de reenvio
@@ -142,11 +165,10 @@ os dados. O documento não promete nada além disso.
 10. **Recuperação de senha** — não existe hoje, nem tela nem chamada. Configurar o Resend não
     entrega isso sozinho: falta o link "esqueci minha senha", a chamada
     `resetPasswordForEmail`, e a tela que recebe a volta e define a senha nova
-11. **Textos e controles do painel** — hoje ele diz "Não dá para desfazer" e "Seus dados foram
-    apagados". Com os 60 dias as duas frases ficam falsas; entram a data do apagamento definitivo
-    e o botão de cancelar. Entra também o **controle para revogar o consentimento de e-mail**: a
-    decisão 2 promete que é reversível e a seção 6 usa isso para dispensar o link de descadastro,
-    mas a sequência só previa a coluna no banco e o checkbox no cadastro
+11. **Textos e controles do painel** — **metade feita em 05/09**: as frases "Não dá para desfazer"
+    e "Seus dados foram apagados" saíram, entraram a data do apagamento definitivo e o botão de
+    cancelar. Falta o **controle para revogar o consentimento de e-mail**, que depende da coluna do
+    passo 3
 12. **Retorno da confirmação** — o `resumeConfirmedSignup` desiste quando não acha perfil no
     navegador, antes de consultar sessão e banco. Com o gatilho criando o perfil, ele precisa
     consultar primeiro. E o `sessao_id` do aparelho onde a pessoa se cadastrou não viaja para o
@@ -155,16 +177,16 @@ os dados. O documento não promete nada além disso.
 
 Do 3 em diante, um commit por decisão e suíte verde em comando separado, como manda o `CLAUDE.md`.
 
-A migration `0013` ainda **não foi aplicada** em banco nenhum, então o passo 3 a edita no lugar em
-vez de empilhar uma correção por cima. Como ela já passou por revisão, pedir uma segunda depois da
-mudança.
+A migration `0013` **foi aplicada em 05/09** e não pode mais ser editada no lugar: o que faltar do
+passo 3 entra numa `0014`. Ela passou por duas revisões antes de subir; a segunda achou três
+defeitos reais que a primeira não viu, o que vale repetir nas próximas.
 
 ## 5. Dependências externas
 
 | O quê | Trava o quê |
 |---|---|
-| Domínio | contato na política e remetente do e-mail. **Não trava a hospedagem**: o Cloudflare Pages publica em `*.pages.dev` |
-| Resend | remetente próprio, em vez do domínio compartilhado do Supabase |
+| ~~Domínio~~ | **comprado em 05/09.** Falta criar o endereço de contato e apontar o DNS |
+| Resend | **deixou de ser cosmético.** Com o domínio na mão, o remetente compartilhado do Supabase é o que impede o cadastro de sustentar 10 a 20 pessoas na mesma tarde: são poucos e-mails por hora e caem em spam. Entrar não depende de e-mail; cadastrar sim |
 | Chaves do Turnstile | pública no `web/config.js`, secreta no Supabase |
 
 O passo 8 fica pronto e inerte até as chaves do Turnstile existirem — mesma situação da Edge
