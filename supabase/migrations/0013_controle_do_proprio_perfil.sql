@@ -64,3 +64,9 @@ revoke all on function public.cancelar_exclusao_da_minha_conta() from public, an
 grant execute on function public.desvincular_meu_telegram() to authenticated;
 grant execute on function public.excluir_minha_conta() to authenticated;
 grant execute on function public.cancelar_exclusao_da_minha_conta() to authenticated;
+
+drop policy "usuario edita o proprio perfil" on public.perfis;
+create policy "usuario edita o proprio perfil"
+  on public.perfis for update
+  using (auth.uid() = user_id and excluida_em is null)
+  with check (auth.uid() = user_id and excluida_em is null);

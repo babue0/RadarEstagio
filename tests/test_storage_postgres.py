@@ -357,6 +357,23 @@ def test_a_marca_de_exclusao_sozinha_tira_o_perfil_da_entrega(
     assert RepositorioPostgres(conexao).listar_ativos() == []
 
 
+def test_perfil_marcado_nao_aceita_mais_edicao_pelo_site(
+    conexao: psycopg.Connection, usuario: Usuario
+):
+    como_dono(conexao, usuario)
+    conexao.execute("select public.excluir_minha_conta()")
+
+    conexao.execute("update perfis set ativo = false where user_id = auth.uid()")
+
+    conexao.execute("select set_config('role', 'postgres', true)")
+    assert (
+        conexao.execute(
+            "select ativo from perfis where id = %s", (usuario.id,)
+        ).fetchone()[0]
+        is True
+    )
+
+
 def test_cancelar_devolve_o_perfil_ao_ar(conexao: psycopg.Connection, usuario: Usuario):
     como_dono(conexao, usuario)
     conexao.execute("select public.excluir_minha_conta()")

@@ -136,3 +136,11 @@ def test_controle_do_perfil_e_fechado_a_visitante_anonimo():
         assert f"grant execute on function public.{funcao}() to authenticated" in sql
         assert "security definer" in sql
         assert "set search_path = ''" in sql
+
+
+def test_perfil_marcado_para_exclusao_nao_aceita_update_do_site():
+    sql = (RAIZ / "supabase/migrations/0013_controle_do_proprio_perfil.sql").read_text()
+
+    assert 'drop policy "usuario edita o proprio perfil" on public.perfis' in sql
+    assert "using (auth.uid() = user_id and excluida_em is null)" in sql
+    assert "with check (auth.uid() = user_id and excluida_em is null)" in sql
