@@ -125,7 +125,9 @@ O que essa rodada deliberadamente não fez, e continua pendente:
 - **Preencher o gabarito humano.** As 20 entregas de `docs/gabarito-2026-09-09.json` seguem com
   `relevante` nulo, então o juiz automático ainda não foi validado.
 - **Frontend em um arquivo só.** `web/assets/app.js` passa de 1.500 linhas com estado
-  compartilhado; a recomendação é separar responsabilidades sem trocar de framework.
+  compartilhado; a recomendação dessa revisão foi separar responsabilidades sem trocar de
+  framework. Em 12/09, Igor solicitou um plano para React com JavaScript, ainda sem execução;
+  ver a seção 2.3.
 
 ## 2.2 Auditoria do agendamento diário (10/09/2026)
 
@@ -147,6 +149,21 @@ que saíram de lá:
   na Adzuna, e esse custo cresce com o número de cidades.
 - **G02 — registrar o fim de cada lote com a duração.** Fecha a margem do G01 e mede o efeito do
   raciocínio `low` na latência.
+
+## 2.3 Migração do frontend para React (12/09/2026)
+
+**Estado: planejamento em revisão; implementação não iniciada.** Igor solicitou registrar
+a migração em PR, mantendo React com JavaScript, sem TypeScript e sem redesenhar a interface.
+O [plano detalhado](plano-migracao-react.md) define arquitetura proposta, etapas, contratos,
+transição dos testes, critérios de aceite, publicação e reversão.
+
+As PRs [#60](https://github.com/RadarEstagio/RadarEstagio/pull/60) e
+[#61](https://github.com/RadarEstagio/RadarEstagio/pull/61) já estão integradas à `main` na base
+`0f0ca45`: preservar header/seções atuais, faixa de logos removida e selos da Adzuna.
+Isso registra o estado do código, não uma conferência do site publicado.
+
+Próximo passo: revisar o plano com Igor e obter autorização para implementar. Este registro
+não instala dependências, altera o frontend ou autoriza mudanças remotas de publicação/Auth.
 
 ## 3. Limitações e decisões que continuam valendo
 
